@@ -1,12 +1,14 @@
 // public ardpifi
 
+// to check which I2C device are connected run i2cdetect -y 1 (apt install i2c-tools )
+
 package main
 
 import (
 	"fmt"
-	"i2c"
 	"log"
 
+	"github.com/d2r2/go-i2c"
 	"github.com/d2r2/go-logger"
 )
 
@@ -27,14 +29,14 @@ func main() {
 	// Uncomment/comment next line to suppress/increase verbosity of output
 	logger.ChangePackageLogLevel("i2c", logger.InfoLevel)
 
-	// i2c.Write([]byte{0x1, 0xF3})
-	// Here goes code specific for sending and reading data
-	// to and from device connected via I2C bus, like:
-	// x, err := i2c.Write([]byte{0x1, 0xF3})
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	//i2c.Write([]byte{0x1, 0xF3})
+	// // this next bit does not work:!!
+	// from https://github.com/d2r2/go-i2c
+	// ....
+	// // Here goes code specific for sending and reading data
+	// // to and from device connected via I2C bus, like:
+	// _, err := i2c.Write([]byte{0x1, 0xF3})
+	// if err != nil { log.Fatal(err) }
+	// ....
 
 	// write data to I2C
 	i2c.WriteBytes([]byte{0x1, 0xF3})

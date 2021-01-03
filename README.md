@@ -68,4 +68,10 @@ sudo raspi-config nonint do_serial 1
 
 
 mkdir -p ~/code/go/src/github.com/johnusher
-git clone https://github.com/johnusher/ardpifi.git ~/code/go/src/github.com/johnusher/ardpifi
+git clone https://github.com/johnusher/ardpifi.git ~/code/go/src/github.com/
+
+git clone https://github.com/d2r2/go-i2c.git ~/code/go/src/github.com/d2r2/go-i2c
+
+git clone https://github.com/d2r2/go-i2c.git ~/code/go/src/github.com/d2r2/go-i2c
+
+johnusher/ardpifi
