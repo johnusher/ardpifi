@@ -1,4 +1,11 @@
-# ardpifi # ardpifi # ardpifi
+# ardpifi 
+
+# johnusher/ardpifi
+
+Task 1: For different keystrokes, send associated I2C codeload.
+
+
+# thanks @siggy!
 
 ### First Boot
 
@@ -74,4 +81,3 @@ git clone https://github.com/d2r2/go-i2c.git ~/code/go/src/github.com/d2r2/go-i2
 
 git clone https://github.com/d2r2/go-i2c.git ~/code/go/src/github.com/d2r2/go-i2c
 
-johnusher/ardpifi
