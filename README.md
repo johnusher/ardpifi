@@ -1,5 +1,48 @@
 # ardpifi # ardpifi # ardpifi
 
+### First Boot
+
+```bash
+ssh pi@raspberrypi.local
+# password: x
+
+# change default password
+passwd
+
+# set quiet boot
+sudo sed -i '${s/$/ quiet loglevel=1/}' /boot/cmdline.txt
+
+# install packages
+sudo apt-get update
+sudo apt-get install -y git tmux vim dnsmasq hostapd
+
+# set up wifi (note leading space to avoid bash history)
+sudo tee --append /etc/wpa_supplicant/wpa_supplicant.conf > /dev/null << 'EOF'
+network={
+    ssid="<WIFI_SSID>"
+    psk="<WIFI_PASSWORD>"
+}
+EOF
+
+# set static IP address
+sudo tee --append /etc/dhcpcd.conf > /dev/null << 'EOF'
+
+# set static ip
+
+interface eth0
+static ip_address=192.168.1.141/24
+static routers=192.168.1.1
+static domain_name_servers=192.168.1.1
+
+interface wlan0
+static ip_address=192.168.1.142/24
+static routers=192.168.1.1
+static domain_name_servers=192.168.1.1
+EOF
+
+# reboot to connect over wifi
+sudo shutdown -r now
+
 
 # disable services
 sudo systemctl disable hciuart
