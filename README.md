@@ -71,13 +71,35 @@ sudo raspi-config nonint do_serial 1
 ## Code
 
 ```bash
-(install go)
+
+go get -u github.com/d2r2/go-logger
+
+go get -u github.com/nsf/termbox-go
+
+url='https://golang.org'$(curl https://golang.org/dl/ | grep armv6l | sort --version-sort | tail -1 | grep -o -E "/dl/go[0-9]+\.[0-9]+((\.[0-9]+)?).linux-armv6l.tar.gz")
+archive_name=$(echo ${url} | cut -d '/' -f5)
+wget ${url}
+sudo tar -C /usr/local -xvf- ${archive_name}
+cat >> ~/.bashrc << 'EOF'
+export GOPATH=$HOME/go
+export PATH=/usr/local/go/bin:$PATH:$GOPATH/bin
+EOF
+rm ${archive_name}
+source ~/.bashrc
 
 
 mkdir -p ~/code/go/src/github.com/johnusher
 git clone https://github.com/johnusher/ardpifi.git ~/code/go/src/github.com/
 
-git clone https://github.com/d2r2/go-i2c.git ~/code/go/src/github.com/d2r2/go-i2c
+git clone https://github.com/d2r2/go-i2c.git ~/go/src/github.com/d2r2/go-i2c
 
-git clone https://github.com/d2r2/go-i2c.git ~/code/go/src/github.com/d2r2/go-i2c
+git clone https://github.com/nsf/termbox-go.git ~/go/src/github.com/nsf/termbox-go
 
+export GOPATH=$HOME/code/go/src
+
+cat >> ~/.bashrc << 'EOF'
+export GOPATH=$HOME/code/go/src
+export PATH=/usr/local/go/bin:$PATH:$GOPATH/bin
+EOF
+
+source ~/.bashrc

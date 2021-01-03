@@ -10,10 +10,12 @@ import (
 
 	"github.com/d2r2/go-i2c"
 	"github.com/d2r2/go-logger"
+	"github.com/nsf/termbox-go"
 )
 
 func main() {
 
+	err := termbox.Init()
 	defer logger.FinalizeLogger()
 	fmt.Println("started i2c'ing")
 
