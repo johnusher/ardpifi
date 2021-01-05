@@ -1,5 +1,6 @@
 /**
-
+  Arduino code:
+  receive message on serial USB and change LEDs
 
 */
 
@@ -15,6 +16,8 @@ void setup() {
   strip.begin();
   strip.show(); // Initialize all pixels to 'off'
   Serial.begin(9600);
+  Serial.print("S");
+  idleCol =  strip.Color(idleColR, idleColG, idleColB);
 }
 
 /**
@@ -24,31 +27,57 @@ void loop() {
 
   while (Serial.available() == 0) {
     // waiting for serial command
-    strip.show(); // Initialize all pixels to 'off'
 
+
+
+  // rainbow:
+    for (j = 0; j < 256; j++) {
+      for (i = 0; i < strip.numPixels(); i++) {
+        strip.setPixelColor(i, Wheel((i + j) & 255));
+//        tone(buzzer, i + j); // Send xm sound signal...
+
+      }
+      strip.show();
+      delay(5);
+    }
+
+
+
+    //    strip.setPixelColor(idleC,idleCol);
+
+    //    if (!idle_flag) {
+    //      strip.fill(idleCol, 0, nLEDS);
+    //      strip.show();
+    //      idle_flag = 1;
+    //    }
+
+    //      tone(buzzer, i XI); // Send 1KHz sound signal...
+//    delay(5);
 
   }
 
+  idle_flag = 0;
+  strip.clear();
   serial_in = Serial.read();
 
   // say what you got:
-  Serial.print("I received: ");
-  Serial.println(serial_in);
+  Serial.print("R");
+
 
   if (serial_in == '0') {
     SMode = 0;
     Serial.println("mode 0");
     colorWipe(strip.Color(255, 0 , 0), 25); // Red
     colorWipe(strip.Color(0, 0 , 0), 50); // off
-    
+
   }
 
   if (serial_in == '1') {
     SMode = 1;
     Serial.println("mode 1");
-    colorWipe(strip.Color(0, 0 , 255), 25); // b
+    colorWipe(strip.Color(0, 255 , 0 ), 25); // g
     colorWipe(strip.Color(0, 0 , 0), 50); // off
-    
+
   }
 
 

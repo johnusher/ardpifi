@@ -10,9 +10,18 @@ char serial_in;
 int SMode = 0;
 int wipeReverse = 0;
 
+int idleC = 0;	// counter
+uint8_t idleColR = 255; 	// colour of idle
+uint32_t idleCol;
+uint8_t idleColG = 143; 
+uint8_t idleColB = 43; 
+
+bool idle_flag = 1; 
+
 const byte nLEDS = 30;
 const byte ledPin = 6;
 
+uint16_t i, j;	// for rainbow effect
 
 
 #endif
