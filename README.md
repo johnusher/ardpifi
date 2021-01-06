@@ -118,3 +118,24 @@ go run jumain.go
 Press any key to print to screen (and eventually send to arduino).
 
 To exit, press "q" to exit termbox, and then ctrl-c to exit the program.
+
+
+# Arduino install
+
+https://siytek.com/arduino-cli-raspberry-pi/
+
++
+arduino-cli core install arduino:avr
+
+
+arduino-cli compile --fqbn arduino:avr:uno xx
+
+arduino-cli upload -p /dev/ttyACM0 --fqbn arduino:avr:uno xx
+
+<del> 
+## add libraries:
+arduino-cli lib search Adafruit_NeoPixel
+</del>
+
+in duino_src:
+arduino-cli compile --fqbn arduino:avr:uno duino_src
