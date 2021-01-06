@@ -1,4 +1,4 @@
-# ardpifi 
+# ardpifi
 
 # johnusher/ardpifi
 
@@ -65,10 +65,14 @@ sudo apt-get -y autoremove
 sudo raspi-config nonint do_boot_behaviour B2 0
 sudo raspi-config nonint do_boot_wait 1
 sudo raspi-config nonint do_serial 1
-
-
+```
 
 ## Code
+
+Note to @johnusher: These `go get` and `git clone` commands should no longer be
+necessary for dependency fetching. All dependencies managed in `go.mod` now,
+just add an import directive for any new depedency in your `*.go` files, and
+`go run/build` should just handle it.
 
 ```bash
 
@@ -103,3 +107,14 @@ export PATH=/usr/local/go/bin:$PATH:$GOPATH/bin
 EOF
 
 source ~/.bashrc
+```
+
+## Run
+
+```bash
+go run jumain.go
+```
+
+Press any key to print to screen (and eventually send to arduino).
+
+To exit, press "q" to exit termbox, and then ctrl-c to exit the program.
