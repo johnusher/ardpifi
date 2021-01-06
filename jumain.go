@@ -39,7 +39,7 @@ func main() {
 	// a little while it resets.
 	time.Sleep(1 * time.Second)
 
-	n, err := s.Write([]byte("0"))
+	n, err := s.Write([]byte("00000000"))
 	if err != nil {
 		log.Errorf("failed to write to port: %s", err)
 		return
@@ -73,14 +73,16 @@ func main() {
 			}
 			log.Infof("key pressed: %s / %d / 0x%X / 0%o", string(key), key, key, key)
 
+			// _, err := s.Write([]byte(0))
+
 			n, err = s.Write([]byte(string(key)))
 			if err != nil {
 				log.Errorf("2. failed to write to serial port: %s", err)
 				return
 			}
 
-			buf := make([]byte, 128)
-			n, _ = s.Read(buf)
+			buf := make([]byte, 16)
+			n, err = s.Read(buf)
 			if err != nil {
 				log.Errorf("serial port read error, %s", err)
 			}
@@ -151,7 +153,7 @@ func findArduino() string {
 	// JU: on my RASPI it shows in ttyAMA0
 	for _, f := range contents {
 		if strings.Contains(f.Name(), "tty.usbserial") ||
-			strings.Contains(f.Name(), "ttyUSB") || strings.Contains(f.Name(), "ttyAMA0") {
+			strings.Contains(f.Name(), "ttyUSB") || strings.Contains(f.Name(), "ttyACM0") {
 			fmt.Println("Duino found at /dev/", f.Name())
 			return "/dev/" + f.Name()
 		}

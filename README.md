@@ -2,7 +2,13 @@
 
 # johnusher/ardpifi
 
-Task 1: For different keystrokes, send associated I2C codeload.
+Connect Arduino Uno with Raspi 3 via USB.
+Run the go script, and keyboard numbers will control LED sequence on the NeoPixel strip.
+LED sequence can be programmed on the Raspi, compiled using arduino-cli, and flashed from the Raspi.
+
+upcoming attractions:
+-integrate the mesh network to allow multiple Raspis to communicate and change the LED show, sync'd on all devices.
+-accelerometer/ gyro control using I2C bus.
 
 
 # thanks @siggy!
@@ -69,16 +75,14 @@ sudo raspi-config nonint do_serial 1
 
 ## Code
 
-Note to @johnusher: These `go get` and `git clone` commands should no longer be
-necessary for dependency fetching. All dependencies managed in `go.mod` now,
+Note 
+All dependencies managed in `go.mod` now,
 just add an import directive for any new depedency in your `*.go` files, and
 `go run/build` should just handle it.
 
 ```bash
 
-go get -u github.com/d2r2/go-logger
 
-go get -u github.com/nsf/termbox-go
 
 url='https://golang.org'$(curl https://golang.org/dl/ | grep armv6l | sort --version-sort | tail -1 | grep -o -E "/dl/go[0-9]+\.[0-9]+((\.[0-9]+)?).linux-armv6l.tar.gz")
 archive_name=$(echo ${url} | cut -d '/' -f5)
@@ -95,9 +99,6 @@ source ~/.bashrc
 mkdir -p ~/code/go/src/github.com/johnusher
 git clone https://github.com/johnusher/ardpifi.git ~/code/go/src/github.com/
 
-git clone https://github.com/d2r2/go-i2c.git ~/go/src/github.com/d2r2/go-i2c
-
-git clone https://github.com/nsf/termbox-go.git ~/go/src/github.com/nsf/termbox-go
 
 export GOPATH=$HOME/code/go/src
 
@@ -108,6 +109,14 @@ EOF
 
 source ~/.bashrc
 ```
+
+NB above has a tar problem for me:
+
+curl -O https://dl.google.com/go/go1.15.6.linux-armv6l.tar.gz
+
+tar -xvf go1.15.6.linux-armv6l.tar.gz
+sudo mv go /usr/local
+
 
 ## Run
 
@@ -120,8 +129,9 @@ Press any key to print to screen (and eventually send to arduino).
 To exit, press "q" to exit termbox, and then ctrl-c to exit the program.
 
 
-# Arduino install
+# Arduino CLI install
 
+folow instructions here:
 https://siytek.com/arduino-cli-raspberry-pi/
 
 +
@@ -141,3 +151,5 @@ arduino-cli compile --fqbn arduino:avr:uno duino_src
 flash:
 arduino-cli upload -p /dev/ttyACM0 --fqbn arduino:avr:uno duino_src
 
+# Run
+go run jumain.go

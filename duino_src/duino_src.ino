@@ -34,6 +34,7 @@ void loop() {
     for (j = 0; j < 256; j++) {
       for (i = 0; i < strip.numPixels(); i++) {
         strip.setPixelColor(i, Wheel((i + j) & 255));
+        // Serial.print("x");
 //        tone(buzzer, i + j); // Send xm sound signal...
 
       }
@@ -61,7 +62,7 @@ void loop() {
   serial_in = Serial.read();
 
   // say what you got:
-  Serial.print("R");
+  Serial.print(serial_in);
 
 
   if (serial_in == '0') {
@@ -72,13 +73,23 @@ void loop() {
 
   }
 
-  if (serial_in == '1') {
+  else if (serial_in == '1') {
     SMode = 1;
     Serial.println("mode 1");
     colorWipe(strip.Color(0, 255 , 0 ), 25); // g
     colorWipe(strip.Color(0, 0 , 0), 50); // off
 
   }
+
+  else
+  {
+    SMode = 1;
+    Serial.println("mode x");
+    colorWipe(strip.Color(0, 0 , 255 ), 15); // b
+    colorWipe(strip.Color(0, 0 , 0), 20); // off
+    
+  }
+  
 
 
   //  if (Serial.available() > 0) {
