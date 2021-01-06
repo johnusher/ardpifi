@@ -128,9 +128,6 @@ https://siytek.com/arduino-cli-raspberry-pi/
 arduino-cli core install arduino:avr
 
 
-arduino-cli compile --fqbn arduino:avr:uno xx
-
-arduino-cli upload -p /dev/ttyACM0 --fqbn arduino:avr:uno xx
 
 <del> 
 ## add libraries:
@@ -138,4 +135,9 @@ arduino-cli lib search Adafruit_NeoPixel
 </del>
 
 in duino_src:
+compile:
 arduino-cli compile --fqbn arduino:avr:uno duino_src
+
+flash:
+arduino-cli upload -p /dev/ttyACM0 --fqbn arduino:avr:uno duino_src
+
