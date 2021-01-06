@@ -7,7 +7,7 @@
 
 #include "ard_JU.h"
 
-#include <Adafruit_NeoPixel.h>
+#include "Adafruit_NeoPixel.h"   // NB this should be from https://github.com/adafruit/Adafruit_NeoPixel!
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(nLEDS, ledPin, NEO_GRB + NEO_KHZ800);
 
