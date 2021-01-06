@@ -1,5 +1,5 @@
 /*!
- * @file Adafruit_NeoPixel.cpp
+ * @file Adafruit_NeoPixel.cpp 
  *
  * @mainpage Arduino Library for driving Adafruit NeoPixel addressable LEDs,
  * FLORA RGB Smart Pixels and compatible devicess -- WS2811, WS2812, WS2812B,
