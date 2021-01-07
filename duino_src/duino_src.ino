@@ -16,7 +16,7 @@ void setup() {
   strip.begin();
   strip.show(); // Initialize all pixels to 'off'
   Serial.begin(9600);
-  Serial.print("S");
+  
   idleCol =  strip.Color(idleColR, idleColG, idleColB);
 }
 
@@ -25,10 +25,10 @@ void setup() {
 */
 void loop() {
 
+Serial.print("S");
   while (Serial.available() == 0) {
+
     // waiting for serial command
-
-
 
   // rainbow:
     for (j = 0; j < 256; j++) {
@@ -67,7 +67,7 @@ void loop() {
 
   if (serial_in == '0') {
     SMode = 0;
-    Serial.println("mode 0");
+    Serial.print("mode 0");
     colorWipe(strip.Color(255, 0 , 0), 25); // Red
     colorWipe(strip.Color(0, 0 , 0), 50); // off
 
@@ -75,7 +75,7 @@ void loop() {
 
   else if (serial_in == '1') {
     SMode = 1;
-    Serial.println("mode 1");
+    Serial.print("mode 1");
     colorWipe(strip.Color(0, 255 , 0 ), 25); // g
     colorWipe(strip.Color(0, 0 , 0), 50); // off
 
@@ -84,7 +84,7 @@ void loop() {
   else
   {
     SMode = 1;
-    Serial.println("mode x");
+    Serial.print("mode x");
     colorWipe(strip.Color(0, 0 , 255 ), 15); // b
     colorWipe(strip.Color(0, 0 , 0), 20); // off
     

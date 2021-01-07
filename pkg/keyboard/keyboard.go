@@ -29,7 +29,9 @@ func (k *Keyboard) Run() error {
 	termbox.Flush()
 
 	for {
+
 		switch ev := termbox.PollEvent(); ev.Type {
+
 		case termbox.EventKey:
 			// close termbox when "q" is pressed
 			if string(ev.Ch) == "q" {

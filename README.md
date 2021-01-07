@@ -81,9 +81,6 @@ just add an import directive for any new depedency in your `*.go` files, and
 `go run/build` should just handle it.
 
 ```bash
-
-
-
 url='https://golang.org'$(curl https://golang.org/dl/ | grep armv6l | sort --version-sort | tail -1 | grep -o -E "/dl/go[0-9]+\.[0-9]+((\.[0-9]+)?).linux-armv6l.tar.gz")
 archive_name=$(echo ${url} | cut -d '/' -f5)
 wget ${url}
@@ -110,13 +107,14 @@ EOF
 source ~/.bashrc
 ```
 
-NB above has a tar problem for me:
+NB above has a tar problem for me, so I used this:
 
+```bash
 curl -O https://dl.google.com/go/go1.15.6.linux-armv6l.tar.gz
-
 tar -xvf go1.15.6.linux-armv6l.tar.gz
 sudo mv go /usr/local
-
+source ~/.bashrc
+```
 
 ## Run
 
@@ -134,10 +132,10 @@ To exit, press "q" to exit termbox, and then ctrl-c to exit the program.
 folow instructions here:
 https://siytek.com/arduino-cli-raspberry-pi/
 
-+
+
 arduino-cli core install arduino:avr
 
-
+Note the directory for the Arudion project must have the same name as the main file ()
 
 <del> 
 ## add libraries:
@@ -151,5 +149,3 @@ arduino-cli compile --fqbn arduino:avr:uno duino_src
 flash:
 arduino-cli upload -p /dev/ttyACM0 --fqbn arduino:avr:uno duino_src
 
-# Run
-go run jumain.go

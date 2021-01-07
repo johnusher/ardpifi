@@ -20,18 +20,28 @@ import (
 	"github.com/tarm/serial"
 
 	"github.com/johnusher/ardpifi/pkg/keyboard"
+	// "github.com/johnusher/ardpifi/pkg/localkeyboard"
 )
 
 func main() {
 
+	// // check if we have USB keyboard attached:
+	// localKB, localKB_det := os.Open(findUSBKeyboard())
+	// if localKB_det != nil {
+	// 	log.Print("No local USB keyboard found")
+	// } else {
+	// 	defer localKB.Close() // do we need to do this?
+	// }
+
 	// Find the device that represents the arduino serial
-	// connection.
+	// connection. NB this is kinda janky- we should have a system to robustly detect a duino,
+	// eg if we dont find one, then re-insert the duino USb cable and note which ports are new
 
 	c := &serial.Config{Name: findArduino(), Baud: 9600, ReadTimeout: time.Second * 1}
 
 	s, err := serial.OpenPort(c)
 	if err != nil {
-		log.Errorf("failed to find Arduino: %s", err)
+		log.Errorf("OpenPort error: %s", err)
 		return
 	}
 
@@ -39,12 +49,24 @@ func main() {
 	// a little while it resets.
 	time.Sleep(1 * time.Second)
 
-	n, err := s.Write([]byte("00000000"))
+	n, err := s.Write([]byte("C"))
+	// send a C for Connect signal to the board and check response
 	if err != nil {
 		log.Errorf("failed to write to port: %s", err)
 		return
 	}
 
+	// read return message from duino:
+	buf := make([]byte, 1)
+	n, err = s.Read(buf)
+	if err != nil {
+		log.Errorf("serial port read error, %s", err)
+	}
+	log.Print("%q", buf[:n])
+
+	// now check if got the correct response:
+
+	// Setup remote (terminal) KB:
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
@@ -55,15 +77,29 @@ func main() {
 		log.Errorf("failed to initialize keyboard: %s", err)
 		return
 	}
-	// defer kb.Close()
+
+	// localkeys := make(chan rune)
+	// localkb, err := localkeyboard.Init(localkeys)
+
+	// if err != nil {
+	// 	log.Errorf("failed to initialize local keyboard: %s", err)
+	// 	return
+	// }
+
 	go kb.Run()
 
+	// go localkb.Run()
+
+	// x := <-localkeys
+
+	// log.Infof("jj", string(x))
+	buf = make([]byte, 128)
 	for {
 		// listen on the keys channel for key presses
 		select {
 		case key, more := <-keys:
 			if !more {
-				log.Infof("keyboard listener closed")
+				log.Infof("keyboard listener closed\n")
 
 				// termbox closed, block until ctrl-c is called
 				<-stop
@@ -71,7 +107,7 @@ func main() {
 				log.Infof("exiting")
 				return
 			}
-			log.Infof("key pressed: %s / %d / 0x%X / 0%o", string(key), key, key, key)
+			log.Infof("key pressed: %s / %d / 0x%X / 0%o \n", string(key), key, key, key)
 
 			// _, err := s.Write([]byte(0))
 
@@ -81,12 +117,12 @@ func main() {
 				return
 			}
 
-			buf := make([]byte, 16)
 			n, err = s.Read(buf)
 			if err != nil {
 				log.Errorf("serial port read error, %s", err)
 			}
-			log.Print("%q", buf[:n])
+			log.Infof("serial return %s / %d / 0x%X / 0%o \n", string(buf[:n]), buf[:n], buf[:n], buf[:n])
+			// log.Infof("%q", buf[:n])
 
 		}
 	}
@@ -94,7 +130,7 @@ func main() {
 	// everything below here is unreachable due to the event loop above that exits
 
 	defer logger.FinalizeLogger()
-	fmt.Println("started i2c'ing")
+	fmt.Println("started i2c'ing\n")
 
 	// Create new connection to Arduino:
 	// I2C bus on line 1 with address 0x08
@@ -150,12 +186,32 @@ func findArduino() string {
 	contents, _ := ioutil.ReadDir("/dev")
 
 	// Look for what is mostly likely the Arduino device
+	// NB this is kinda janky- we should have a system to robustly detect a duino, eg if we dont find one, then re-insert the duino USb cable and note which ports are new
+
 	// JU: on my RASPI it shows in ttyAMA0
 	for _, f := range contents {
-		if strings.Contains(f.Name(), "tty.usbserial") ||
-			strings.Contains(f.Name(), "ttyUSB") || strings.Contains(f.Name(), "ttyACM0") {
+		if strings.Contains(f.Name(), "ttyACM0") {
 			fmt.Println("Duino found at /dev/", f.Name())
 			return "/dev/" + f.Name()
+		}
+	}
+
+	// Have not been able to find a USB device that 'looks'
+	// like an Arduino.
+	return ""
+}
+
+func findUSBKeyboard() string {
+	contents, _ := ioutil.ReadDir("/dev/input")
+
+	// Look for what is mostly likely the Arduino device
+	// NB this is kinda janky- we should have a system to robustly detect a duino, eg if we dont find one, then re-insert the duino USb cable and note which ports are new
+
+	// JU: on my RASPI it shows in ttyAMA0
+	for _, f := range contents {
+		if strings.Contains(f.Name(), "event") {
+			fmt.Println("USB KB found at /dev/input/", f.Name())
+			return "/dev/input/" + f.Name()
 		}
 	}
 
