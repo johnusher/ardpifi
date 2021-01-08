@@ -2,9 +2,13 @@
 
 # johnusher/ardpifi
 
-Connect Arduino Uno with Raspi 3 via USB.
+Mesh network with Raspis to control Arudion-powered LED strips.
+
+Mesh code from: https://github.com/siggy/ledmesh
+Connect Arduino Uno with Raspi 3 via USB
 Run the go script, and keyboard numbers will control LED sequence on the NeoPixel strip.
 LED sequence can be programmed on the Raspi, compiled using arduino-cli, and flashed from the Raspi.
+
 
 upcoming attractions:
 -integrate the mesh network to allow multiple Raspis to communicate and change the LED show, sync'd on all devices.
@@ -43,12 +47,12 @@ sudo tee --append /etc/dhcpcd.conf > /dev/null << 'EOF'
 # set static ip
 
 interface eth0
-static ip_address=192.168.1.141/24
+static ip_address=192.168.1.164/24
 static routers=192.168.1.1
 static domain_name_servers=192.168.1.1
 
 interface wlan0
-static ip_address=192.168.1.142/24
+static ip_address=192.168.1.164/24
 static routers=192.168.1.1
 static domain_name_servers=192.168.1.1
 EOF
@@ -72,6 +76,12 @@ sudo raspi-config nonint do_boot_behaviour B2 0
 sudo raspi-config nonint do_boot_wait 1
 sudo raspi-config nonint do_serial 1
 ```
+
+
+
+### Mesh network
+
+See file main.go, from https://github.com/siggy/ledmesh
 
 ## Code
 
@@ -110,9 +120,8 @@ source ~/.bashrc
 NB above has a tar problem for me, so I used this:
 
 ```bash
-curl -O https://dl.google.com/go/go1.15.6.linux-armv6l.tar.gz
-tar -xvf go1.15.6.linux-armv6l.tar.gz
-sudo mv go /usr/local
+wget https://dl.google.com/go/go1.15.6.linux-armv6l.tar.gz -O /tmp/go1.15.6.linux-armv6l.tar.gz
+sudo tar -C /usr/local -xzf /tmp/go1.15.6.linux-armv6l.tar.gz
 source ~/.bashrc
 ```
 

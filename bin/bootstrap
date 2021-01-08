@@ -1,0 +1,72 @@
+#!/bin/sh
+
+# set quiet boot
+#sudo sed -i '${s/$/ quiet loglevel=1/}' /boot/cmdline.txt
+
+# install packages
+sudo apt-get update
+sudo apt-get install -y git tmux vim
+
+# to fix tmux locale issue
+echo "en_US.UTF-8 UTF-8" | sudo tee --append /etc/locale.gen
+sudo locale-gen
+
+# tmux
+# tmux attach
+# ctrl-b $ # rename pane
+
+#
+## batman
+#
+
+# Based on:
+# https://www.reddit.com/r/darknetplan/comments/68s6jp/how_to_configure_batmanadv_on_the_raspberry_pi_3/
+
+sudo apt install libnl-3-dev libnl-genl-3-dev
+git clone https://git.open-mesh.org/batctl.git
+(
+  cd batctl
+  sudo make install
+)
+
+# Activate batman-adv
+sudo modprobe batman-adv
+# Disable and configure wlan0
+sudo ip link set wlan0 down
+# sudo ifconfig wlan0 mtu 1532
+sudo killall wpa_supplicant # ???
+sudo iwconfig wlan0 mode ad-hoc
+sudo iwconfig wlan0 essid ledmesh
+sudo iwconfig wlan0 ap any
+sudo iwconfig wlan0 channel 8
+sleep 1s
+sudo ip link set wlan0 up
+sleep 1s
+sudo batctl if add wlan0
+sleep 1s
+sudo ifconfig bat0 up
+sleep 5s
+# Use different IPv4 addresses for each device
+# This is the only change necessary to the script for
+# different devices. Make sure to indicate the number
+# of bits used for the mask.
+sudo ifconfig bat0 172.27.0.x/16
+sudo iwconfig wlan0 ap CA:B4:54:B1:5A:75
+
+# test batctl
+sudo batctl o
+
+# install Go
+wget https://dl.google.com/go/go1.11.linux-armv6l.tar.gz -O /tmp/go1.11.linux-armv6l.tar.gz
+sudo tar -C /usr/local -xzf /tmp/go1.11.linux-armv6l.tar.gz
+
+
+
+# get application code
+mkdir -p ~/code/go/src/github.com/siggy
+git clone https://github.com/siggy/ledmesh.git ~/code/go/src/github.com/siggy/ledmesh
+
+# copy .local.bash to system, enable on reboot
+cp ~/code/go/src/github.com/siggy/ledmesh/.local.bash ~/
+source ~/.local.bash
+echo "[[ -s ${HOME}/.local.bash ]] && source ${HOME}/.local.bash" >> ~/.bashrc
