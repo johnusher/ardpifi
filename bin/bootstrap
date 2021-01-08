@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# based on https://github.com/siggy/ledmesh/blob/master/bin/bootstrap
+
 # set quiet boot
 #sudo sed -i '${s/$/ quiet loglevel=1/}' /boot/cmdline.txt
 
@@ -57,8 +59,8 @@ sudo iwconfig wlan0 ap CA:B4:54:B1:5A:75
 sudo batctl o
 
 # install Go
-wget https://dl.google.com/go/go1.11.linux-armv6l.tar.gz -O /tmp/go1.11.linux-armv6l.tar.gz
-sudo tar -C /usr/local -xzf /tmp/go1.11.linux-armv6l.tar.gz
+wget https://dl.google.com/go/go1.15.6.linux-armv6l.tar.gz -O /tmp/go1.15.6.linux-armv6l.tar.gz
+sudo tar -C /usr/local -xzf /tmp/go1.15.6.linux-armv6l.tar.gz
 
 
 
