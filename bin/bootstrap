@@ -52,7 +52,7 @@ sleep 5s
 # This is the only change necessary to the script for
 # different devices. Make sure to indicate the number
 # of bits used for the mask.
-sudo ifconfig bat0 172.27.0.x/16
+sudo ifconfig bat0 172.27.0.1/16
 sudo iwconfig wlan0 ap CA:B4:54:B1:5A:75
 
 # test batctl
@@ -67,6 +67,9 @@ sudo tar -C /usr/local -xzf /tmp/go1.15.6.linux-armv6l.tar.gz
 # get application code
 mkdir -p ~/code/go/src/github.com/siggy
 git clone https://github.com/siggy/ledmesh.git ~/code/go/src/github.com/siggy/ledmesh
+
+mkdir -p ~/code/go/src/github.com/johnusher
+git clone https://github.com/johnusher/ardpifi.git ~/code/go/src/github.com/johnusher/ardpifi
 
 # copy .local.bash to system, enable on reboot
 cp ~/code/go/src/github.com/siggy/ledmesh/.local.bash ~/

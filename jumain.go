@@ -39,6 +39,12 @@ func main() {
 
 	c := &serial.Config{Name: findArduino(), Baud: 9600, ReadTimeout: time.Second * 1}
 
+	// c.Baud = 19200
+	// c.Parity = 'N'
+	// // c.BYTESIZE = 8
+	// c.StopBits = 1
+	// c.ReadTimeout = 1.0
+
 	s, err := serial.OpenPort(c)
 	if err != nil {
 		log.Errorf("OpenPort error: %s", err)
@@ -93,7 +99,7 @@ func main() {
 	// x := <-localkeys
 
 	// log.Infof("jj", string(x))
-	buf = make([]byte, 128)
+	buf = make([]byte, 5)
 	for {
 		// listen on the keys channel for key presses
 		select {
@@ -188,9 +194,9 @@ func findArduino() string {
 	// Look for what is mostly likely the Arduino device
 	// NB this is kinda janky- we should have a system to robustly detect a duino, eg if we dont find one, then re-insert the duino USb cable and note which ports are new
 
-	// JU: on my RASPI it shows in ttyAMA0
+	// JU: on my RASPI the legit Aurdion Uno shows in ttyACM0, but my fake nano +CH340-Chip shows on ttyUSB0
 	for _, f := range contents {
-		if strings.Contains(f.Name(), "ttyACM0") {
+		if strings.Contains(f.Name(), "ttyUSB") || strings.Contains(f.Name(), "ttyACM0") {
 			fmt.Println("Duino found at /dev/", f.Name())
 			return "/dev/" + f.Name()
 		}
@@ -204,10 +210,8 @@ func findArduino() string {
 func findUSBKeyboard() string {
 	contents, _ := ioutil.ReadDir("/dev/input")
 
-	// Look for what is mostly likely the Arduino device
-	// NB this is kinda janky- we should have a system to robustly detect a duino, eg if we dont find one, then re-insert the duino USb cable and note which ports are new
+	// Look for what is mostly likely the local USB KB
 
-	// JU: on my RASPI it shows in ttyAMA0
 	for _, f := range contents {
 		if strings.Contains(f.Name(), "event") {
 			fmt.Println("USB KB found at /dev/input/", f.Name())
