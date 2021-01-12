@@ -47,6 +47,66 @@ ssh pi@raspberrypi.local
 # change default password
 passwd
 
+
+
+# set quiet boot
+sudo sed -i '${s/$/ quiet loglevel=1/}' /boot/cmdline.txt
+
+# install packages
+sudo apt-get update
+sudo apt-get install -y git tmux vim dnsmasq hostapd
+
+# set up wifi (note leading space to avoid bash history)
+sudo tee --append /etc/wpa_supplicant/wpa_supplicant.conf > /dev/null << 'EOF'
+network={
+    ssid="<WIFI_SSID>"
+    psk="<WIFI_PASSWORD>"
+}
+EOF
+
+# set static IP address
+sudo tee --append /etc/dhcpcd.conf > /dev/null << 'EOF'
+
+# set static ip
+
+interface eth0
+static ip_address=192.168.1.164/24
+static routers=192.168.1.1
+static domain_name_servers=192.168.1.1
+
+interface wlan0
+static ip_address=192.168.1.164/24
+static routers=192.168.1.1
+static domain_name_servers=192.168.1.1
+EOF
+
+# reboot to connect over wifi
+sudo shutdown -r now
+```
+
+```bash
+# configure git
+git config --global push.default simple
+git config --global core.editor "vim"
+git config --global user.email "you@example.com"
+git config --global user.name "Your Name"
+
+# disable services
+sudo systemctl disable hciuart
+sudo systemctl disable bluetooth
+sudo systemctl disable plymouth
+
+# remove unnecessary packages
+sudo apt-get -y purge libx11-6 libgtk-3-common xkb-data lxde-icon-theme raspberrypi-artwork penguinspuzzle ntp plymouth*
+sudo apt-get -y autoremove
+
+sudo raspi-config nonint do_boot_behaviour B2 0
+sudo raspi-config nonint do_boot_wait 1
+sudo raspi-config nonint do_serial 1
+```
+
+# now you are setup! run bootstrap to download packages
+
 /bootstrap
 ```
 
