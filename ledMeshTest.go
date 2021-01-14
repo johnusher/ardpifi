@@ -1,5 +1,7 @@
 package main
 
+// from https://github.com/siggy/ledmesh/blob/master/main.go
+
 import (
 	"net"
 	"os"
@@ -72,6 +74,7 @@ func main() {
 					uint32(buffIn[5])<<8 +
 					uint32(buffIn[6])<<16 +
 					uint32(buffIn[7])<<24
+					// 4 bytes
 
 				log.Infof("%+v: %s: %d", addr, net.IP(buffIn[0:4]), pings)
 			} else {
