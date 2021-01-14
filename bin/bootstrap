@@ -71,6 +71,17 @@ git clone https://github.com/siggy/ledmesh.git ~/code/go/src/github.com/siggy/le
 mkdir -p ~/code/go/src/github.com/johnusher
 git clone https://github.com/johnusher/ardpifi.git ~/code/go/src/github.com/johnusher/ardpifi
 
+mkdir -p ~/code/go/src/github.com/d2r2
+git clone https://github.com/d2r2/go-i2c.git ~/code/go/src/github.com/d2r2/go-i2c
+
+mkdir -p ~/code/go/src/github.com/nsf
+git clone https://github.com/nsf/termbox-go.git ~/code/go/src/github.com/nsf/termbox-go.git
+
+mkdir -p ~/code/go/src/github.com/tarm
+git clone https://github.com/tarm/serial.git ~/code/go/src/github.com/tarm/serial
+
+
+
 # copy .local.bash to system, enable on reboot
 cp ~/code/go/src/github.com/siggy/ledmesh/.local.bash ~/
 source ~/.local.bash

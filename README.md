@@ -110,7 +110,7 @@ sudo raspi-config nonint do_serial 1
 /bootstrap
 ```
 
-## Build and run
+## Build and run (in ~/code/go/src/github.com/siggy/ledmesh)
 
 ```bash
 go run main.go
@@ -149,8 +149,8 @@ Repos we install:
 https://github.com/siggy/ledmesh.git
 https://github.com/johnusher/ardpifi.git
 
-
-
+https://github.com/d2r2/go-i2c.git
+https://github.com/nsf/termbox-go.git
 
 # Arduino CLI install
 
