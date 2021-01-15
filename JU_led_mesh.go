@@ -132,6 +132,23 @@ func main() {
 			log.Fatal(err)
 		}
 
+		// read: NB i want to change this so we get an interupt when there is a UDP message!
+		if n, addr, err := conn.ReadFromUDP(buffIn); err == nil {
+			if n == msgSize {
+				pings := uint32(buffIn[4]) +
+					uint32(buffIn[5])<<8 +
+					uint32(buffIn[6])<<16 +
+					uint32(buffIn[7])<<24
+					// 4 bytes
+
+				log.Infof("%+v: %s: %d", addr, net.IP(buffIn[0:4]), pings)
+			} else {
+				log.Errorf("Received unexpected message length from %+v: %d", addr, n)
+			}
+		} else if ne, ok := err.(*net.OpError); !ok || !ne.Timeout() {
+			log.Errorf("ReadFromUDP failed with %s", err)
+		}
+
 		// listen on the keys channel for key presses
 		select {
 		case key, more := <-keys:
@@ -183,23 +200,6 @@ func main() {
 			// }
 		default:
 			// fall through, add a sleep here if you want to slow things down
-
-			time.Sleep(1 * time.Second)
-			if n, addr, err := conn.ReadFromUDP(buffIn); err == nil {
-				if n == msgSize {
-					pings := uint32(buffIn[4]) +
-						uint32(buffIn[5])<<8 +
-						uint32(buffIn[6])<<16 +
-						uint32(buffIn[7])<<24
-						// 4 bytes
-
-					log.Infof("%+v: %s: %d", addr, net.IP(buffIn[0:4]), pings)
-				} else {
-					log.Errorf("Received unexpected message length from %+v: %d", addr, n)
-				}
-			} else if ne, ok := err.(*net.OpError); !ok || !ne.Timeout() {
-				log.Errorf("ReadFromUDP failed with %s", err)
-			}
 		}
 	}
 
