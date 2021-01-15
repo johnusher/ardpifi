@@ -198,7 +198,8 @@ func main() {
 			pingAt = time.Now().Add(interval)
 			// myPings++
 			// }
-
+		default:
+			// fall through, add a sleep here if you want to slow things down
 		}
 	}
 
