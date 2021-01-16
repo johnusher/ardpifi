@@ -143,6 +143,12 @@ func main() {
 		case message, _ := <-messages:
 			log.Infof("BATMAN message : %s / %d / 0x%X / 0%o \n", string(message), message, message, message)
 
+			n, err = s.Write([]byte(string(message)))
+			if err != nil {
+				log.Errorf("3. failed to write to serial port: %s", err)
+				return
+			}
+
 		case key, more := <-keys:
 			if !more {
 				log.Infof("keyboard listener closed\n")
