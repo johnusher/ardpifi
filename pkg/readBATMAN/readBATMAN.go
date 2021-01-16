@@ -10,8 +10,9 @@ import (
 )
 
 type ReadBATMAN struct {
-	message chan<- uint32
-	Conn    *net.UDPConn
+	message  chan<- uint32
+	FarEndIP *net.IP
+	Conn     *net.UDPConn
 }
 
 const (
@@ -61,6 +62,7 @@ func Init(message chan<- uint32) (*ReadBATMAN, error) {
 
 	return &ReadBATMAN{
 		message,
+		nil,
 		conn,
 	}, nil
 }
@@ -84,8 +86,8 @@ func (k *ReadBATMAN) Run() error {
 
 	for {
 
-		// read: NB i want to change this so we get an interupt when there is a UDP message!
 		if n, addr, err := k.Conn.ReadFromUDP(buffIn); err == nil {
+
 			if n == msgSize {
 				pings := uint32(buffIn[4]) +
 					uint32(buffIn[5])<<8 +
@@ -96,6 +98,7 @@ func (k *ReadBATMAN) Run() error {
 				log.Infof("%+v: %s: %d", addr, net.IP(buffIn[0:4]), pings)
 
 				k.message <- pings // send to output
+				// k.FarEndIP = net.IP(buffIn[0:4])
 			} else {
 				log.Errorf("Received unexpected message length from %+v: %d", addr, n)
 			}
