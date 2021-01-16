@@ -83,28 +83,28 @@ func main() {
 
 	// log.Info("LEDMesh starting up")
 
-	// myIP := net.IP{}
+	myIP := net.IP{}
 	myPings := uint32(0)
 
-	// i, err := net.InterfaceByName(ifaceName)
-	// if err != nil {
-	// 	log.Fatalf("InterfaceByName failed: %s", err)
-	// }
+	i, err := net.InterfaceByName(ifaceName)
+	if err != nil {
+		log.Fatalf("InterfaceByName failed: %s", err)
+	}
 
-	// addrs, err := i.Addrs()
-	// if err != nil {
-	// 	log.Fatalf("Failed to get addresses for interface %+v: %s", i, err)
-	// }
+	addrs, err := i.Addrs()
+	if err != nil {
+		log.Fatalf("Failed to get addresses for interface %+v: %s", i, err)
+	}
 
-	// for _, addr := range addrs {
-	// 	ipnet := addr.(*net.IPNet)
-	// 	ip4 := ipnet.IP.To4()
-	// 	if ip4 != nil && ip4[0] == 172 {
-	// 		myIP = ip4
-	// 	}
-	// }
+	for _, addr := range addrs {
+		ipnet := addr.(*net.IPNet)
+		ip4 := ipnet.IP.To4()
+		if ip4 != nil && ip4[0] == 172 {
+			myIP = ip4
+		}
+	}
 
-	// log.Infof("Serving at %s", myIP)
+	log.Infof("Serving at %s", myIP)
 
 	// sig := make(chan os.Signal, 1)
 	// signal.Notify(sig, os.Interrupt, os.Kill)
@@ -118,9 +118,9 @@ func main() {
 
 	// buffIn := make([]byte, msgSize)  // received via BATMAM
 	buffOut := make([]byte, msgSize) // sent to batman
-	// copy(buffOut[0:4], myIP)
+	copy(buffOut[0:4], myIP)
 
-	// bcast := &net.UDPAddr{Port: port, IP: net.IPv4(172, 27, 255, 255)}
+	bcast := &net.UDPAddr{Port: port, IP: net.IPv4(172, 27, 255, 255)}
 	// pingAt := time.Now()
 
 	// init BATMAN:
@@ -182,9 +182,9 @@ func main() {
 			buffOut[5] = byte(myPings & 0x0000ff00 >> 8)
 			buffOut[6] = byte(myPings & 0x00ff0000 >> 16)
 			buffOut[7] = byte(myPings & 0xff000000 >> 24)
-			// if _, err := conn.WriteToUDP(buffOut, bcast); err != nil {
-			// 	log.Fatal(err)
-			// }
+			if _, err := bm.Conn.WriteToUDP(buffOut, bcast); err != nil {
+				log.Fatal(err)
+			}
 			// pingAt = time.Now().Add(interval)
 			// myPings++
 			// }

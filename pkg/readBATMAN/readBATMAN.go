@@ -11,6 +11,7 @@ import (
 
 type ReadBATMAN struct {
 	message chan<- uint32
+	Conn    *net.UDPConn
 }
 
 const (
@@ -26,17 +27,6 @@ func Init(message chan<- uint32) (*ReadBATMAN, error) {
 	// if err != nil {
 	// 	return nil, err
 	// }
-
-	return &ReadBATMAN{message}, nil
-}
-
-func (k *ReadBATMAN) Run() error {
-	defer func() {
-		close(k.message)
-
-	}()
-
-	log.Info("LEDMesh starting up")
 
 	myIP := net.IP{}
 	// myPings := uint32(0)
@@ -69,7 +59,21 @@ func (k *ReadBATMAN) Run() error {
 		log.Fatal(err)
 	}
 
-	log.Infof("Listening as %+v", conn.LocalAddr().(*net.UDPAddr))
+	return &ReadBATMAN{
+		message,
+		conn,
+	}, nil
+}
+
+func (k *ReadBATMAN) Run() error {
+	defer func() {
+		close(k.message)
+
+	}()
+
+	log.Info("LEDMesh starting up")
+
+	log.Infof("Listening as %+v", k.Conn.LocalAddr().(*net.UDPAddr))
 
 	buffIn := make([]byte, msgSize) // received via BATMAM
 	// buffOut := make([]byte, msgSize) // sent to batman
@@ -81,7 +85,7 @@ func (k *ReadBATMAN) Run() error {
 	for {
 
 		// read: NB i want to change this so we get an interupt when there is a UDP message!
-		if n, addr, err := conn.ReadFromUDP(buffIn); err == nil {
+		if n, addr, err := k.Conn.ReadFromUDP(buffIn); err == nil {
 			if n == msgSize {
 				pings := uint32(buffIn[4]) +
 					uint32(buffIn[5])<<8 +

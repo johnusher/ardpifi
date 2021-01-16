@@ -16,7 +16,7 @@ void setup() {
   strip.begin();
   strip.show(); // Initialize all pixels to 'off'
   Serial.begin(9600);
-  
+
   idleCol =  strip.Color(idleColR, idleColG, idleColB);
 }
 
@@ -87,9 +87,9 @@ Serial.print("S");
     Serial.print("mode x");
     colorWipe(strip.Color(0, 0 , 255 ), 15); // b
     colorWipe(strip.Color(0, 0 , 0), 20); // off
-    
+
   }
-  
+
 
 
   //  if (Serial.available() > 0) {
@@ -136,7 +136,6 @@ void colorWipe(uint32_t c, uint8_t wait) {
 
 
 }
-
 
 
 // Slightly different, this makes the rainbow equally distributed throughout
