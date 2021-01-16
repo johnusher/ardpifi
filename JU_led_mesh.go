@@ -136,68 +136,72 @@ func main() {
 	go kb.Run()
 	go bm.Run()
 
-	for {
+	go func() {
+		for {
+			select {
+			case message, _ := <-messages:
+				log.Infof("BATMAN message : %s / %d / 0x%X / 0%o \n", string(message), message, message, message)
 
-		// listen on the keys channel for key presses AND listen for new BATMAN message
-		select {
-		case message, _ := <-messages:
-			log.Infof("BATMAN message : %s / %d / 0x%X / 0%o \n", string(message), message, message, message)
-
-			n, err = s.Write([]byte(string(message)))
-			if err != nil {
-				log.Errorf("3. failed to write to serial port: %s", err)
-				return
+				n, err = s.Write([]byte(string(message)))
+				if err != nil {
+					log.Errorf("3. failed to write to serial port: %s", err)
+					return
+				}
 			}
-
-		case key, more := <-keys:
-			if !more {
-				log.Infof("keyboard listener closed\n")
-
-				// termbox closed, block until ctrl-c is called
-				<-stop
-
-				log.Infof("exiting")
-				return
-			}
-			log.Infof("key pressed: %s / %d / 0x%X / 0%o \n", string(key), key, key, key)
-
-			// _, err := s.Write([]byte(0))
-
-			n, err = s.Write([]byte(string(key)))
-			if err != nil {
-				log.Errorf("2. failed to write to serial port: %s", err)
-				return
-			}
-
-			n, err = s.Read(buf)
-			if err != nil {
-				log.Errorf("serial port read error, %s", err)
-			}
-			log.Infof("serial return %s / %d / 0x%X / 0%o \n", string(buf[:n]), buf[:n], buf[:n], buf[:n])
-			// log.Infof("%q", buf[:n])
-
-			// now send the key over BATMAN:
-
-			// buf := make([]byte, 1)
-			// _ = utf8.EncodeRune(buf, key)
-
-			myPings = uint32(key) // convert rune to uint32
-			// write
-			// if time.Now().After(pingAt) {
-			buffOut[4] = byte(myPings & 0x000000ff)
-			buffOut[5] = byte(myPings & 0x0000ff00 >> 8)
-			buffOut[6] = byte(myPings & 0x00ff0000 >> 16)
-			buffOut[7] = byte(myPings & 0xff000000 >> 24)
-			if _, err := bm.Conn.WriteToUDP(buffOut, bcast); err != nil {
-				log.Fatal(err)
-			}
-			// pingAt = time.Now().Add(interval)
-			// myPings++
-			// }
-		default:
-			// fall through, add a sleep here if you want to slow things down
 		}
-	}
+	}()
+
+	go func() {
+		for {
+			select {
+			case key, more := <-keys:
+				if !more {
+					log.Infof("keyboard listener closed\n")
+
+					// termbox closed, block until ctrl-c is called
+					<-stop
+
+					log.Infof("exiting")
+					return
+				}
+				log.Infof("key pressed: %s / %d / 0x%X / 0%o \n", string(key), key, key, key)
+
+				// _, err := s.Write([]byte(0))
+
+				n, err = s.Write([]byte(string(key)))
+				if err != nil {
+					log.Errorf("2. failed to write to serial port: %s", err)
+					return
+				}
+
+				n, err = s.Read(buf)
+				if err != nil {
+					log.Errorf("serial port read error, %s", err)
+				}
+				log.Infof("serial return %s / %d / 0x%X / 0%o \n", string(buf[:n]), buf[:n], buf[:n], buf[:n])
+				// log.Infof("%q", buf[:n])
+
+				// now send the key over BATMAN:
+
+				// buf := make([]byte, 1)
+				// _ = utf8.EncodeRune(buf, key)
+
+				myPings = uint32(key) // convert rune to uint32
+				// write
+				// if time.Now().After(pingAt) {
+				buffOut[4] = byte(myPings & 0x000000ff)
+				buffOut[5] = byte(myPings & 0x0000ff00 >> 8)
+				buffOut[6] = byte(myPings & 0x00ff0000 >> 16)
+				buffOut[7] = byte(myPings & 0xff000000 >> 24)
+				if _, err := bm.Conn.WriteToUDP(buffOut, bcast); err != nil {
+					log.Fatal(err)
+				}
+				// pingAt = time.Now().Add(interval)
+				// myPings++
+				// }
+			}
+		}
+	}()
 
 }
 
