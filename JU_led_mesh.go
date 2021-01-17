@@ -177,15 +177,18 @@ func messageLoop(messages <-chan []byte, s port.Port, myIP net.IP) error {
 			log.Infof("received message from my own IP: %s / %s", ip, string(pings))
 		} else {
 			log.Infof("received message from other IP: %s / %s", ip, string(pings))
+
+			// write to duino:
+			_, err := s.Write([]byte(string(message)))
+			if err != nil {
+				log.Errorf("3. failed to write to serial port: %s", err)
+				return err
+			}
+
 		}
 
 		log.Infof("BATMAN message : %s / %d / 0x%X / 0%o \n", string(pings), pings, pings, pings)
 
-		_, err := s.Write([]byte(string(message)))
-		if err != nil {
-			log.Errorf("3. failed to write to serial port: %s", err)
-			return err
-		}
 	}
 }
 
@@ -208,18 +211,7 @@ func keyLoop(keys <-chan rune, s port.Port, myIP net.IP, bcastIP net.IP, bm *rea
 			return nil
 		}
 		log.Infof("key pressed: %s / %d / 0x%X / 0%o \n", string(key), key, key, key)
-		// _, err := s.Write([]byte(0))
-		n, err := s.Write([]byte(string(key)))
-		if err != nil {
-			log.Errorf("2. failed to write to serial port: %s", err)
-			return err
-		}
-		n, err = s.Read(buf)
-		if err != nil {
-			log.Errorf("serial port read error, %s", err)
-		}
-		log.Infof("serial return %s / %d / 0x%X / 0%o \n", string(buf[:n]), buf[:n], buf[:n], buf[:n])
-		// log.Infof("%q", buf[:n])
+
 		// now send the key over BATMAN:
 		// buf := make([]byte, 1)
 		// _ = utf8.EncodeRune(buf, key)
@@ -236,6 +228,19 @@ func keyLoop(keys <-chan rune, s port.Port, myIP net.IP, bcastIP net.IP, bm *rea
 		}
 		// pingAt = time.Now().Add(interval)
 		myPings++
+
+		// write to duino: NB maybe insert a wait before here so all pi's send the new duino command at a similar time
+		n, err := s.Write([]byte(string(key)))
+		if err != nil {
+			log.Errorf("2. failed to write to serial port: %s", err)
+			return err
+		}
+		// read response from duin (not necessary)
+		n, err = s.Read(buf)
+		if err != nil {
+			log.Errorf("serial port read error, %s", err)
+		}
+		log.Infof("serial return %s / %d / 0x%X / 0%o \n", string(buf[:n]), buf[:n], buf[:n], buf[:n])
 		// }
 
 	}
