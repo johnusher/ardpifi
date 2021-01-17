@@ -47,8 +47,8 @@ func main() {
 	// connection. NB this is kinda janky- we should have a system to robustly detect a duino,
 	// eg if we dont find one, then re-insert the duino USb cable and note which ports are new
 
-	c := &serial.Config{Name: findArduino(), Baud: 9600, ReadTimeout: time.Second * 1}
-
+	// c := &serial.Config{Name: findArduino(), Baud: 9600, ReadTimeout: time.Second * 1}
+	c := &serial.Config{Name: findArduino(), Baud: 19200, ReadTimeout: time.Second * 1}
 	s, err := port.OpenPort(c, *noHardware)
 	if err != nil {
 		log.Errorf("OpenPort error: %s", err)

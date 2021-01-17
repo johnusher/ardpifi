@@ -15,7 +15,9 @@ void setup() {
   pinMode(ledPin, OUTPUT);
   strip.begin();
   strip.show(); // Initialize all pixels to 'off'
-  Serial.begin(9600);
+  // Serial.begin(9600);
+  Serial.begin(19200);
+  
 
   idleCol =  strip.Color(idleColR, idleColG, idleColB);
 }
