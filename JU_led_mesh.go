@@ -179,7 +179,7 @@ func messageLoop(messages <-chan []byte, s port.Port, myIP net.IP) error {
 			log.Infof("received message from other IP: %s / %s", ip, string(pings))
 
 			// write to duino:
-			_, err := s.Write([]byte(string(message)))
+			_, err := s.Write([]byte(string(message[4])))
 			if err != nil {
 				log.Errorf("3. failed to write to serial port: %s", err)
 				return err
