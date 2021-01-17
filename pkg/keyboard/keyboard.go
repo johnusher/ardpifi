@@ -36,6 +36,7 @@ func (k *Keyboard) Run() error {
 		case termbox.EventKey:
 			// close termbox when "q" is pressed
 			if string(ev.Ch) == "q" {
+				termbox.Close()
 				return nil
 			}
 
