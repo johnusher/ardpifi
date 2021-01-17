@@ -11,12 +11,14 @@ type Interface interface {
 }
 
 type mockInterface struct {
+	ip  net.IP
 	log *log.Entry
 }
 
-func InterfaceByName(name string, noHardware bool) (Interface, error) {
+func InterfaceByName(name string, noHardware bool, mockBcastIP net.IP) (Interface, error) {
 	if noHardware {
 		return &mockInterface{
+			ip: mockBcastIP,
 			log: log.WithFields(log.Fields{
 				"mock": "interface",
 				"name": name,
@@ -30,9 +32,5 @@ func InterfaceByName(name string, noHardware bool) (Interface, error) {
 func (m *mockInterface) Addrs() ([]net.Addr, error) {
 	log.Info("Addrs")
 
-	return []net.Addr{
-		&net.IPNet{
-			IP: net.ParseIP("172.27.42.42"),
-		},
-	}, nil
+	return []net.Addr{&net.IPNet{IP: m.ip}}, nil
 }

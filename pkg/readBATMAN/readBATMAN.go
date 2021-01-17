@@ -24,7 +24,7 @@ const (
 	// ifaceName = "en0" // pc
 )
 
-func Init(messages chan<- []byte, noHardware bool) (*ReadBATMAN, error) {
+func Init(messages chan<- []byte, noHardware bool, bcastIP net.IP) (*ReadBATMAN, error) {
 	// err := termbox.Init()
 	// if err != nil {
 	// 	return nil, err
@@ -33,7 +33,7 @@ func Init(messages chan<- []byte, noHardware bool) (*ReadBATMAN, error) {
 	myIP := net.IP{}
 	// myPings := uint32(0)
 
-	i, err := iface.InterfaceByName(ifaceName, noHardware)
+	i, err := iface.InterfaceByName(ifaceName, noHardware, bcastIP)
 	if err != nil {
 		log.Errorf("InterfaceByName failed: %s", err)
 		return nil, err
@@ -48,7 +48,7 @@ func Init(messages chan<- []byte, noHardware bool) (*ReadBATMAN, error) {
 	for _, addr := range addrs {
 		ipnet := addr.(*net.IPNet)
 		ip4 := ipnet.IP.To4()
-		if ip4 != nil && ip4[0] == 172 {
+		if ip4 != nil && ip4[0] == bcastIP.To4()[0] {
 			myIP = ip4
 		}
 	}
@@ -88,26 +88,26 @@ func (k *ReadBATMAN) Run() error {
 	// pingAt := time.Now()
 
 	for {
-
-		if n, addr, err := k.Conn.ReadFromUDP(buffIn); err == nil {
-
-			if n == msgSize {
-				pings := uint32(buffIn[4]) +
-					uint32(buffIn[5])<<8 +
-					uint32(buffIn[6])<<16 +
-					uint32(buffIn[7])<<24
-					// 4 bytes
-
-				log.Infof("%+v: %s: %d", addr, net.IP(buffIn[0:4]), pings)
-
-				k.messages <- buffIn // send to output
-				// k.FarEndIP = net.IP(buffIn[0:4])
-			} else {
-				log.Errorf("Received unexpected message length from %+v: %d", addr, n)
-			}
-		} else if ne, ok := err.(*net.OpError); !ok || !ne.Timeout() {
+		n, addr, err := k.Conn.ReadFromUDP(buffIn)
+		if err != nil {
 			log.Errorf("ReadFromUDP failed with %s", err)
+			continue
 		}
 
+		if n != msgSize {
+			log.Errorf("Received unexpected message length from %+v: %d", addr, n)
+			continue
+		}
+
+		pings := uint32(buffIn[4]) +
+			uint32(buffIn[5])<<8 +
+			uint32(buffIn[6])<<16 +
+			uint32(buffIn[7])<<24
+			// 4 bytes
+
+		log.Infof("%+v: %s: %d", addr, net.IP(buffIn[0:4]), pings)
+
+		k.messages <- buffIn // send to output
+		// k.FarEndIP = net.IP(buffIn[0:4])
 	}
 }

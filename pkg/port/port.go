@@ -15,9 +15,9 @@ type Port interface {
 }
 
 type mockPort struct {
-	log        *log.Entry
 	b          []byte
 	sync.Mutex // protects byte buffer
+	log        *log.Entry
 }
 
 func OpenPort(c *serial.Config, noHardware bool) (Port, error) {

@@ -29,11 +29,19 @@ const (
 	interval  = 1 * time.Second
 	ifaceName = "bat0" // rpi
 	// ifaceName = "en0" // pc
+
+	batBcast   = "172.27.255.255"
+	localBcast = "127.0.0.1"
 )
 
 func main() {
 	noHardware := flag.Bool("no-hardware", false, "run without hardware dependencies")
 	flag.Parse()
+
+	bcastIP := net.ParseIP(batBcast)
+	if *noHardware {
+		bcastIP = net.ParseIP(localBcast)
+	}
 
 	// Find the device that represents the arduino serial
 	// connection. NB this is kinda janky- we should have a system to robustly detect a duino,
@@ -86,7 +94,7 @@ func main() {
 
 	myIP := net.IP{}
 
-	i, err := iface.InterfaceByName(ifaceName, *noHardware)
+	i, err := iface.InterfaceByName(ifaceName, *noHardware, bcastIP)
 	if err != nil {
 		log.Errorf("InterfaceByName failed: %s", err)
 		return
@@ -101,7 +109,7 @@ func main() {
 	for _, addr := range addrs {
 		ipnet := addr.(*net.IPNet)
 		ip4 := ipnet.IP.To4()
-		if ip4 != nil && ip4[0] == 172 {
+		if ip4 != nil && ip4[0] == bcastIP.To4()[0] {
 			myIP = ip4
 		}
 	}
@@ -120,7 +128,7 @@ func main() {
 
 	// init BATMAN:
 	messages := make(chan []byte)
-	bm, err := readBATMAN.Init(messages, *noHardware)
+	bm, err := readBATMAN.Init(messages, *noHardware, bcastIP)
 	if err != nil {
 		log.Errorf("failed to initialize readBATMAN: %s", err)
 		return
@@ -134,10 +142,10 @@ func main() {
 	errs := make(chan error)
 
 	go func() {
-		errs <- messageLoop(messages, s, myIP) // catch error
+		errs <- messageLoop(messages, s, myIP)
 	}()
 	go func() {
-		errs <- keyLoop(keys, s, myIP, bm) // catch error
+		errs <- keyLoop(keys, s, myIP, bcastIP, bm)
 	}()
 
 	// block until ctrl-c or one of the loops returns an error
@@ -159,16 +167,17 @@ func messageLoop(messages <-chan []byte, s port.Port, myIP net.IP) error {
 			continue
 		}
 
-		if myIP.String() == net.IP(message[0:4]).String() {
-			log.Infof("received message from my own IP: %x", message)
-		} else {
-			log.Infof("received message from other IP: %x", message)
-		}
-
+		ip := net.IP(message[0:4])
 		pings := uint32(message[4]) +
 			uint32(message[5])<<8 +
 			uint32(message[6])<<16 +
 			uint32(message[7])<<24
+
+		if myIP.Equal(net.IP(message[0:4])) {
+			log.Infof("received message from my own IP: %s / %s", ip, string(pings))
+		} else {
+			log.Infof("received message from other IP: %s / %s", ip, string(pings))
+		}
 
 		log.Infof("BATMAN message : %s / %d / 0x%X / 0%o \n", string(pings), pings, pings, pings)
 
@@ -180,7 +189,7 @@ func messageLoop(messages <-chan []byte, s port.Port, myIP net.IP) error {
 	}
 }
 
-func keyLoop(keys <-chan rune, s port.Port, myIP net.IP, bm *readBATMAN.ReadBATMAN) error {
+func keyLoop(keys <-chan rune, s port.Port, myIP net.IP, bcastIP net.IP, bm *readBATMAN.ReadBATMAN) error {
 	log.Info("Starting key loop")
 
 	buf := make([]byte, 5)
@@ -188,7 +197,7 @@ func keyLoop(keys <-chan rune, s port.Port, myIP net.IP, bm *readBATMAN.ReadBATM
 	buffOut := make([]byte, msgSize) // sent to batman
 	copy(buffOut[0:4], myIP)
 
-	bcast := &net.UDPAddr{Port: batPort, IP: net.IPv4(172, 27, 255, 255)}
+	bcast := &net.UDPAddr{Port: batPort, IP: bcastIP}
 
 	for {
 		key, more := <-keys
