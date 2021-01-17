@@ -6,11 +6,12 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/johnusher/ardpifi/pkg/iface"
 	log "github.com/sirupsen/logrus"
 )
 
 type ReadBATMAN struct {
-	message  chan<- uint32
+	messages chan<- uint32
 	FarEndIP *net.IP
 	Conn     *net.UDPConn
 }
@@ -23,7 +24,7 @@ const (
 	// ifaceName = "en0" // pc
 )
 
-func Init(message chan<- uint32) (*ReadBATMAN, error) {
+func Init(messages chan<- uint32, noHardware bool) (*ReadBATMAN, error) {
 	// err := termbox.Init()
 	// if err != nil {
 	// 	return nil, err
@@ -32,7 +33,7 @@ func Init(message chan<- uint32) (*ReadBATMAN, error) {
 	myIP := net.IP{}
 	// myPings := uint32(0)
 
-	i, err := net.InterfaceByName(ifaceName)
+	i, err := iface.InterfaceByName(ifaceName, noHardware)
 	if err != nil {
 		log.Errorf("InterfaceByName failed: %s", err)
 		return nil, err
@@ -64,7 +65,7 @@ func Init(message chan<- uint32) (*ReadBATMAN, error) {
 	}
 
 	return &ReadBATMAN{
-		message,
+		messages,
 		nil,
 		conn,
 	}, nil
@@ -72,7 +73,7 @@ func Init(message chan<- uint32) (*ReadBATMAN, error) {
 
 func (k *ReadBATMAN) Run() error {
 	defer func() {
-		close(k.message)
+		close(k.messages)
 	}()
 
 	log.Info("LEDMesh starting up")
@@ -99,7 +100,7 @@ func (k *ReadBATMAN) Run() error {
 
 				log.Infof("%+v: %s: %d", addr, net.IP(buffIn[0:4]), pings)
 
-				k.message <- pings // send to output
+				k.messages <- pings // send to output
 				// k.FarEndIP = net.IP(buffIn[0:4])
 			} else {
 				log.Errorf("Received unexpected message length from %+v: %d", addr, n)

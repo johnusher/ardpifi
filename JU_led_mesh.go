@@ -5,6 +5,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -14,14 +15,16 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/johnusher/ardpifi/pkg/iface"
 	"github.com/johnusher/ardpifi/pkg/keyboard"
+	"github.com/johnusher/ardpifi/pkg/port"
 	"github.com/johnusher/ardpifi/pkg/readBATMAN"
 	log "github.com/sirupsen/logrus"
 	"github.com/tarm/serial"
 )
 
 const (
-	port      = 4200
+	batPort   = 4200
 	msgSize   = net.IPv4len + 4 // IP + uint32
 	interval  = 1 * time.Second
 	ifaceName = "bat0" // rpi
@@ -29,13 +32,16 @@ const (
 )
 
 func main() {
+	noHardware := flag.Bool("no-hardware", false, "run without hardware dependencies")
+	flag.Parse()
+
 	// Find the device that represents the arduino serial
 	// connection. NB this is kinda janky- we should have a system to robustly detect a duino,
 	// eg if we dont find one, then re-insert the duino USb cable and note which ports are new
 
 	c := &serial.Config{Name: findArduino(), Baud: 9600, ReadTimeout: time.Second * 1}
 
-	s, err := serial.OpenPort(c)
+	s, err := port.OpenPort(c, *noHardware)
 	if err != nil {
 		log.Errorf("OpenPort error: %s", err)
 		return
@@ -80,7 +86,7 @@ func main() {
 
 	myIP := net.IP{}
 
-	i, err := net.InterfaceByName(ifaceName)
+	i, err := iface.InterfaceByName(ifaceName, *noHardware)
 	if err != nil {
 		log.Errorf("InterfaceByName failed: %s", err)
 		return
@@ -114,7 +120,7 @@ func main() {
 
 	// init BATMAN:
 	messages := make(chan uint32)
-	bm, err := readBATMAN.Init(messages)
+	bm, err := readBATMAN.Init(messages, *noHardware)
 	if err != nil {
 		log.Errorf("failed to initialize readBATMAN: %s", err)
 		return
@@ -141,7 +147,7 @@ func main() {
 	}
 }
 
-func messageLoop(messages <-chan uint32, s *serial.Port, myIP net.IP) error {
+func messageLoop(messages <-chan uint32, s port.Port, myIP net.IP) error {
 	log.Info("Starting message loop")
 
 	for {
@@ -163,7 +169,7 @@ func messageLoop(messages <-chan uint32, s *serial.Port, myIP net.IP) error {
 	}
 }
 
-func keyLoop(keys <-chan rune, s *serial.Port, myIP net.IP, bm *readBATMAN.ReadBATMAN) error {
+func keyLoop(keys <-chan rune, s port.Port, myIP net.IP, bm *readBATMAN.ReadBATMAN) error {
 	log.Info("Starting key loop")
 
 	buf := make([]byte, 5)
@@ -171,7 +177,7 @@ func keyLoop(keys <-chan rune, s *serial.Port, myIP net.IP, bm *readBATMAN.ReadB
 	buffOut := make([]byte, msgSize) // sent to batman
 	copy(buffOut[0:4], myIP)
 
-	bcast := &net.UDPAddr{Port: port, IP: net.IPv4(172, 27, 255, 255)}
+	bcast := &net.UDPAddr{Port: batPort, IP: net.IPv4(172, 27, 255, 255)}
 
 	for {
 		key, more := <-keys

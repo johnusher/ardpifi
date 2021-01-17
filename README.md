@@ -138,7 +138,7 @@ and sudo ifconfig bat0 172.27.0.2/16
 
 ## Code
 
-Note 
+Note
 All dependencies managed in `go.mod` now,
 just add an import directive for any new depedency in your `*.go` files, and
 `go run/build` should just handle it.
@@ -166,7 +166,7 @@ Tested with Aurdion Uno and Aurdion clone: "Nano V3 | ATMEL ATmega328P AVR Micro
 The Uno shows on port ttyACM0 and the clone on ttyUSB.
 NB only 1 from 2 clones works for me!
 
-<del> 
+<del>
 ## add libraries:
 arduino-cli lib search Adafruit_NeoPixel
 </del>
@@ -175,7 +175,7 @@ in duino_src:
 
 compile and flash:
 Uno:
-arduino-cli compile --fqbn arduino:avr:uno duino_src  
+arduino-cli compile --fqbn arduino:avr:uno duino_src
 arduino-cli upload -p /dev/ttyACM0 --fqbn arduino:avr:uno duino_src
 Clone
 arduino-cli compile --fqbn arduino:avr:diecimila:cpu=atmega328 duino_src
@@ -194,6 +194,10 @@ Press any key to print to screen (and eventually send to arduino).
 
 To exit, press "q" to exit termbox, and then ctrl-c to exit the program.
 
+### Run without hardware
 
+Run with hardware (serial, network) API calls mocked out:
 
-
+```bash
+go run JU_led_mesh.go -no-hardware
+```
