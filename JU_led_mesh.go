@@ -29,7 +29,6 @@ const (
 )
 
 func main() {
-
 	// Find the device that represents the arduino serial
 	// connection. NB this is kinda janky- we should have a system to robustly detect a duino,
 	// eg if we dont find one, then re-insert the duino USb cable and note which ports are new
@@ -59,7 +58,7 @@ func main() {
 	if err != nil {
 		log.Errorf("serial port read error, %s", err)
 	}
-	log.Print("%q", buf[:n])
+	log.Info("%q", buf[:n])
 
 	// now check if got the correct response:
 
@@ -75,25 +74,22 @@ func main() {
 		return
 	}
 
-	// go kb.Run()
-
-	buf = make([]byte, 5)
-
 	//  now setup BATMAN:
 
 	// log.Info("LEDMesh starting up")
 
 	myIP := net.IP{}
-	myPings := uint32(0)
 
 	i, err := net.InterfaceByName(ifaceName)
 	if err != nil {
-		log.Fatalf("InterfaceByName failed: %s", err)
+		log.Errorf("InterfaceByName failed: %s", err)
+		return
 	}
 
 	addrs, err := i.Addrs()
 	if err != nil {
-		log.Fatalf("Failed to get addresses for interface %+v: %s", i, err)
+		log.Errorf("Failed to get addresses for interface %+v: %s", i, err)
+		return
 	}
 
 	for _, addr := range addrs {
@@ -114,157 +110,111 @@ func main() {
 	// 	log.Fatal(err)
 	// }
 
-	// log.Infof("Listening as %+v", conn.LocalAddr().(*net.UDPAddr))
-
-	// buffIn := make([]byte, msgSize)  // received via BATMAM
-	buffOut := make([]byte, msgSize) // sent to batman
-	copy(buffOut[0:4], myIP)
-
-	bcast := &net.UDPAddr{Port: port, IP: net.IPv4(172, 27, 255, 255)}
 	// pingAt := time.Now()
 
 	// init BATMAN:
 	messages := make(chan uint32)
-	bm, _ := readBATMAN.Init(messages)
-	// if err != nil {
-	// 	log.Errorf("failed to initialize keyboard: %s", err)
-	// 	return
-	// }
+	bm, err := readBATMAN.Init(messages)
+	if err != nil {
+		log.Errorf("failed to initialize readBATMAN: %s", err)
+		return
+	}
 
 	// run kb and BATMAN:
 
 	go kb.Run()
 	go bm.Run()
 
-	// this works:
+	errs := make(chan error)
+
+	go func() {
+		errs <- messageLoop(messages, s, myIP) // catch error
+	}()
+	go func() {
+		errs <- keyLoop(keys, s, myIP, bm) // catch error
+	}()
+
+	// block until ctrl-c or one of the loops returns an error
+	select {
+	case <-stop:
+	case <-errs:
+	}
+}
+
+func messageLoop(messages <-chan uint32, s *serial.Port, myIP net.IP) error {
+	log.Info("Starting message loop")
+
 	for {
 		// listen on the keys channel for key presses AND listen for new BATMAN message
-		select {
-		case message, _ := <-messages:
+		message, _ := <-messages
 
-			// todo: stop us receiving our own message!
-			// if myIP == <-FarEndIP {
-			// 	log.Infof("received own message!")
-			// }
+		// todo: stop us receiving our own message!
+		// if myIP == <-FarEndIP {
+		// 	log.Infof("received own message!")
+		// }
 
-			log.Infof("BATMAN message : %s / %d / 0x%X / 0%o \n", string(message), message, message, message)
+		log.Infof("BATMAN message : %s / %d / 0x%X / 0%o \n", string(message), message, message, message)
 
-			n, err = s.Write([]byte(string(message)))
-			if err != nil {
-				log.Errorf("3. failed to write to serial port: %s", err)
-				return
-			}
-
-		case key, more := <-keys:
-			if !more {
-				log.Infof("keyboard listener closed\n")
-				// termbox closed, block until ctrl-c is called
-				<-stop
-				log.Infof("exiting")
-				return
-			}
-			log.Infof("key pressed: %s / %d / 0x%X / 0%o \n", string(key), key, key, key)
-			// _, err := s.Write([]byte(0))
-			n, err = s.Write([]byte(string(key)))
-			if err != nil {
-				log.Errorf("2. failed to write to serial port: %s", err)
-				return
-			}
-			n, err = s.Read(buf)
-			if err != nil {
-				log.Errorf("serial port read error, %s", err)
-			}
-			log.Infof("serial return %s / %d / 0x%X / 0%o \n", string(buf[:n]), buf[:n], buf[:n], buf[:n])
-			// log.Infof("%q", buf[:n])
-			// now send the key over BATMAN:
-			// buf := make([]byte, 1)
-			// _ = utf8.EncodeRune(buf, key)
-			myPings = uint32(key) // convert rune to uint32
-			// write
-			// if time.Now().After(pingAt) {
-			buffOut[4] = byte(myPings & 0x000000ff)
-			buffOut[5] = byte(myPings & 0x0000ff00 >> 8)
-			buffOut[6] = byte(myPings & 0x00ff0000 >> 16)
-			buffOut[7] = byte(myPings & 0xff000000 >> 24)
-			if _, err := bm.Conn.WriteToUDP(buffOut, bcast); err != nil {
-				log.Fatal(err)
-			}
-			// pingAt = time.Now().Add(interval)
-			// myPings++
-			// }
-		default:
-			// fall through, add a sleep here if you want to slow things down
+		_, err := s.Write([]byte(string(message)))
+		if err != nil {
+			log.Errorf("3. failed to write to serial port: %s", err)
+			return err
 		}
 	}
+}
 
-	// these 2 go func() break it!
-	// go func() {
-	// 	for {
-	// 		select {
-	// 		case message, _ := <-messages:
-	// 			log.Infof("BATMAN message : %s / %d / 0x%X / 0%o \n", string(message), message, message, message)
+func keyLoop(keys <-chan rune, s *serial.Port, myIP net.IP, bm *readBATMAN.ReadBATMAN) error {
+	log.Info("Starting key loop")
 
-	// 			n, err = s.Write([]byte(string(message)))
-	// 			if err != nil {
-	// 				log.Errorf("3. failed to write to serial port: %s", err)
-	// 				return
-	// 			}
-	// 		}
-	// 	}
-	// }()
+	buf := make([]byte, 5)
 
-	// go func() {
-	// 	for {
-	// 		select {
-	// 		case key, more := <-keys:
-	// 			if !more {
-	// 				log.Infof("keyboard listener closed\n")
+	buffOut := make([]byte, msgSize) // sent to batman
+	copy(buffOut[0:4], myIP)
 
-	// 				// termbox closed, block until ctrl-c is called
-	// 				<-stop
+	bcast := &net.UDPAddr{Port: port, IP: net.IPv4(172, 27, 255, 255)}
 
-	// 				log.Infof("exiting")
-	// 				return
-	// 			}
-	// 			log.Infof("key pressed: %s / %d / 0x%X / 0%o \n", string(key), key, key, key)
+	for {
+		key, more := <-keys
+		if !more {
+			log.Infof("keyboard listener closed\n")
+			// termbox closed, block until ctrl-c is called
+			log.Infof("exiting")
+			return nil
+		}
+		log.Infof("key pressed: %s / %d / 0x%X / 0%o \n", string(key), key, key, key)
+		// _, err := s.Write([]byte(0))
+		n, err := s.Write([]byte(string(key)))
+		if err != nil {
+			log.Errorf("2. failed to write to serial port: %s", err)
+			return err
+		}
+		n, err = s.Read(buf)
+		if err != nil {
+			log.Errorf("serial port read error, %s", err)
+		}
+		log.Infof("serial return %s / %d / 0x%X / 0%o \n", string(buf[:n]), buf[:n], buf[:n], buf[:n])
+		// log.Infof("%q", buf[:n])
+		// now send the key over BATMAN:
+		// buf := make([]byte, 1)
+		// _ = utf8.EncodeRune(buf, key)
+		myPings := uint32(key) // convert rune to uint32
+		// write
+		// if time.Now().After(pingAt) {
+		buffOut[4] = byte(myPings & 0x000000ff)
+		buffOut[5] = byte(myPings & 0x0000ff00 >> 8)
+		buffOut[6] = byte(myPings & 0x00ff0000 >> 16)
+		buffOut[7] = byte(myPings & 0xff000000 >> 24)
+		if _, err := bm.Conn.WriteToUDP(buffOut, bcast); err != nil {
+			log.Error(err)
+			return err
+		}
+		// pingAt = time.Now().Add(interval)
+		myPings++
+		// }
 
-	// 			// _, err := s.Write([]byte(0))
+	}
 
-	// 			n, err = s.Write([]byte(string(key)))
-	// 			if err != nil {
-	// 				log.Errorf("2. failed to write to serial port: %s", err)
-	// 				return
-	// 			}
-
-	// 			n, err = s.Read(buf)
-	// 			if err != nil {
-	// 				log.Errorf("serial port read error, %s", err)
-	// 			}
-	// 			log.Infof("serial return %s / %d / 0x%X / 0%o \n", string(buf[:n]), buf[:n], buf[:n], buf[:n])
-	// 			// log.Infof("%q", buf[:n])
-
-	// 			// now send the key over BATMAN:
-
-	// 			// buf := make([]byte, 1)
-	// 			// _ = utf8.EncodeRune(buf, key)
-
-	// 			myPings = uint32(key) // convert rune to uint32
-	// 			// write
-	// 			// if time.Now().After(pingAt) {
-	// 			buffOut[4] = byte(myPings & 0x000000ff)
-	// 			buffOut[5] = byte(myPings & 0x0000ff00 >> 8)
-	// 			buffOut[6] = byte(myPings & 0x00ff0000 >> 16)
-	// 			buffOut[7] = byte(myPings & 0xff000000 >> 24)
-	// 			if _, err := bm.Conn.WriteToUDP(buffOut, bcast); err != nil {
-	// 				log.Fatal(err)
-	// 			}
-	// 			// pingAt = time.Now().Add(interval)
-	// 			// myPings++
-	// 			// }
-	// 		}
-	// 	}
-	// }()
-
+	return nil
 }
 
 // findArduino looks for the file that represents the Arduino

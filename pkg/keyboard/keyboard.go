@@ -12,15 +12,16 @@ type Keyboard struct {
 }
 
 func Init(keys chan<- rune) (*Keyboard, error) {
-	err := termbox.Init()
-	if err != nil {
-		return nil, err
-	}
-
 	return &Keyboard{keys}, nil
 }
 
 func (k *Keyboard) Run() error {
+	err := termbox.Init()
+	if err != nil {
+		log.Errorf("termbox init failed; %s", err)
+		return err
+	}
+
 	defer func() {
 		close(k.keys)
 		termbox.Close()

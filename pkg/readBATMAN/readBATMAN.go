@@ -34,12 +34,14 @@ func Init(message chan<- uint32) (*ReadBATMAN, error) {
 
 	i, err := net.InterfaceByName(ifaceName)
 	if err != nil {
-		log.Fatalf("InterfaceByName failed: %s", err)
+		log.Errorf("InterfaceByName failed: %s", err)
+		return nil, err
 	}
 
 	addrs, err := i.Addrs()
 	if err != nil {
-		log.Fatalf("Failed to get addresses for interface %+v: %s", i, err)
+		log.Errorf("Failed to get addresses for interface %+v: %s", i, err)
+		return nil, err
 	}
 
 	for _, addr := range addrs {
@@ -57,7 +59,8 @@ func Init(message chan<- uint32) (*ReadBATMAN, error) {
 
 	conn, err := net.ListenUDP("udp", &net.UDPAddr{Port: port})
 	if err != nil {
-		log.Fatal(err)
+		log.Error(err)
+		return nil, err
 	}
 
 	return &ReadBATMAN{
@@ -70,7 +73,6 @@ func Init(message chan<- uint32) (*ReadBATMAN, error) {
 func (k *ReadBATMAN) Run() error {
 	defer func() {
 		close(k.message)
-
 	}()
 
 	log.Info("LEDMesh starting up")
