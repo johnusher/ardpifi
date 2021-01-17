@@ -33,7 +33,7 @@ func OpenPort(c *serial.Config, noHardware bool) (Port, error) {
 }
 
 func (m *mockPort) Read(b []byte) (int, error) {
-	m.log.Info("Read")
+	m.log.Infof("Read: %s", m.b)
 
 	m.Lock()
 	defer m.Unlock()

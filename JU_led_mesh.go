@@ -119,7 +119,7 @@ func main() {
 	// pingAt := time.Now()
 
 	// init BATMAN:
-	messages := make(chan uint32)
+	messages := make(chan []byte)
 	bm, err := readBATMAN.Init(messages, *noHardware)
 	if err != nil {
 		log.Errorf("failed to initialize readBATMAN: %s", err)
@@ -147,19 +147,30 @@ func main() {
 	}
 }
 
-func messageLoop(messages <-chan uint32, s port.Port, myIP net.IP) error {
+func messageLoop(messages <-chan []byte, s port.Port, myIP net.IP) error {
 	log.Info("Starting message loop")
 
 	for {
 		// listen on the keys channel for key presses AND listen for new BATMAN message
 		message, _ := <-messages
 
-		// todo: stop us receiving our own message!
-		// if myIP == <-FarEndIP {
-		// 	log.Infof("received own message!")
-		// }
+		if len(message) != msgSize {
+			log.Errorf("Received unexpected message length %d, expected %d: %x", len(message), msgSize, message)
+			continue
+		}
 
-		log.Infof("BATMAN message : %s / %d / 0x%X / 0%o \n", string(message), message, message, message)
+		if myIP.String() == net.IP(message[0:4]).String() {
+			log.Infof("received message from my own IP: %x", message)
+		} else {
+			log.Infof("received message from other IP: %x", message)
+		}
+
+		pings := uint32(message[4]) +
+			uint32(message[5])<<8 +
+			uint32(message[6])<<16 +
+			uint32(message[7])<<24
+
+		log.Infof("BATMAN message : %s / %d / 0x%X / 0%o \n", string(pings), pings, pings, pings)
 
 		_, err := s.Write([]byte(string(message)))
 		if err != nil {

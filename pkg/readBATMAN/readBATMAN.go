@@ -11,7 +11,7 @@ import (
 )
 
 type ReadBATMAN struct {
-	messages chan<- uint32
+	messages chan<- []byte
 	FarEndIP *net.IP
 	Conn     *net.UDPConn
 }
@@ -24,7 +24,7 @@ const (
 	// ifaceName = "en0" // pc
 )
 
-func Init(messages chan<- uint32, noHardware bool) (*ReadBATMAN, error) {
+func Init(messages chan<- []byte, noHardware bool) (*ReadBATMAN, error) {
 	// err := termbox.Init()
 	// if err != nil {
 	// 	return nil, err
@@ -100,7 +100,7 @@ func (k *ReadBATMAN) Run() error {
 
 				log.Infof("%+v: %s: %d", addr, net.IP(buffIn[0:4]), pings)
 
-				k.messages <- pings // send to output
+				k.messages <- buffIn // send to output
 				// k.FarEndIP = net.IP(buffIn[0:4])
 			} else {
 				log.Errorf("Received unexpected message length from %+v: %d", addr, n)
