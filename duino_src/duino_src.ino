@@ -14,10 +14,10 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(nLEDS, ledPin, NEO_GRB + NEO_KHZ800)
 void setup() {
   pinMode(ledPin, OUTPUT);
   strip.begin();
-  strip.show(); // Initialize all pixels to 'off'
+  myStripShow(); // Initialize all pixels to 'off'
   // Serial.begin(9600);
   Serial.begin(19200);
-  
+
 
   idleCol =  strip.Color(idleColR, idleColG, idleColB);
 }
@@ -27,70 +27,57 @@ void setup() {
 */
 void loop() {
 
-Serial.print("S");
+  Serial.print("S");
+
+  for (i = 0; i < strip.numPixels(); i++) {
+    strip.setPixelColor(i, idleColR, idleColG, idleColB, 0);
+    //    strip.setPixelColor(i, 0, 0, 0, 127);
+    myStripShow();
+    // Serial.print("x");
+    //        tone(buzzer, i + j); // Send xm sound signal...
+
+  }
+
+  idleC = 0;
   while (Serial.available() == 0) {
 
     // waiting for serial command
+    idleC = idleC + 1;
+    idleC = idleC % strip.numPixels();
 
-  // rainbow:
-    for (j = 0; j < 256; j++) {
-      for (i = 0; i < strip.numPixels(); i++) {
-        strip.setPixelColor(i, Wheel((i + j) & 255));
-        // Serial.print("x");
-//        tone(buzzer, i + j); // Send xm sound signal...
 
-      }
-      strip.show();
-      delay(5);
+    strip.setPixelColor(idleC, 0, 0, 127);  // show blue light moving along
+
+    myStripShow();
+
+    for (i = 0; i < 1000; i++) {
+      checkSerialInput();
     }
 
+    strip.setPixelColor(idleC, idleColR, idleColG, idleColB);
+    myStripShow();
 
-
-    //    strip.setPixelColor(idleC,idleCol);
-
-    //    if (!idle_flag) {
-    //      strip.fill(idleCol, 0, nLEDS);
-    //      strip.show();
-    //      idle_flag = 1;
+    //
+    //    // rainbow:
+    //    for (j = 0; j < maxC; j++) {
+    //      for (i = 0; i < strip.numPixels(); i++) {
+    //        strip.setPixelColor(i, Wheel((i + j) & (maxC-1)));
+    //        // Serial.print("x");
+    //        //        tone(buzzer, i + j); // Send xm sound signal...
+    //
+    //      }
+    //      //      myStripShow();
+    //      myStripShow();
+    ////      delay(5);
     //    }
 
-    //      tone(buzzer, i XI); // Send 1KHz sound signal...
-//    delay(5);
+
 
   }
 
-  idle_flag = 0;
-  strip.clear();
-  serial_in = Serial.read();
-
-  // say what you got:
-  Serial.print(serial_in);
+  checkSerialInput();
 
 
-  if (serial_in == '0') {
-    SMode = 0;
-    Serial.print("mode 0");
-    colorWipe(strip.Color(255, 0 , 0), 25); // Red
-    colorWipe(strip.Color(0, 0 , 0), 50); // off
-
-  }
-
-  else if (serial_in == '1') {
-    SMode = 1;
-    Serial.print("mode 1");
-    colorWipe(strip.Color(0, 255 , 0 ), 25); // g
-    colorWipe(strip.Color(0, 0 , 0), 50); // off
-
-  }
-
-  else
-  {
-    SMode = 1;
-    Serial.print("mode x");
-    colorWipe(strip.Color(0, 0 , 255 ), 15); // b
-    colorWipe(strip.Color(0, 0 , 0), 20); // off
-
-  }
 
 
 
@@ -106,6 +93,55 @@ Serial.print("S");
 
 
 
+void checkSerialInput() {
+  idle_flag = 0;
+  strip.clear();
+  serial_in = Serial.read();
+
+  // say what you got:
+  //  Serial.print(serial_in);
+  //  Serial.flush();
+
+  if (serial_in == '0') {
+    SMode = 0;
+    Serial.print("mode 0");
+    Serial.flush();
+
+    colorWipe(strip.Color(maxC, 0 , 0), 25); // Red
+    colorWipe(strip.Color(0, 0 , 0), 50); // off
+
+  }
+
+  else if (serial_in == '1') {
+    SMode = 1;
+    Serial.print("mode 1");
+    Serial.flush();
+
+    colorWipe(strip.Color(0, maxC , 0 ), 25); // g
+    colorWipe(strip.Color(0, 0 , 0), 50); // off
+
+  }
+
+  //  else
+  //  {
+  //    SMode = 2;
+  //
+  //    colorWipe(strip.Color(0, 0 , 255 ), 15); // b
+  //    colorWipe(strip.Color(0, 0 , 0), 20); // off
+  //
+  //    Serial.print("mode x");
+  //    Serial.flush();
+  //  }
+
+
+}
+
+void myStripShow() {
+  if (Serial.available() > 0) {
+    checkSerialInput();
+  }
+  strip.show();
+}
 
 
 // Fill the dots one after the other with a color
@@ -116,7 +152,7 @@ void colorWipe(uint32_t c, uint8_t wait) {
     for (uint16_t i = 0; i < strip.numPixels(); i++) {
       strip.setPixelColor(i, c);
       //      tone(buzzer, i ); // Send 1KHz sound signal...
-      strip.show();
+      myStripShow();
       delay(wait);
     }
   }
@@ -126,7 +162,7 @@ void colorWipe(uint32_t c, uint8_t wait) {
       strip.setPixelColor(strip.numPixels() - i, c);
       //      tone(buzzer, i XI); // Send 1KHz sound signal...
 
-      strip.show();
+      myStripShow();
       delay(wait);
     }
   }
@@ -151,7 +187,7 @@ void rainbowCycle(uint8_t wait) {
       //     tone(buzzer, i + j); // Send xm sound signal...
 
     }
-    strip.show();
+    myStripShow();
     delay(wait);
   }
 
