@@ -113,11 +113,17 @@ sudo raspi-config nonint do_serial 1
 ## Build and run (in ~/code/go/src/github.com/siggy/ledmesh)
 
 ```bash
-go run main.go
+go run JU_led_mesh.go
 ```
 
 
 ### Mesh network
+
+On raspi #1 run
+./runBATMAN.sh
+
+On raspi #2 run 
+./runBATMAN2.sh
 
 See file main.go, from https://github.com/siggy/ledmesh
 

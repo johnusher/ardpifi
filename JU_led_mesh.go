@@ -15,6 +15,11 @@ import (
 	"syscall"
 	"time"
 
+	// "github.com/qinxin0720/lcd1602"
+
+	device "github.com/d2r2/go-hd44780"
+	i2c "github.com/d2r2/go-i2c"
+
 	"github.com/johnusher/ardpifi/pkg/iface"
 	"github.com/johnusher/ardpifi/pkg/keyboard"
 	"github.com/johnusher/ardpifi/pkg/port"
@@ -34,7 +39,36 @@ const (
 	localBcast = "127.0.0.1"
 )
 
+func check(err error) {
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 func main() {
+
+	// // LCD:
+
+	// i2c, err := i2c.NewI2C(0x27, 1)
+	// check(err)
+	// defer i2c.Close()
+	// lcd, err := device.NewLcd(i2c, device.LCD_16x2)
+	// check(err)
+	// lcd.BacklightOn()
+	// lcd.Clear()
+	// for {
+	// 	lcd.Home()
+	// 	t := time.Now()
+	// 	lcd.SetPosition(0, 0)
+	// 	fmt.Fprint(lcd, t.Format("Monday Jan 2"))
+	// 	lcd.SetPosition(1, 0)
+	// 	fmt.Fprint(lcd, t.Format("15:04:05 2006"))
+	// 	//		lcd.SetPosition(4, 0)
+	// 	//		fmt.Fprint(lcd, "i2c, VGA, and Go")
+	// 	time.Sleep(333 * time.Millisecond)
+	// }
+
+	// xxxxxxxxxxxxxxxxxxx
 	noHardware := flag.Bool("no-hardware", false, "run without hardware dependencies")
 	flag.Parse()
 
@@ -158,6 +192,16 @@ func main() {
 func messageLoop(messages <-chan []byte, s port.Port, myIP net.IP) error {
 	log.Info("Starting message loop")
 
+	// LCD:
+
+	i2c, err := i2c.NewI2C(0x27, 1)
+	check(err)
+	defer i2c.Close()
+	lcd, err := device.NewLcd(i2c, device.LCD_16x2)
+	check(err)
+	lcd.BacklightOn()
+	lcd.Clear()
+
 	for {
 		// listen on the keys channel for key presses AND listen for new BATMAN message
 		message, _ := <-messages
@@ -184,6 +228,14 @@ func messageLoop(messages <-chan []byte, s port.Port, myIP net.IP) error {
 				log.Errorf("3. failed to write to serial port: %s", err)
 				return err
 			}
+
+			// write to LCD:
+			lcd.SetPosition(0, 0)
+			// fmt.Fprint(lcd, t.Format("Message received:"))
+			_ = lcd.ShowMessage("Message received:", device.SHOW_LINE_1)
+			lcd.SetPosition(1, 0)
+			// fmt.Fprint(lcd, t.Format(string(message[4])))
+			_ = lcd.ShowMessage(string(message[4]), device.SHOW_LINE_2)
 
 		}
 

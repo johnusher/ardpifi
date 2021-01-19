@@ -1,4 +1,6 @@
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
+github.com/d2r2/go-hd44780 v0.0.0-20181002113701-74cc28c83a3e h1:3gLJWdofXjBoecDb9e+giWp77saiF6r2Mtu+edWCksY=
+github.com/d2r2/go-hd44780 v0.0.0-20181002113701-74cc28c83a3e/go.mod h1:IruYZr0O1UbQs3rV5N2WPM8CpaT5rRgvPPzksu1+N6o=
 github.com/d2r2/go-i2c v0.0.0-20191123181816-73a8a799d6bc h1:HLRSIWzUGMLCq4ldt0W1GLs3nnAxa5EGoP+9qHgh6j0=
 github.com/d2r2/go-i2c v0.0.0-20191123181816-73a8a799d6bc/go.mod h1:AwxDPnsgIpy47jbGXZHA9Rv7pDkOJvQbezPuK1Y+nNk=
 github.com/d2r2/go-logger v0.0.0-20181221090742-9998a510495e h1:ZG3JBA6rPRl0xxQ+nNSfO7tor8w+CNCTs05DNJQYbLM=
@@ -19,8 +21,14 @@ github.com/mattn/go-runewidth v0.0.9 h1:Lm995f3rfxdpd6TSmuVCHVb/QhupuXlYr8sCI/Qd
 github.com/mattn/go-runewidth v0.0.9/go.mod h1:H031xJmbD/WCDINGzjvQ9THkh0rPKHF+m2gUSrubnMI=
 github.com/nsf/termbox-go v0.0.0-20201124104050-ed494de23a00 h1:Rl8NelBe+n7SuLbJyw13ho7CGWUt2BjGGKIoreCWQ/c=
 github.com/nsf/termbox-go v0.0.0-20201124104050-ed494de23a00/go.mod h1:T0cTdVuOwf7pHQNtfhnEbzHbcNyCEcVU4YPpouCbVxo=
+github.com/op/go-logging v0.0.0-20160315200505-970db520ece7 h1:lDH9UUVJtmYCjyT0CI4q8xvlXPxeZ0gYCVvWbmPlp88=
+github.com/op/go-logging v0.0.0-20160315200505-970db520ece7/go.mod h1:HzydrMdWErDVzsI23lYNej1Htcns9BCg93Dk0bBINWk=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
+github.com/qinxin0720/go-rpigpio v0.0.0-20180904143339-2333e352173d h1:WV3yIp7gM1ZBMRxMEsUbMX8B0snbZZbB69vUYA4+bSw=
+github.com/qinxin0720/go-rpigpio v0.0.0-20180904143339-2333e352173d/go.mod h1:TRfDhvCzTzcx4XGpysthH4Q6OFXm2qpmjvw8R6VkutI=
+github.com/qinxin0720/lcd1602 v1.0.0 h1:6vSGgy9dZ+WmIsb+qZeTx8/jGokhAx880AsvJhs3nEI=
+github.com/qinxin0720/lcd1602 v1.0.0/go.mod h1:9iiHdYckMVTX6LiaQ2Dpbg/wBk5SAFEfELygZf11Ad4=
 github.com/sirupsen/logrus v1.7.0 h1:ShrD1U9pZB12TX0cVy0DtePoCH97K8EtX+mg7ZARUtM=
 github.com/sirupsen/logrus v1.7.0/go.mod h1:yWOB1SBYBC5VeMP7gHvWumXLIWorT60ONWic61uBYv0=
 github.com/stretchr/objx v0.1.0 h1:4G4v2dO3VZwixGIRoQ5Lfboy6nUhCyYzaqnIAPPhYs4=
