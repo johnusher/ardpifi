@@ -49,6 +49,21 @@ func main() {
 
 	// // LCD:
 
+	i2c, LCDerr := i2c.NewI2C(0x27, 1)
+	if LCDerr != nil {
+		log.Errorf("error opening LCD on I2C, %s", LCDerr)
+	} else {
+		defer i2c.Close()
+	}
+	lcd, LCDerr := device.NewLcd(i2c, device.LCD_16x2)
+	if LCDerr != nil {
+		log.Errorf("errormaking LCD device, %s", LCDerr)
+	} else {
+		lcd.BacklightOn()
+		lcd.Clear()
+		// lcd.SetStrobeDelays(300)
+	}
+
 	// i2c, err := i2c.NewI2C(0x27, 1)
 	// check(err)
 	// defer i2c.Close()
@@ -82,7 +97,9 @@ func main() {
 	// eg if we dont find one, then re-insert the duino USb cable and note which ports are new
 
 	// c := &serial.Config{Name: findArduino(), Baud: 9600, ReadTimeout: time.Second * 1}
-	c := &serial.Config{Name: findArduino(), Baud: 19200, ReadTimeout: time.Second * 1}
+	// c := &serial.Config{Name: findArduino(), Baud: 19200, ReadTimeout: time.Second * 1}
+	c := &serial.Config{Name: findArduino(), Baud: 115200, ReadTimeout: time.Second * 1}
+
 	s, err := port.OpenPort(c, *noHardware)
 	if err != nil {
 		log.Errorf("OpenPort error: %s", err)
@@ -150,6 +167,15 @@ func main() {
 
 	log.Infof("Serving at %s", myIP)
 
+	if LCDerr == nil {
+		// write to LCD:
+		lcd.SetPosition(0, 0)
+		_ = lcd.ShowMessage("My IP", device.SHOW_LINE_1)
+
+		lcd.SetPosition(1, 0)
+		_ = lcd.ShowMessage(string(myIP), device.SHOW_LINE_2)
+	}
+
 	// sig := make(chan os.Signal, 1)
 	// signal.Notify(sig, os.Interrupt, os.Kill)
 
@@ -176,7 +202,7 @@ func main() {
 	errs := make(chan error)
 
 	go func() {
-		errs <- messageLoop(messages, s, myIP)
+		errs <- messageLoop(messages, s, myIP, lcd, LCDerr)
 	}()
 	go func() {
 		errs <- keyLoop(keys, s, myIP, bcastIP, bm)
@@ -189,18 +215,8 @@ func main() {
 	}
 }
 
-func messageLoop(messages <-chan []byte, s port.Port, myIP net.IP) error {
+func messageLoop(messages <-chan []byte, s port.Port, myIP net.IP, lcd *device.Lcd, LCDerr error) error {
 	log.Info("Starting message loop")
-
-	// LCD:
-
-	i2c, err := i2c.NewI2C(0x27, 1)
-	check(err)
-	defer i2c.Close()
-	lcd, err := device.NewLcd(i2c, device.LCD_16x2)
-	check(err)
-	lcd.BacklightOn()
-	lcd.Clear()
 
 	for {
 		// listen on the keys channel for key presses AND listen for new BATMAN message
@@ -223,19 +239,24 @@ func messageLoop(messages <-chan []byte, s port.Port, myIP net.IP) error {
 			log.Infof("received message from other IP: %s / %s", ip, string(pings))
 
 			// write to duino:
+			s.Flush()
 			_, err := s.Write([]byte(string(message[4]))) // note we only send first byte
 			if err != nil {
 				log.Errorf("3. failed to write to serial port: %s", err)
 				return err
 			}
+			s.Flush()
 
-			// write to LCD:
-			lcd.SetPosition(0, 0)
-			// fmt.Fprint(lcd, t.Format("Message received:"))
-			_ = lcd.ShowMessage("Message received:", device.SHOW_LINE_1)
-			lcd.SetPosition(1, 0)
-			// fmt.Fprint(lcd, t.Format(string(message[4])))
-			_ = lcd.ShowMessage(string(message[4]), device.SHOW_LINE_2)
+			if LCDerr == nil {
+				// write to LCD:
+				lcd.Clear()
+				lcd.SetPosition(0, 0)
+				// fmt.Fprint(lcd, t.Format("Message received:"))
+				_ = lcd.ShowMessage("Message received:", device.SHOW_LINE_1)
+				lcd.SetPosition(1, 0)
+				// fmt.Fprint(lcd, t.Format(string(message[4])))
+				_ = lcd.ShowMessage(string(message[4]), device.SHOW_LINE_2)
+			}
 
 		}
 

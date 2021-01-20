@@ -25,7 +25,7 @@ bool idle_flag = 1;
 const byte nLEDS = 30;
 const byte ledPin = 6;
 
-
+int breakFlag = 0; 
 
 uint16_t i, j;	// for rainbow effect
 
