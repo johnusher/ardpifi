@@ -130,23 +130,6 @@ func main() {
 	// a little while it resets.
 	time.Sleep(1 * time.Second)
 
-	n, err := s.Write([]byte("C"))
-	// send a C for Connect signal to the board and check response
-	if err != nil {
-		log.Errorf("failed to write to port: %s", err)
-		return
-	}
-
-	// read return message from duino:
-	buf := make([]byte, 1)
-	n, err = s.Read(buf)
-	if err != nil {
-		log.Errorf("serial port read error, %s", err)
-	}
-	log.Infof("%q", buf[:n])
-
-	// now check if got the correct response:
-
 	// Setup remote (terminal) KB:
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
@@ -304,7 +287,7 @@ func messageLoop(messages <-chan []byte, s port.Port, myIP net.IP, lcd lcd.LCD, 
 func keyLoop(keys <-chan rune, s port.Port, myIP net.IP, bcastIP net.IP, bm *readBATMAN.ReadBATMAN) error {
 	log.Info("Starting key loop")
 
-	buf := make([]byte, 5)
+	// buf := make([]byte, 5)   // this was used for serial return from duino
 
 	buffOut := make([]byte, msgSize) // sent to batman
 	copy(buffOut[0:4], myIP)
@@ -339,18 +322,18 @@ func keyLoop(keys <-chan rune, s port.Port, myIP net.IP, bcastIP net.IP, bm *rea
 		myPings++
 
 		// write to duino: NB maybe insert a wait before here so all pi's send the new duino command at a similar time
-		n, err := s.Write([]byte(string(key)))
+		_, err := s.Write([]byte(string(key)))
 		if err != nil {
 			log.Errorf("2. failed to write to serial port: %s", err)
 			return err
 		}
-		// read response from duin (not necessary)
-		n, err = s.Read(buf)
-		if err != nil {
-			log.Errorf("serial port read error, %s", err)
-		}
-		log.Infof("serial return %s / %d / 0x%X / 0%o \n", string(buf[:n]), buf[:n], buf[:n], buf[:n])
+		// // read response from duin (not necessary)
+		// n, err = s.Read(buf)
+		// if err != nil {
+		// 	log.Errorf("serial port read error, %s", err)
 		// }
+		// log.Infof("serial return %s / %d / 0x%X / 0%o \n", string(buf[:n]), buf[:n], buf[:n], buf[:n])
+		// // }
 
 	}
 

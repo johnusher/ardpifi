@@ -120,9 +120,11 @@ go run JU_led_mesh.go
 ### Mesh network
 
 On raspi #1 run
+
 ./runBATMAN.sh
 
 On raspi #2 run
+
 ./runBATMAN2.sh
 
 See file main.go, from https://github.com/siggy/ledmesh
@@ -197,11 +199,22 @@ arduino-cli upload -p /dev/ttyUSB0 --fqbn arduino:avr:diecimila:cpu=atmega328 du
 
 ## Run
 
+
+On raspi #1 run
+
 ```bash
-go run JU_led_mesh.go --web-addr :8080 -log-level debug
+./runBATMAN.sh
+go run JU_led_mesh.go --web-addr :8080 -no-lcd  -log-level debug
 ```
 
-Press any key to print to screen (and eventually send to arduino).
+On raspi #2 run
+
+```bash
+./runBATMAN2.sh
+go run JU_led_mesh.go --web-addr :8081 -no-lcd  -log-level debug
+```
+
+Press any key, sent to mesh, and if it is a 0 or 1, we change led pattern
 
 To exit, press "q" to exit termbox, and then ctrl-c to exit the program.
 
@@ -210,7 +223,7 @@ To exit, press "q" to exit termbox, and then ctrl-c to exit the program.
 Run with hardware (serial, network) API calls mocked out:
 
 ```bash
-go run JU_led_mesh.go --web-addr :8080 -no-hardware -no-lcd -log-level debug
+go run JU_led_mesh.go --web-addr :80801 -no-hardware -no-lcd -log-level debug
 ```
 
 # Set up port forwarding for web server
