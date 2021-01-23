@@ -50,7 +50,15 @@ func main() {
 	webAddr := flag.String("web-addr", ":8080", "address to serve web on")
 	noHardware := flag.Bool("no-hardware", false, "run without hardware dependencies")
 	noLCD := flag.Bool("no-lcd", false, "run without lcd display")
+	logLevel := flag.String("log-level", "info", "log level, must be one of: panic, fatal, error, warn, info, debug, trace")
 	flag.Parse()
+
+	level, err := log.ParseLevel(*logLevel)
+	if err != nil {
+		log.Errorf("failed to parse log level [%s]: %s", *logLevel, err)
+		return
+	}
+	log.SetLevel(level)
 
 	// // LCD:
 
@@ -135,7 +143,7 @@ func main() {
 	if err != nil {
 		log.Errorf("serial port read error, %s", err)
 	}
-	log.Info("%q", buf[:n])
+	log.Infof("%q", buf[:n])
 
 	// now check if got the correct response:
 
@@ -216,6 +224,21 @@ func main() {
 	}()
 	go func() {
 		errs <- keyLoop(keys, s, myIP, bcastIP, bm)
+	}()
+	go func() {
+		// handle key presses from web, send to messages channel
+		for {
+			phoneEvent, more := <-web.Phone()
+			if !more {
+				log.Errorf("web phoneEvent channel closed")
+				return
+			}
+
+			msg := make([]byte, msgSize)
+			msg[4] = []byte(phoneEvent.Key)[0]
+
+			messages <- msg
+		}
 	}()
 
 	// block until ctrl-c or one of the loops returns an error

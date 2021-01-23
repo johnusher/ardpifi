@@ -45,6 +45,8 @@ type Client struct {
 
 	// Buffered channel of outbound messages.
 	send chan []byte
+
+	log *log.Entry
 }
 
 // readPump pumps messages from the websocket connection to the hub.
@@ -64,15 +66,15 @@ func (c *Client) readPump() {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Errorf("error: %v", err)
+				c.log.Errorf("error: %v", err)
 			}
 			break
 		}
 		select {
 		case c.hub.phone <- message:
-			log.Debugf("Phone event sent")
+			c.log.Debugf("Phone event sent")
 		case <-time.After(1 * time.Millisecond):
-			log.Debugf("Phone event dropped")
+			c.log.Debugf("Phone event dropped")
 		}
 	}
 }
@@ -127,10 +129,17 @@ func (c *Client) writePump() {
 func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Println(err)
+		log.Error(err)
 		return
 	}
-	client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256)}
+	client := &Client{
+		hub:  hub,
+		conn: conn,
+		send: make(chan []byte, 256),
+		log: log.WithFields(log.Fields{
+			"web": "client",
+		}),
+	}
 	client.hub.register <- client
 
 	// Allow collection of memory referenced by the caller by doing all work in

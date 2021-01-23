@@ -9,6 +9,7 @@ import (
 
 type Web struct {
 	hub *Hub
+	log *log.Entry
 }
 
 func InitWeb(webAddr string) *Web {
@@ -35,15 +36,22 @@ func InitWeb(webAddr string) *Web {
 
 	return &Web{
 		hub: hub,
+		log: log.WithFields(log.Fields{
+			"web": webAddr,
+		}),
 	}
 }
 
 func (w *Web) Render(msg string) {
 	b, err := json.Marshal(msg)
 	if err != nil {
-		log.Print(err)
+		w.log.Error(err)
 		return
 	}
 
 	go func() { w.hub.render <- b }()
+}
+
+func (w *Web) Phone() <-chan PhoneEvent {
+	return w.hub.phoneEvents
 }

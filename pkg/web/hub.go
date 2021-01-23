@@ -24,7 +24,7 @@ type Hub struct {
 	phone chan []byte
 
 	// structured inbound messages from phone
-	phoneEvents chan phoneEvent
+	phoneEvents chan PhoneEvent
 
 	// Outbound messages to web page
 	render chan []byte
@@ -34,6 +34,8 @@ type Hub struct {
 
 	// Unregister requests from clients.
 	unregister chan *Client
+
+	log *log.Entry
 }
 
 type deviceAcceleration struct {
@@ -57,7 +59,9 @@ type deviceOrientation struct {
 	Beta  float64 `json:"beta"`
 	Gamma float64 `json:"gamma"`
 }
-type phoneEvent struct {
+type PhoneEvent struct {
+	Key string `json:"key"`
+
 	RGB              string `json:"rgb"`
 	R                uint32 `json:"r,omitempty"`
 	G                uint32 `json:"g,omitempty"`
@@ -92,7 +96,10 @@ func newHub() *Hub {
 		register:    make(chan *Client),
 		unregister:  make(chan *Client),
 		clients:     make(map[*Client]bool),
-		phoneEvents: make(chan phoneEvent),
+		phoneEvents: make(chan PhoneEvent),
+		log: log.WithFields(log.Fields{
+			"web": "hub",
+		}),
 	}
 }
 
@@ -120,7 +127,7 @@ func (h *Hub) run() {
 		case message := <-h.phone:
 			p, err := unMarshalPhone(message)
 			if err != nil {
-				log.Errorf("Failed to unmarshal phone message: %+v", message)
+				h.log.Errorf("Failed to unmarshal phone message: %+v", message)
 				continue
 			}
 
@@ -129,13 +136,13 @@ func (h *Hub) run() {
 	}
 }
 
-func unMarshalPhone(message []byte) (phoneEvent, error) {
-	p := phoneEvent{}
+func unMarshalPhone(message []byte) (PhoneEvent, error) {
+	p := PhoneEvent{}
 
 	err := json.Unmarshal(message, &p)
 	if err != nil {
 		log.Errorf("json.Unmarshal failed for %+v: %s", string(message), err)
-		return phoneEvent{}, err
+		return PhoneEvent{}, err
 	}
 	log.Debugf("Phone event message:      %+v", string(message))
 	log.Debugf("Phone event unmarshalled: %+v", p)
@@ -144,26 +151,26 @@ func unMarshalPhone(message []byte) (phoneEvent, error) {
 	if len(l) != 4 {
 		err := fmt.Errorf("Invalid rgb string: %+v", p)
 		log.Error(err)
-		return phoneEvent{}, err
+		return PhoneEvent{}, err
 	}
 
 	r, err := strconv.Atoi(l[1])
 	if err != nil {
 		err := fmt.Errorf("Invalid rgb int parse: %+v", p)
 		log.Error(err)
-		return phoneEvent{}, err
+		return PhoneEvent{}, err
 	}
 	g, err := strconv.Atoi(l[2])
 	if err != nil {
 		err := fmt.Errorf("Invalid rgb int parse: %+v", p)
 		log.Error(err)
-		return phoneEvent{}, err
+		return PhoneEvent{}, err
 	}
 	b, err := strconv.Atoi(l[3])
 	if err != nil {
 		err := fmt.Errorf("Invalid rgb int parse: %+v", p)
 		log.Error(err)
-		return phoneEvent{}, err
+		return PhoneEvent{}, err
 	}
 
 	p.R = uint32(r)

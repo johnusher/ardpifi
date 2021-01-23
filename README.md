@@ -201,17 +201,6 @@ arduino-cli upload -p /dev/ttyUSB0 --fqbn arduino:avr:diecimila:cpu=atmega328 du
 go run jumain.go
 ```
 
-```bash
-$ go run JU_led_mesh.go -h
-Usage of JU_led_mesh:
-  -no-hardware
-    	run without hardware dependencies
-  -no-lcd
-    	run without lcd display
-  -web-addr string
-    	address to serve web on (default ":8080")
-```
-
 Press any key to print to screen (and eventually send to arduino).
 
 To exit, press "q" to exit termbox, and then ctrl-c to exit the program.
@@ -221,7 +210,7 @@ To exit, press "q" to exit termbox, and then ctrl-c to exit the program.
 Run with hardware (serial, network) API calls mocked out:
 
 ```bash
-go run JU_led_mesh.go --web-addr :8080 -no-hardware -no-lcd
+go run JU_led_mesh.go --web-addr :8080 -no-hardware -no-lcd -log-level debug
 ```
 
 # Set up port forwarding for web server
