@@ -234,6 +234,10 @@ func main() {
 				return
 			}
 
+			if len(phoneEvent.Key) == 0 {
+				continue
+			}
+
 			msg := make([]byte, msgSize)
 			msg[4] = []byte(phoneEvent.Key)[0]
 
