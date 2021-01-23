@@ -8,6 +8,7 @@ require (
 	github.com/d2r2/go-logger v0.0.0-20181221090742-9998a510495e
 	github.com/gorilla/websocket v1.4.2
 	github.com/huin/goserial v0.0.0-20121012073615-7b90efdb22b1
+	github.com/jacobsa/go-serial v0.0.0-20180131005756-15cf729a72d4
 	github.com/kr/text v0.2.0 // indirect
 	github.com/nsf/termbox-go v0.0.0-20201124104050-ed494de23a00
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7 // indirect
