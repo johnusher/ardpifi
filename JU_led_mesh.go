@@ -239,6 +239,7 @@ func main() {
 			}
 
 			msg := make([]byte, msgSize)
+			copy(msg[0:4], myIP)
 			msg[4] = []byte(phoneEvent.Key)[0]
 
 			messages <- msg
