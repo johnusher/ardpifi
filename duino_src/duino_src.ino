@@ -47,8 +47,18 @@ void loop() {
     idleC = idleC + 1;
     idleC = idleC % strip.numPixels();
 
+    // if(idleC==strip.numPixels()){
+    // colC = colC + 1;
+    // colC = colC % 127;
+      
+    // // change color:
+    //   uint8_t idleColR = 0; 	// colour of idle
+    //   uint8_t idleColG = 64%colC; 
+    //   uint8_t idleColB = 127%colC; 
 
-    strip.setPixelColor(idleC, 0, 0, 127);  // show blue light moving along
+    // }
+
+    strip.setPixelColor(idleC, idleColR, idleColG, idleColB);  // show blue light moving along
 
     if(breakFlag==0){        
       

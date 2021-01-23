@@ -10,12 +10,13 @@ char serial_in;
 int SMode = 0;
 int wipeReverse = 0;
 
-int idleC = 0;	// counter
+int idleC = 0;	// counter for led position
+int colC = 0;	// counter for led colour
 
 uint32_t idleCol;
-uint8_t idleColR = 64; 	// colour of idle
-uint8_t idleColG = 35; 
-uint8_t idleColB = 10; 
+uint8_t idleColR = 0; 	// colour of idle
+uint8_t idleColG = 0; 
+uint8_t idleColB = 127; 
 
 
 uint8_t maxC = 128;   // max colour value
