@@ -172,11 +172,11 @@ Tested with Aurdion Uno and Aurdion clone: "Nano V3 | ATMEL ATmega328P AVR Micro
 The Uno shows on port ttyACM0 and the clone on ttyUSB.
 NB only 1 from 2 clones works for me!
 
-<del>
+
 ## add libraries:
 
 arduino-cli lib search Adafruit_NeoPixel
-</del>
+
 
 in duino_src:
 
@@ -198,7 +198,7 @@ arduino-cli upload -p /dev/ttyUSB0 --fqbn arduino:avr:diecimila:cpu=atmega328 du
 ## Run
 
 ```bash
-go run jumain.go
+go run JU_led_mesh.go --web-addr :8080 -log-level debug
 ```
 
 Press any key to print to screen (and eventually send to arduino).
@@ -217,9 +217,12 @@ go run JU_led_mesh.go --web-addr :8080 -no-hardware -no-lcd -log-level debug
 
 ## First-time ssh config setup
 
+On laptop:
+
+
 ```bash
-PI_IP=192.x.x.x
-USER=piuser
+PI_IP=192.168.1.164
+USER=pi
 
 cat << EOF >> ~/.ssh/config
 
