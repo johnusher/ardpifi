@@ -174,6 +174,7 @@ NB only 1 from 2 clones works for me!
 
 <del>
 ## add libraries:
+
 arduino-cli lib search Adafruit_NeoPixel
 </del>
 
@@ -182,9 +183,13 @@ in duino_src:
 compile and flash:
 Uno:
 arduino-cli compile --fqbn arduino:avr:uno duino_src
+
 arduino-cli upload -p /dev/ttyACM0 --fqbn arduino:avr:uno duino_src
+
 Clone
+
 arduino-cli compile --fqbn arduino:avr:diecimila:cpu=atmega328 duino_src
+
 arduino-cli upload -p /dev/ttyUSB0 --fqbn arduino:avr:diecimila:cpu=atmega328 duino_src
 
 
