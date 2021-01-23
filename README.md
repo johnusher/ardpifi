@@ -122,7 +122,7 @@ go run JU_led_mesh.go
 On raspi #1 run
 ./runBATMAN.sh
 
-On raspi #2 run 
+On raspi #2 run
 ./runBATMAN2.sh
 
 See file main.go, from https://github.com/siggy/ledmesh
@@ -205,5 +205,5 @@ To exit, press "q" to exit termbox, and then ctrl-c to exit the program.
 Run with hardware (serial, network) API calls mocked out:
 
 ```bash
-go run JU_led_mesh.go -no-hardware
+go run JU_led_mesh.go -no-hardware -no-lcd
 ```

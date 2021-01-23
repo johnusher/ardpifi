@@ -19,9 +19,9 @@ import (
 
 	device "github.com/d2r2/go-hd44780"
 	i2c "github.com/d2r2/go-i2c"
-
 	"github.com/johnusher/ardpifi/pkg/iface"
 	"github.com/johnusher/ardpifi/pkg/keyboard"
+	"github.com/johnusher/ardpifi/pkg/lcd"
 	"github.com/johnusher/ardpifi/pkg/port"
 	"github.com/johnusher/ardpifi/pkg/readBATMAN"
 	log "github.com/sirupsen/logrus"
@@ -46,23 +46,32 @@ func check(err error) {
 }
 
 func main() {
+	noHardware := flag.Bool("no-hardware", false, "run without hardware dependencies")
+	noLCD := flag.Bool("no-lcd", false, "run without lcd display")
+	flag.Parse()
 
 	// // LCD:
 
-	i2c, LCDerr := i2c.NewI2C(0x27, 1)
-	if LCDerr != nil {
-		log.Errorf("error opening LCD on I2C, %s", LCDerr)
-	} else {
-		defer i2c.Close()
+	var i2cDevice *i2c.I2C
+	if !*noLCD {
+		var err error
+		i2cDevice, err = i2c.NewI2C(0x27, 1)
+		if err != nil {
+			log.Errorf("error opening LCD on I2C, %s", err)
+			return
+		}
+		defer i2cDevice.Close()
 	}
-	lcd, LCDerr := device.NewLcd(i2c, device.LCD_16x2)
-	if LCDerr != nil {
-		log.Errorf("errormaking LCD device, %s", LCDerr)
-	} else {
-		lcd.BacklightOn()
-		lcd.Clear()
-		// lcd.SetStrobeDelays(300)
+
+	lcd, err := lcd.New(i2cDevice, *noLCD)
+	if err != nil {
+		log.Errorf("errormaking LCD device, %s", err)
+		return
 	}
+
+	lcd.BacklightOn()
+	lcd.Clear()
+	// lcd.SetStrobeDelays(300)
 
 	// i2c, err := i2c.NewI2C(0x27, 1)
 	// check(err)
@@ -84,8 +93,6 @@ func main() {
 	// }
 
 	// xxxxxxxxxxxxxxxxxxx
-	noHardware := flag.Bool("no-hardware", false, "run without hardware dependencies")
-	flag.Parse()
 
 	bcastIP := net.ParseIP(batBcast)
 	if *noHardware {
@@ -167,14 +174,12 @@ func main() {
 
 	log.Infof("Serving at %s", myIP)
 
-	if LCDerr == nil {
-		// write to LCD:
-		lcd.SetPosition(0, 0)
-		_ = lcd.ShowMessage("My IP", device.SHOW_LINE_1)
+	// write to LCD:
+	lcd.SetPosition(0, 0)
+	_ = lcd.ShowMessage("My IP", device.SHOW_LINE_1)
 
-		lcd.SetPosition(1, 0)
-		_ = lcd.ShowMessage(string(myIP), device.SHOW_LINE_2)
-	}
+	lcd.SetPosition(1, 0)
+	_ = lcd.ShowMessage(string(myIP), device.SHOW_LINE_2)
 
 	// sig := make(chan os.Signal, 1)
 	// signal.Notify(sig, os.Interrupt, os.Kill)
@@ -202,7 +207,7 @@ func main() {
 	errs := make(chan error)
 
 	go func() {
-		errs <- messageLoop(messages, s, myIP, lcd, LCDerr)
+		errs <- messageLoop(messages, s, myIP, lcd)
 	}()
 	go func() {
 		errs <- keyLoop(keys, s, myIP, bcastIP, bm)
@@ -215,7 +220,7 @@ func main() {
 	}
 }
 
-func messageLoop(messages <-chan []byte, s port.Port, myIP net.IP, lcd *device.Lcd, LCDerr error) error {
+func messageLoop(messages <-chan []byte, s port.Port, myIP net.IP, lcd lcd.LCD) error {
 	log.Info("Starting message loop")
 
 	for {
@@ -247,16 +252,14 @@ func messageLoop(messages <-chan []byte, s port.Port, myIP net.IP, lcd *device.L
 			}
 			s.Flush()
 
-			if LCDerr == nil {
-				// write to LCD:
-				lcd.Clear()
-				lcd.SetPosition(0, 0)
-				// fmt.Fprint(lcd, t.Format("Message received:"))
-				_ = lcd.ShowMessage("Message received:", device.SHOW_LINE_1)
-				lcd.SetPosition(1, 0)
-				// fmt.Fprint(lcd, t.Format(string(message[4])))
-				_ = lcd.ShowMessage(string(message[4]), device.SHOW_LINE_2)
-			}
+			// write to LCD:
+			lcd.Clear()
+			lcd.SetPosition(0, 0)
+			// fmt.Fprint(lcd, t.Format("Message received:"))
+			_ = lcd.ShowMessage("Message received:", device.SHOW_LINE_1)
+			lcd.SetPosition(1, 0)
+			// fmt.Fprint(lcd, t.Format(string(message[4])))
+			_ = lcd.ShowMessage(string(message[4]), device.SHOW_LINE_2)
 
 		}
 
