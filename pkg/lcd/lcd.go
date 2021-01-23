@@ -26,8 +26,6 @@ type mockLCD struct {
 }
 
 func New(i2c *i2c.I2C, noHardware bool) (LCD, error) {
-
-	// if noHardware TODO
 	if noHardware {
 		return &mockLCD{
 			log: log.WithFields(log.Fields{
@@ -40,7 +38,7 @@ func New(i2c *i2c.I2C, noHardware bool) (LCD, error) {
 }
 
 func (m *mockLCD) ShowMessage(text string, options device.ShowOptions) error {
-	m.log.Infof("ShowMessage %s %+v", text, options)
+	m.log.Infof("ShowMessage(%s, %+v)", text, options)
 	return nil
 }
 
@@ -70,11 +68,11 @@ func (m *mockLCD) Home() error {
 }
 
 func (m *mockLCD) SetPosition(line, pos int) error {
-	m.log.Info("SetPosition %d %d", line, pos)
+	m.log.Infof("SetPosition(%d, %d)", line, pos)
 	return nil
 }
 
 func (m *mockLCD) Command(cmd byte) error {
-	m.log.Info("Command %+v", cmd)
+	m.log.Infof("Command(%+v)", cmd)
 	return nil
 }

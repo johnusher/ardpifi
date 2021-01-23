@@ -24,6 +24,7 @@ import (
 	"github.com/johnusher/ardpifi/pkg/lcd"
 	"github.com/johnusher/ardpifi/pkg/port"
 	"github.com/johnusher/ardpifi/pkg/readBATMAN"
+	"github.com/johnusher/ardpifi/pkg/web"
 	log "github.com/sirupsen/logrus"
 	"github.com/tarm/serial"
 )
@@ -46,6 +47,7 @@ func check(err error) {
 }
 
 func main() {
+	webAddr := flag.String("web-addr", ":8080", "address to serve web on")
 	noHardware := flag.Bool("no-hardware", false, "run without hardware dependencies")
 	noLCD := flag.Bool("no-lcd", false, "run without lcd display")
 	flag.Parse()
@@ -93,6 +95,9 @@ func main() {
 	// }
 
 	// xxxxxxxxxxxxxxxxxxx
+
+	web := web.InitWeb(*webAddr)
+	log.Infof("web: %+v", web)
 
 	bcastIP := net.ParseIP(batBcast)
 	if *noHardware {
@@ -207,7 +212,7 @@ func main() {
 	errs := make(chan error)
 
 	go func() {
-		errs <- messageLoop(messages, s, myIP, lcd)
+		errs <- messageLoop(messages, s, myIP, lcd, web)
 	}()
 	go func() {
 		errs <- keyLoop(keys, s, myIP, bcastIP, bm)
@@ -220,7 +225,7 @@ func main() {
 	}
 }
 
-func messageLoop(messages <-chan []byte, s port.Port, myIP net.IP, lcd lcd.LCD) error {
+func messageLoop(messages <-chan []byte, s port.Port, myIP net.IP, lcd lcd.LCD, web *web.Web) error {
 	log.Info("Starting message loop")
 
 	for {
@@ -239,9 +244,13 @@ func messageLoop(messages <-chan []byte, s port.Port, myIP net.IP, lcd lcd.LCD) 
 			uint32(message[7])<<24
 
 		if myIP.Equal(net.IP(message[0:4])) {
-			log.Infof("received message from my own IP: %s / %s", ip, string(pings))
+			msg := fmt.Sprintf("received message from my own IP: %s / %s", ip, string(pings))
+			log.Info(msg)
+			web.Render(msg)
 		} else {
-			log.Infof("received message from other IP: %s / %s", ip, string(pings))
+			msg := fmt.Sprintf("received message from other IP: %s / %s", ip, string(pings))
+			log.Info(msg)
+			web.Render(msg)
 
 			// write to duino:
 			s.Flush()

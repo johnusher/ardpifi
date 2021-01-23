@@ -196,6 +196,17 @@ arduino-cli upload -p /dev/ttyUSB0 --fqbn arduino:avr:diecimila:cpu=atmega328 du
 go run jumain.go
 ```
 
+```bash
+$ go run JU_led_mesh.go -h
+Usage of JU_led_mesh:
+  -no-hardware
+    	run without hardware dependencies
+  -no-lcd
+    	run without lcd display
+  -web-addr string
+    	address to serve web on (default ":8080")
+```
+
 Press any key to print to screen (and eventually send to arduino).
 
 To exit, press "q" to exit termbox, and then ctrl-c to exit the program.
@@ -205,5 +216,35 @@ To exit, press "q" to exit termbox, and then ctrl-c to exit the program.
 Run with hardware (serial, network) API calls mocked out:
 
 ```bash
-go run JU_led_mesh.go -no-hardware -no-lcd
+go run JU_led_mesh.go --web-addr :8080 -no-hardware -no-lcd
 ```
+
+# Set up port forwarding for web server
+
+## First-time ssh config setup
+
+```bash
+PI_IP=192.x.x.x
+USER=piuser
+
+cat << EOF >> ~/.ssh/config
+
+Host pi
+  HostName $PI_IP
+  User $USER
+  Port 22
+  BatchMode yes
+  ServerAliveInterval 60
+  ServerAliveCountMax 5
+  ForwardAgent yes
+    LocalForward 127.0.0.1:8080 127.0.0.1:8080
+EOF
+```
+
+## Tunnel
+
+```bash
+ssh $USER@pi
+```
+
+Open a browser window to localhost:8080
