@@ -26,9 +26,32 @@ type Gps struct {
 	SerialPort io.ReadWriteCloser // i was trying to pass this out of init and then back in to run
 }
 
-func Init() (*Gps, error) { // !!! not sure about this!
+func Init(gpsChan chan GPSMessage) (*Gps, error) { // !!! not sure about this!
 
 	// NB I wanted to open the serial port here, then return the serial port, and use it in the run()
+
+	options := serial.OpenOptions{
+		PortName:        "/dev/ttyS0",
+		BaudRate:        9600,
+		DataBits:        8,
+		StopBits:        1,
+		MinimumReadSize: 4,
+	}
+	serialPort, err := serial.Open(options)
+	if err != nil {
+		log.Fatalf("serial.Open: %v", err)
+	}
+
+	return &Gps{gpsChan,
+		serialPort}, nil
+
+}
+
+func (g *Gps) Close() {
+	g.SerialPort.Close()
+}
+
+func (g *Gps) Run() error {
 
 	// options := serial.OpenOptions{
 	// 	PortName:        "/dev/ttyS0",
@@ -43,27 +66,7 @@ func Init() (*Gps, error) { // !!! not sure about this!
 	// }
 	// defer serialPort.Close()
 
-	return &Gps{nil,
-		nil}, nil
-
-}
-
-func (g *Gps) Run() error {
-
-	options := serial.OpenOptions{
-		PortName:        "/dev/ttyS0",
-		BaudRate:        9600,
-		DataBits:        8,
-		StopBits:        1,
-		MinimumReadSize: 4,
-	}
-	serialPort, err := serial.Open(options)
-	if err != nil {
-		log.Fatalf("serial.Open: %v", err)
-	}
-	defer serialPort.Close()
-
-	reader := bufio.NewReader(serialPort)
+	reader := bufio.NewReader(g.SerialPort)
 	scanner := bufio.NewScanner(reader)
 
 	log.Infof("Started GPS read with port %s", g.SerialPort)
@@ -78,11 +81,16 @@ func (g *Gps) Run() error {
 
 				// NB latitude and longitude are strings so need to cpnvet to float:
 
-				// latitudeF, _ := strconv.ParseFloat(latitude, 64)
-				// longitudeF, _ := strconv.ParseFloat(longitude, 64)
+				latitudeF, _ := strconv.ParseFloat(latitude, 64)
+				longitudeF, _ := strconv.ParseFloat(longitude, 64)
 
 				// g.gps.lat <- latitudeF   // send to output: this doesnt work!
 				// g.gps.long <- longitudeF // send to output: this doesnt work!
+
+				g.gps <- GPSMessage{
+					lat:  latitudeF,
+					long: longitudeF,
+				}
 
 				log.Infof("LAtitude =  %s. Longitude = %s", latitude, longitude)
 				// log.Infof("fixQuality =  %s. ", fixQuality)

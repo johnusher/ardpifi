@@ -172,11 +172,10 @@ func main() {
 		return
 	}
 
-	// keys := make(chan rune)
-	// kb, err := keyboard.Init(keys)
+	gpsChan := make(chan gps.GPSMessage)
+	g, err := gps.Init(gpsChan)
 
-	// gps := make(chan struct{})
-	g, err := gps.Init()
+	defer g.Close()
 
 	// run kb and BATMAN:
 	go kb.Run()
@@ -205,6 +204,19 @@ func main() {
 			}
 
 			keys <- []rune(phoneEvent.Key)[0]
+		}
+	}()
+
+	go func() {
+		// handle gps
+		for {
+			gpsMessage, more := <-gpsChan
+			if !more {
+				log.Errorf("web phoneEvent channel closed")
+				return
+			}
+
+			log.Infof("GPS Message received: %+v", gpsMessage)
 		}
 	}()
 
