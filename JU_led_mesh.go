@@ -19,6 +19,7 @@ import (
 
 	device "github.com/d2r2/go-hd44780"
 	i2c "github.com/d2r2/go-i2c"
+	"github.com/johnusher/ardpifi/pkg/gps"
 	"github.com/johnusher/ardpifi/pkg/iface"
 	"github.com/johnusher/ardpifi/pkg/keyboard"
 	"github.com/johnusher/ardpifi/pkg/lcd"
@@ -81,28 +82,7 @@ func main() {
 
 	lcd.BacklightOn()
 	lcd.Clear()
-	// lcd.SetStrobeDelays(300)
-
-	// i2c, err := i2c.NewI2C(0x27, 1)
-	// check(err)
-	// defer i2c.Close()
-	// lcd, err := device.NewLcd(i2c, device.LCD_16x2)
-	// check(err)
-	// lcd.BacklightOn()
-	// lcd.Clear()
-	// for {
-	// 	lcd.Home()
-	// 	t := time.Now()
-	// 	lcd.SetPosition(0, 0)
-	// 	fmt.Fprint(lcd, t.Format("Monday Jan 2"))
-	// 	lcd.SetPosition(1, 0)
-	// 	fmt.Fprint(lcd, t.Format("15:04:05 2006"))
-	// 	//		lcd.SetPosition(4, 0)
-	// 	//		fmt.Fprint(lcd, "i2c, VGA, and Go")
-	// 	time.Sleep(333 * time.Millisecond)
-	// }
-
-	// xxxxxxxxxxxxxxxxxxx
+	// lcd.SetStrobeDelays(300)   // TODO: doenst work but should!
 
 	web := web.InitWeb(*webAddr)
 	log.Infof("web: %+v", web)
@@ -127,10 +107,9 @@ func main() {
 	}
 
 	// When connecting to an older revision Arduino, you need to wait
-	// a little while it resets.
 	time.Sleep(1 * time.Second)
 
-	// Setup remote (terminal) KB:
+	// Setup keyboard input:
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
@@ -143,8 +122,6 @@ func main() {
 	}
 
 	//  now setup BATMAN:
-
-	// log.Info("LEDMesh starting up")
 
 	myIP := net.IP{}
 
@@ -195,8 +172,9 @@ func main() {
 		return
 	}
 
-	// run kb and BATMAN:
+	gps, err := gps.Init(chan gps)
 
+	// run kb and BATMAN:
 	go kb.Run()
 	go bm.Run()
 
