@@ -172,11 +172,16 @@ func main() {
 		return
 	}
 
-	gps, err := gps.Init(chan gps)
+	// keys := make(chan rune)
+	// kb, err := keyboard.Init(keys)
+
+	// gps := make(chan struct{})
+	g, err := gps.Init()
 
 	// run kb and BATMAN:
 	go kb.Run()
 	go bm.Run()
+	go g.Run()
 
 	errs := make(chan error)
 
