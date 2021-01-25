@@ -15,18 +15,31 @@ import (
 	"github.com/jacobsa/go-serial/serial"
 )
 
+type GPS interface {
+	Run() error
+	Close() error
+}
+
 type GPSMessage struct {
 	lat        float64
 	long       float64
 	fixQuality uint16 // Horizontal Dilution of Precision (HDOP). Relative accuracy of horizontal position. 1 = ideal, >20 = poor
 }
 
-type Gps struct {
+type gps struct {
 	gps        chan<- GPSMessage
 	SerialPort io.ReadWriteCloser // i was trying to pass this out of init and then back in to run
 }
 
-func Init(gpsChan chan GPSMessage) (*Gps, error) { // !!! not sure about this!
+func Init(gpsChan chan<- GPSMessage, noHardware bool) (GPS, error) {
+	if noHardware {
+		return initMockGPS(gpsChan)
+	}
+
+	return initGPS(gpsChan)
+}
+
+func initGPS(gpsChan chan<- GPSMessage) (GPS, error) { // !!! not sure about this!
 
 	// NB I wanted to open the serial port here, then return the serial port, and use it in the run()
 
@@ -39,19 +52,21 @@ func Init(gpsChan chan GPSMessage) (*Gps, error) { // !!! not sure about this!
 	}
 	serialPort, err := serial.Open(options)
 	if err != nil {
-		log.Fatalf("serial.Open: %v", err)
+		log.Errorf("serial.Open: %v", err)
+		return nil, err
 	}
 
-	return &Gps{gpsChan,
-		serialPort}, nil
-
+	return &gps{
+		gpsChan,
+		serialPort,
+	}, nil
 }
 
-func (g *Gps) Close() {
-	g.SerialPort.Close()
+func (g *gps) Close() error {
+	return g.SerialPort.Close()
 }
 
-func (g *Gps) Run() error {
+func (g *gps) Run() error {
 
 	// options := serial.OpenOptions{
 	// 	PortName:        "/dev/ttyS0",
@@ -83,13 +98,15 @@ func (g *Gps) Run() error {
 
 				latitudeF, _ := strconv.ParseFloat(latitude, 64)
 				longitudeF, _ := strconv.ParseFloat(longitude, 64)
+				fixQuality, _ := strconv.ParseInt(gps.fixQuality, 10, 16)
 
 				// g.gps.lat <- latitudeF   // send to output: this doesnt work!
 				// g.gps.long <- longitudeF // send to output: this doesnt work!
 
 				g.gps <- GPSMessage{
-					lat:  latitudeF,
-					long: longitudeF,
+					lat:        latitudeF,
+					long:       longitudeF,
+					fixQuality: uint16(fixQuality),
 				}
 
 				log.Infof("LAtitude =  %s. Longitude = %s", latitude, longitude)
@@ -101,7 +118,6 @@ func (g *Gps) Run() error {
 			} else {
 				// fmt.Println("no gps fix available")
 				log.Infof("no gps fix available")
-
 			}
 			time.Sleep(2 * time.Second)
 		} else {

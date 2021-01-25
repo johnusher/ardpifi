@@ -41,12 +41,6 @@ const (
 	localBcast = "127.0.0.1"
 )
 
-func check(err error) {
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
 func main() {
 	webAddr := flag.String("web-addr", ":8080", "address to serve web on")
 	noHardware := flag.Bool("no-hardware", false, "run without hardware dependencies")
@@ -173,8 +167,11 @@ func main() {
 	}
 
 	gpsChan := make(chan gps.GPSMessage)
-	g, err := gps.Init(gpsChan)
-
+	g, err := gps.Init(gpsChan, *noHardware)
+	if err != nil {
+		log.Errorf("failed to initialize gps: %s", err)
+		return
+	}
 	defer g.Close()
 
 	// run kb and BATMAN:
@@ -188,7 +185,7 @@ func main() {
 		errs <- messageLoop(messages, s, myIP, lcd, web)
 	}()
 	go func() {
-		errs <- keyLoop(keys, s, myIP, bcastIP, bm)
+		errs <- broadcastLoop(keys, gpsChan, s, myIP, bcastIP, bm)
 	}()
 	go func() {
 		// handle key presses from web, send to messages channel
@@ -204,19 +201,6 @@ func main() {
 			}
 
 			keys <- []rune(phoneEvent.Key)[0]
-		}
-	}()
-
-	go func() {
-		// handle gps
-		for {
-			gpsMessage, more := <-gpsChan
-			if !more {
-				log.Errorf("web phoneEvent channel closed")
-				return
-			}
-
-			log.Infof("GPS Message received: %+v", gpsMessage)
 		}
 	}()
 
@@ -279,7 +263,7 @@ func messageLoop(messages <-chan []byte, s port.Port, myIP net.IP, lcd lcd.LCD, 
 	}
 }
 
-func keyLoop(keys <-chan rune, s port.Port, myIP net.IP, bcastIP net.IP, bm *readBATMAN.ReadBATMAN) error {
+func broadcastLoop(keys <-chan rune, gps <-chan gps.GPSMessage, s port.Port, myIP net.IP, bcastIP net.IP, bm *readBATMAN.ReadBATMAN) error {
 	log.Info("Starting key loop")
 
 	// buf := make([]byte, 5)   // this was used for serial return from duino
@@ -290,49 +274,59 @@ func keyLoop(keys <-chan rune, s port.Port, myIP net.IP, bcastIP net.IP, bm *rea
 	bcast := &net.UDPAddr{Port: batPort, IP: bcastIP}
 
 	for {
-		key, more := <-keys
-		if !more {
-			log.Infof("keyboard listener closed\n")
-			// termbox closed, block until ctrl-c is called
-			log.Infof("exiting")
-			return nil
-		}
-		log.Infof("key pressed: %s / %d / 0x%X / 0%o \n", string(key), key, key, key)
+		select {
 
-		// now send the key over BATMAN:
-		// buf := make([]byte, 1)
-		// _ = utf8.EncodeRune(buf, key)
-		myPings := uint32(key) // convert rune to uint32
-		// write
-		// if time.Now().After(pingAt) {
-		buffOut[4] = byte(myPings & 0x000000ff)
-		buffOut[5] = byte(myPings & 0x0000ff00 >> 8)
-		buffOut[6] = byte(myPings & 0x00ff0000 >> 16)
-		buffOut[7] = byte(myPings & 0xff000000 >> 24)
-		if _, err := bm.Conn.WriteToUDP(buffOut, bcast); err != nil {
-			log.Error(err)
-			return err
-		}
-		// pingAt = time.Now().Add(interval)
-		myPings++
+		case gpsMessage, more := <-gps:
+			if !more {
+				log.Infof("gps channel closed\n")
+				log.Infof("exiting")
+				return nil
+			}
 
-		// write to duino: NB maybe insert a wait before here so all pi's send the new duino command at a similar time
-		_, err := s.Write([]byte(string(key)))
-		if err != nil {
-			log.Errorf("2. failed to write to serial port: %s", err)
-			return err
-		}
-		// // read response from duin (not necessary)
-		// n, err = s.Read(buf)
-		// if err != nil {
-		// 	log.Errorf("serial port read error, %s", err)
-		// }
-		// log.Infof("serial return %s / %d / 0x%X / 0%o \n", string(buf[:n]), buf[:n], buf[:n], buf[:n])
-		// // }
+			log.Infof("GPS Message received: %+v", gpsMessage)
 
+		case key, more := <-keys:
+			if !more {
+				log.Infof("keyboard listener closed\n")
+				// termbox closed, block until ctrl-c is called
+				log.Infof("exiting")
+				return nil
+			}
+			log.Infof("key pressed: %s / %d / 0x%X / 0%o \n", string(key), key, key, key)
+
+			// now send the key over BATMAN:
+			// buf := make([]byte, 1)
+			// _ = utf8.EncodeRune(buf, key)
+			myPings := uint32(key) // convert rune to uint32
+			// write
+			// if time.Now().After(pingAt) {
+			buffOut[4] = byte(myPings & 0x000000ff)
+			buffOut[5] = byte(myPings & 0x0000ff00 >> 8)
+			buffOut[6] = byte(myPings & 0x00ff0000 >> 16)
+			buffOut[7] = byte(myPings & 0xff000000 >> 24)
+			if _, err := bm.Conn.WriteToUDP(buffOut, bcast); err != nil {
+				log.Error(err)
+				return err
+			}
+			// pingAt = time.Now().Add(interval)
+			myPings++
+
+			// write to duino: NB maybe insert a wait before here so all pi's send the new duino command at a similar time
+			_, err := s.Write([]byte(string(key)))
+			if err != nil {
+				log.Errorf("2. failed to write to serial port: %s", err)
+				return err
+			}
+			// // read response from duin (not necessary)
+			// n, err = s.Read(buf)
+			// if err != nil {
+			// 	log.Errorf("serial port read error, %s", err)
+			// }
+			// log.Infof("serial return %s / %d / 0x%X / 0%o \n", string(buf[:n]), buf[:n], buf[:n], buf[:n])
+			// // }
+
+		}
 	}
-
-	return nil
 }
 
 // findArduino looks for the file that represents the Arduino
