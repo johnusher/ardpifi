@@ -43,8 +43,8 @@ const (
 )
 
 type ChatRequest struct {
-	Latf  chan float64
-	Longf chan float64
+	Latf  float64
+	Longf float64
 	ID    string
 }
 
@@ -283,8 +283,8 @@ func broadcastLoop(keys <-chan rune, gps <-chan gps.GPSMessage, s port.Port, myI
 
 	// make struct we send over udp:
 	initChatRequest := ChatRequest{
-		Latf:  make(chan float64, 10.0),
-		Longf: make(chan float64, 10.0),
+		Latf:  10.0,
+		Longf: 25.0,
 		ID:    "raspi 1",
 	}
 
