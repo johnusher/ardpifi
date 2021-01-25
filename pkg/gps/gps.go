@@ -68,23 +68,10 @@ func (g *gps) Close() error {
 
 func (g *gps) Run() error {
 
-	// options := serial.OpenOptions{
-	// 	PortName:        "/dev/ttyS0",
-	// 	BaudRate:        9600,
-	// 	DataBits:        8,
-	// 	StopBits:        1,
-	// 	MinimumReadSize: 4,
-	// }
-	// serialPort, err := serial.Open(options)
-	// if err != nil {
-	// 	log.Fatalf("serial.Open: %v", err)
-	// }
-	// defer serialPort.Close()
-
 	reader := bufio.NewReader(g.SerialPort)
 	scanner := bufio.NewScanner(reader)
 
-	log.Infof("Started GPS read with port %s", g.SerialPort)
+	// log.Infof("Started GPS read with port %s", g.SerialPort)
 
 	for scanner.Scan() {
 
@@ -100,16 +87,13 @@ func (g *gps) Run() error {
 				longitudeF, _ := strconv.ParseFloat(longitude, 64)
 				fixQuality, _ := strconv.ParseInt(gps.fixQuality, 10, 16)
 
-				// g.gps.lat <- latitudeF   // send to output: this doesnt work!
-				// g.gps.long <- longitudeF // send to output: this doesnt work!
-
 				g.gps <- GPSMessage{
 					lat:        latitudeF,
 					long:       longitudeF,
 					fixQuality: uint16(fixQuality),
 				}
 
-				log.Infof("LAtitude =  %s. Longitude = %s", latitude, longitude)
+				// log.Infof("LAtitude =  %s. Longitude = %s", latitude, longitude)
 				// log.Infof("fixQuality =  %s. ", fixQuality)
 
 				// fmt.Println(latitude + "," + longitude)
@@ -117,7 +101,7 @@ func (g *gps) Run() error {
 
 			} else {
 				// fmt.Println("no gps fix available")
-				log.Infof("no gps fix available")
+				log.Infof("low fixQuality")
 			}
 			time.Sleep(2 * time.Second)
 		} else {

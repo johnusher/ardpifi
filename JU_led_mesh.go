@@ -5,6 +5,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -40,6 +41,12 @@ const (
 	batBcast   = "172.27.255.255"
 	localBcast = "127.0.0.1"
 )
+
+type ChatRequest struct {
+	Latf  chan float64
+	Longf chan float64
+	ID    string
+}
 
 func main() {
 	webAddr := flag.String("web-addr", ":8080", "address to serve web on")
@@ -143,10 +150,11 @@ func main() {
 
 	// write to LCD:
 	lcd.SetPosition(0, 0)
-	_ = lcd.ShowMessage("My IP", device.SHOW_LINE_1)
+	_ = lcd.ShowMessage("Starting", device.SHOW_LINE_1)
 
-	lcd.SetPosition(1, 0)
-	_ = lcd.ShowMessage(string(myIP), device.SHOW_LINE_2)
+	// lcd.SetPosition(1, 0)
+
+	// _ = lcd.ShowMessage(string(myIP), device.SHOW_LINE_2)
 
 	// sig := make(chan os.Signal, 1)
 	// signal.Notify(sig, os.Interrupt, os.Kill)
@@ -258,7 +266,7 @@ func messageLoop(messages <-chan []byte, s port.Port, myIP net.IP, lcd lcd.LCD, 
 
 		}
 
-		log.Infof("BATMAN message : %s / %d / 0x%X / 0%o \n", string(pings), pings, pings, pings)
+		// log.Infof("BATMAN message : %s / %d / 0x%X / 0%o \n", string(pings), pings, pings, pings)
 
 	}
 }
@@ -268,10 +276,17 @@ func broadcastLoop(keys <-chan rune, gps <-chan gps.GPSMessage, s port.Port, myI
 
 	// buf := make([]byte, 5)   // this was used for serial return from duino
 
-	buffOut := make([]byte, msgSize) // sent to batman
+	buffOut := make([]byte, msgSize) // sent to mesh
 	copy(buffOut[0:4], myIP)
 
 	bcast := &net.UDPAddr{Port: batPort, IP: bcastIP}
+
+	// make struct we send over udp:
+	initChatRequest := ChatRequest{
+		Latf:  make(chan float64, 10.0),
+		Longf: make(chan float64, 10.0),
+		ID:    "raspi 1",
+	}
 
 	for {
 		select {
@@ -284,6 +299,26 @@ func broadcastLoop(keys <-chan rune, gps <-chan gps.GPSMessage, s port.Port, myI
 			}
 
 			log.Infof("GPS Message received: %+v", gpsMessage)
+
+			// make json:
+			initChatRequest.Latf = <-gpsMessage.lat
+			initChatRequest.Longf = <-gpsMessage.long
+
+			jsonRequest, err := json.Marshal(initChatRequest)
+
+			if err != nil {
+				log.Print("Marshal Register information failed.")
+				log.Fatal(err)
+			}
+			_, err = bm.Conn.WriteToUDP(jsonRequest, bcast)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			// if _, err := bm.Conn.WriteToUDP(gpsMessage, bcast); err != nil {
+			// 	log.Error(err)
+			// 	return err
+			// }
 
 		case key, more := <-keys:
 			if !more {

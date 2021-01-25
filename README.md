@@ -139,13 +139,15 @@ On raspi #2 run
 
 ./runBATMAN2.sh
 
+NB you may need to run these commands twice!
+
 See file main.go, from https://github.com/siggy/ledmesh
 
 Based on:
 
 https://www.reddit.com/r/darknetplan/comments/68s6jp/how_to_configure_batmanadv_on_the_raspberry_pi_3/
 
-see instructions here:
+see install instructions here:
 
 https://github.com/siggy/ledmesh/blob/master/bin/bootstrap
 
@@ -165,12 +167,8 @@ just add an import directive for any new depedency in your `*.go` files, and
 
 
 All code (and go) is installed via bootstrap.
-Repos we install:
-https://github.com/siggy/ledmesh.git
-https://github.com/johnusher/ardpifi.git
 
-https://github.com/d2r2/go-i2c.git
-https://github.com/nsf/termbox-go.git
+
 
 # Arduino CLI install
 
@@ -180,7 +178,7 @@ https://siytek.com/arduino-cli-raspberry-pi/
 this additional command was needed:
 arduino-cli core install arduino:avr
 
-Note the directory for the Arudion project must have the same name as the main file ()
+Note the directory for the Arudio project must have the same name as the main file .ino.
 
 Tested with Aurdion Uno and Aurdion clone: "Nano V3 | ATMEL ATmega328P AVR Microcontroller | CH340-Chip".
 The Uno shows on port ttyACM0 and the clone on ttyUSB.
