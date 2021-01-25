@@ -28,7 +28,7 @@ func InitWeb(webAddr string) *Web {
 		serveWs(hub, w, r)
 	})
 	go func() {
-		err := http.ListenAndServe(webAddr, nil)
+		err := http.ListenAndServe(webAddr, nil) // "192.168.1.1:8080"
 		if err != nil {
 			log.Fatal("ListenAndServe: ", err)
 		}

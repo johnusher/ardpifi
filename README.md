@@ -2,7 +2,9 @@
 
 # johnusher/ardpifi Summary
 
-Mesh network with Raspis to control Arduino controlled LED strips.
+Mesh network with Raspis to control Arduino controlled LED strips using GPS and accelerometers.
+
+A  webserver on the pi provides a bi-directional UI (currently only via ethernet SSH).
 
 LED code can be updated, compiled and flashed locally via USB from Raspi to Arduino.
 
@@ -13,13 +15,23 @@ We install everything now with /bin/bootstrap (not tested!!)
 Mesh code from: https://github.com/siggy/ledmesh
 
 ## Hardware set-up
-Connect Arduino Uno (also Nano clone tested) to Raspi 3 via USB
-Run the go script, and keyboard numbers will control LED sequence on the NeoPixel strip.
-LED sequence can be programmed on the Raspi, compiled using arduino-cli, and flashed from the Raspi.
+Connect Arduino Uno (also Nano clone tested) to Raspi 3 via USB. Programmable NeoPixelLED stips connected to Arduino and should be powered seperately:
+https://www.christians-shop.de/Nano-V3-developer-board-for-Arduino-IDE-ATMEL-ATmega328P-AVR-Microcontroller-CH340-Chip-Christians-Technikshop
+
+NEO-6M GPS module connect with GPIO serial (uses /dev/ttyS0, you need to disable serial console output, and disable bluetooth.):
+https://www.amazon.de/dp/B088LR3488/ref=pe_3044161_185740101_TE_item
+
+LCD 1602 I2C Module | 16x2 conected via I2C: https://www.christians-shop.de/Set-LCD-1602-I2C-Module-16x2-Figures-Illumination-Blue-I2C-Module-for-Arduino
+
+There are "no harware" options for running without LCD or GPS.
+
+Run the go script, and keyboard numbers will send a command to the mesh network, eg controlling LED sequence on the LED strip.
+
+LED sequences can be programmed on the Raspi, compiled using arduino-cli, and flashed from the Raspi.
 
 
 ## Upcoming attractions:
--integrate the mesh network to allow multiple Raspis to communicate and change the LED show, sync'd on all devices.
+-send GPS on the mesh so devices can work out relative baring (using magnetometer compass).
 -accelerometer/ gyro control using I2C bus.
 
 
