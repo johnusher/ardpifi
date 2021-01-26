@@ -14,11 +14,13 @@ type ReadBATMAN struct {
 	messages chan<- []byte
 	FarEndIP *net.IP
 	Conn     *net.UDPConn
+	log      *log.Entry
 }
 
 const (
-	port      = 4200
-	msgSize   = net.IPv4len + 4 // IP + uint32
+	port = 4200
+	// msgSize   = net.IPv4len + 4 // IP + uint32
+	msgSize   = 1000 // IP + uint32
 	interval  = 1 * time.Second
 	ifaceName = "bat0" // rpi
 	// ifaceName = "en0" // pc
@@ -68,6 +70,10 @@ func Init(messages chan<- []byte, noHardware bool, bcastIP net.IP) (*ReadBATMAN,
 		messages,
 		nil,
 		conn,
+		log.WithFields(log.Fields{
+			"package": "readBATMAN",
+			"bcastIP": bcastIP,
+		}),
 	}, nil
 }
 
@@ -76,9 +82,9 @@ func (k *ReadBATMAN) Run() error {
 		close(k.messages)
 	}()
 
-	log.Info("LEDMesh starting up")
+	k.log.Info("LEDMesh starting up")
 
-	log.Infof("Listening as %+v", k.Conn.LocalAddr().(*net.UDPAddr))
+	k.log.Infof("Listening as %+v", k.Conn.LocalAddr().(*net.UDPAddr))
 
 	buffIn := make([]byte, msgSize) // received via BATMAM
 	// buffOut := make([]byte, msgSize) // sent to batman
@@ -90,24 +96,25 @@ func (k *ReadBATMAN) Run() error {
 	for {
 		n, addr, err := k.Conn.ReadFromUDP(buffIn)
 		if err != nil {
-			log.Errorf("ReadFromUDP failed with %s", err)
+			k.log.Errorf("ReadFromUDP failed with %s", err)
 			continue
 		}
 
-		if n != msgSize {
-			log.Errorf("Received unexpected message length from %+v: %d", addr, n)
+		if n > msgSize {
+			k.log.Errorf("Received unexpected message length from %+v: %d", addr, n)
 			continue
 		}
 
-		pings := uint32(buffIn[4]) +
-			uint32(buffIn[5])<<8 +
-			uint32(buffIn[6])<<16 +
-			uint32(buffIn[7])<<24
-			// 4 bytes
+		// pings := uint32(buffIn[4]) +
+		// 	uint32(buffIn[5])<<8 +
+		// 	uint32(buffIn[6])<<16 +
+		// 	uint32(buffIn[7])<<24
+		// 	// 4 bytes
+		msg := buffIn[0:n]
 
-		log.Infof("%+v: %s: %d", addr, net.IP(buffIn[0:4]), pings)
+		k.log.Infof("received: %s", string(msg))
 
-		k.messages <- buffIn // send to output
+		k.messages <- buffIn[0:n] // send to output
 		// k.FarEndIP = net.IP(buffIn[0:4])
 	}
 }

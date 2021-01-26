@@ -21,9 +21,9 @@ type GPS interface {
 }
 
 type GPSMessage struct {
-	lat        float64
-	long       float64
-	fixQuality uint16 // Horizontal Dilution of Precision (HDOP). Relative accuracy of horizontal position. 1 = ideal, >20 = poor
+	Lat        float64
+	Long       float64
+	FixQuality uint16 // Horizontal Dilution of Precision (HDOP). Relative accuracy of horizontal position. 1 = ideal, >20 = poor
 }
 
 type gps struct {
@@ -88,9 +88,9 @@ func (g *gps) Run() error {
 				fixQuality, _ := strconv.ParseInt(gps.fixQuality, 10, 16)
 
 				g.gps <- GPSMessage{
-					lat:        latitudeF,
-					long:       longitudeF,
-					fixQuality: uint16(fixQuality),
+					Lat:        latitudeF,
+					Long:       longitudeF,
+					FixQuality: uint16(fixQuality),
 				}
 
 				// log.Infof("LAtitude =  %s. Longitude = %s", latitude, longitude)

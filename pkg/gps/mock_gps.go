@@ -42,9 +42,9 @@ func (m *mockGPS) Run() error {
 			m.log.Infof("Sending %f %f %d", lat, long, fixQuality)
 
 			m.gps <- GPSMessage{
-				lat:        lat,
-				long:       long,
-				fixQuality: fixQuality,
+				Lat:        lat,
+				Long:       long,
+				FixQuality: fixQuality,
 			}
 		}
 	}

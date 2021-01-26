@@ -32,8 +32,8 @@ import (
 )
 
 const (
-	batPort   = 4200
-	msgSize   = net.IPv4len + 4 // IP + uint32
+	batPort = 4200
+	// msgSize   = net.IPv4len + 4 // IP + uint32
 	interval  = 1 * time.Second
 	ifaceName = "bat0" // rpi
 	// ifaceName = "en0" // pc
@@ -46,13 +46,16 @@ type ChatRequest struct {
 	Latf  float64
 	Longf float64
 	ID    string
+	Key   rune
 }
 
 func main() {
+	raspID := flag.String("rasp-id", "raspi 1", "unique raspberry pi ID")
 	webAddr := flag.String("web-addr", ":8080", "address to serve web on")
 	noHardware := flag.Bool("no-hardware", false, "run without hardware dependencies")
 	noLCD := flag.Bool("no-lcd", false, "run without lcd display")
 	logLevel := flag.String("log-level", "info", "log level, must be one of: panic, fatal, error, warn, info, debug, trace")
+
 	flag.Parse()
 
 	level, err := log.ParseLevel(*logLevel)
@@ -190,10 +193,10 @@ func main() {
 	errs := make(chan error)
 
 	go func() {
-		errs <- messageLoop(messages, s, myIP, lcd, web)
+		errs <- messageLoop(messages, s, *raspID, lcd, web)
 	}()
 	go func() {
-		errs <- broadcastLoop(keys, gpsChan, s, myIP, bcastIP, bm)
+		errs <- broadcastLoop(keys, gpsChan, s, *raspID, bcastIP, bm)
 	}()
 	go func() {
 		// handle key presses from web, send to messages channel
@@ -219,30 +222,33 @@ func main() {
 	}
 }
 
-func messageLoop(messages <-chan []byte, s port.Port, myIP net.IP, lcd lcd.LCD, web *web.Web) error {
+func messageLoop(messages <-chan []byte, s port.Port, raspID string, lcd lcd.LCD, web *web.Web) error {
 	log.Info("Starting message loop")
 
 	for {
 		// listen on the keys channel for key presses AND listen for new BATMAN message
 		message, _ := <-messages
 
-		if len(message) != msgSize {
-			log.Errorf("Received unexpected message length %d, expected %d: %x", len(message), msgSize, message)
-			continue
+		jsonMessage := ChatRequest{}
+
+		// make json:
+		err := json.Unmarshal(message, &jsonMessage)
+		if err != nil {
+			log.Errorf("Unmarshal failed: %s", err)
+			return err
 		}
+		// ip := net.IP(message[0:4])
+		// pings := uint32(message[4]) +
+		// 	uint32(message[5])<<8 +
+		// 	uint32(message[6])<<16 +
+		// 	uint32(message[7])<<24
 
-		ip := net.IP(message[0:4])
-		pings := uint32(message[4]) +
-			uint32(message[5])<<8 +
-			uint32(message[6])<<16 +
-			uint32(message[7])<<24
-
-		if myIP.Equal(net.IP(message[0:4])) {
-			msg := fmt.Sprintf("received message from my own IP: %s / %s", ip, string(pings))
+		if jsonMessage.ID == raspID {
+			msg := fmt.Sprintf("received message from self: %+v", jsonMessage)
 			log.Info(msg)
 			web.Render(msg)
 		} else {
-			msg := fmt.Sprintf("received message from other IP: %s / %s", ip, string(pings))
+			msg := fmt.Sprintf("received message from other raspi: %s", jsonMessage)
 			log.Info(msg)
 			web.Render(msg)
 
@@ -271,22 +277,15 @@ func messageLoop(messages <-chan []byte, s port.Port, myIP net.IP, lcd lcd.LCD, 
 	}
 }
 
-func broadcastLoop(keys <-chan rune, gps <-chan gps.GPSMessage, s port.Port, myIP net.IP, bcastIP net.IP, bm *readBATMAN.ReadBATMAN) error {
+func broadcastLoop(keys <-chan rune, gps <-chan gps.GPSMessage, s port.Port, raspID string, bcastIP net.IP, bm *readBATMAN.ReadBATMAN) error {
 	log.Info("Starting key loop")
 
 	// buf := make([]byte, 5)   // this was used for serial return from duino
 
-	buffOut := make([]byte, msgSize) // sent to mesh
-	copy(buffOut[0:4], myIP)
+	// buffOut := make([]byte, msgSize) // sent to mesh
+	// copy(buffOut[0:4], myIP)
 
 	bcast := &net.UDPAddr{Port: batPort, IP: bcastIP}
-
-	// make struct we send over udp:
-	initChatRequest := ChatRequest{
-		Latf:  10.0,
-		Longf: 25.0,
-		ID:    "raspi 1",
-	}
 
 	for {
 		select {
@@ -300,19 +299,23 @@ func broadcastLoop(keys <-chan rune, gps <-chan gps.GPSMessage, s port.Port, myI
 
 			log.Infof("GPS Message received: %+v", gpsMessage)
 
+			// make struct we send over udp:
+			initChatRequest := ChatRequest{
+				Latf:  gpsMessage.Lat,
+				Longf: gpsMessage.Long,
+				ID:    raspID,
+			}
+
 			// make json:
-			initChatRequest.Latf = <-gpsMessage.lat
-			initChatRequest.Longf = <-gpsMessage.long
-
 			jsonRequest, err := json.Marshal(initChatRequest)
-
 			if err != nil {
-				log.Print("Marshal Register information failed.")
-				log.Fatal(err)
+				log.Errorf("Marshal Register information failed: %s", err)
+				return err
 			}
 			_, err = bm.Conn.WriteToUDP(jsonRequest, bcast)
 			if err != nil {
-				log.Fatal(err)
+				log.Error(err)
+				return err
 			}
 
 			// if _, err := bm.Conn.WriteToUDP(gpsMessage, bcast); err != nil {
@@ -329,25 +332,42 @@ func broadcastLoop(keys <-chan rune, gps <-chan gps.GPSMessage, s port.Port, myI
 			}
 			log.Infof("key pressed: %s / %d / 0x%X / 0%o \n", string(key), key, key, key)
 
-			// now send the key over BATMAN:
-			// buf := make([]byte, 1)
-			// _ = utf8.EncodeRune(buf, key)
-			myPings := uint32(key) // convert rune to uint32
-			// write
-			// if time.Now().After(pingAt) {
-			buffOut[4] = byte(myPings & 0x000000ff)
-			buffOut[5] = byte(myPings & 0x0000ff00 >> 8)
-			buffOut[6] = byte(myPings & 0x00ff0000 >> 16)
-			buffOut[7] = byte(myPings & 0xff000000 >> 24)
-			if _, err := bm.Conn.WriteToUDP(buffOut, bcast); err != nil {
+			initChatRequest := ChatRequest{
+				ID:  raspID,
+				Key: key,
+			}
+
+			// make json:
+			jsonRequest, err := json.Marshal(initChatRequest)
+			if err != nil {
+				log.Errorf("Marshal Register information failed: %s", err)
+				return err
+			}
+			_, err = bm.Conn.WriteToUDP(jsonRequest, bcast)
+			if err != nil {
 				log.Error(err)
 				return err
 			}
-			// pingAt = time.Now().Add(interval)
-			myPings++
+
+			// // now send the key over BATMAN:
+			// // buf := make([]byte, 1)
+			// // _ = utf8.EncodeRune(buf, key)
+			// myPings := uint32(key) // convert rune to uint32
+			// // write
+			// // if time.Now().After(pingAt) {
+			// buffOut[4] = byte(myPings & 0x000000ff)
+			// buffOut[5] = byte(myPings & 0x0000ff00 >> 8)
+			// buffOut[6] = byte(myPings & 0x00ff0000 >> 16)
+			// buffOut[7] = byte(myPings & 0xff000000 >> 24)
+			// if _, err := bm.Conn.WriteToUDP(buffOut, bcast); err != nil {
+			// 	log.Error(err)
+			// 	return err
+			// }
+			// // pingAt = time.Now().Add(interval)
+			// myPings++
 
 			// write to duino: NB maybe insert a wait before here so all pi's send the new duino command at a similar time
-			_, err := s.Write([]byte(string(key)))
+			_, err = s.Write([]byte(string(key)))
 			if err != nil {
 				log.Errorf("2. failed to write to serial port: %s", err)
 				return err
