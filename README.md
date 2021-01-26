@@ -216,14 +216,14 @@ On raspi #1 run
 
 ```bash
 ./runBATMAN.sh
-go run JU_led_mesh.go --web-addr :8080 -no-lcd  -log-level debug
+go run JU_led_mesh.go -rasp-id=wee --web-addr :8080 -no-lcd -log-level debug
 ```
 
 On raspi #2 run
 
 ```bash
 ./runBATMAN2.sh
-go run JU_led_mesh.go --web-addr :8081 -no-lcd  -log-level debug
+go run JU_led_mesh.go -rasp-id=poo --web-addr :8081 -no-lcd -log-level debug
 ```
 
 Press any key, sent to mesh, and if it is a 0 or 1, we change led pattern

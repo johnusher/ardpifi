@@ -107,7 +107,7 @@ func main() {
 	s, err := port.OpenPort(c, *noHardware)
 	if err != nil {
 		log.Errorf("OpenPort error: %s", err)
-		//return
+		return
 	}
 
 	// When connecting to an older revision Arduino, you need to wait
@@ -249,27 +249,41 @@ func messageLoop(messages <-chan []byte, s port.Port, raspID string, lcd lcd.LCD
 			// log.Info(msg)
 			// web.Render(msg)
 		} else {
-			msg := fmt.Sprintf("received message from other raspi: %s", jsonMessage)
+
+			//  message from other:
+			msg := fmt.Sprintf("received message from other: %+v", jsonMessage)
 			log.Info(msg)
 			web.Render(msg)
 
-			// write to duino:
-			s.Flush()
-			_, err := s.Write([]byte(string(message[4]))) // note we only send first byte
-			if err != nil {
-				log.Errorf("3. failed to write to serial port: %s", err)
-				//return err
-			}
-			s.Flush()
+			if string(jsonMessage.Key) != "x" {
 
-			// write to LCD:
-			lcd.Clear()
-			lcd.SetPosition(0, 0)
-			// fmt.Fprint(lcd, t.Format("Message received:"))
-			_ = lcd.ShowMessage("Message received:", device.SHOW_LINE_1)
-			lcd.SetPosition(1, 0)
-			// fmt.Fprint(lcd, t.Format(string(message[4])))
-			_ = lcd.ShowMessage(string(message[4]), device.SHOW_LINE_2)
+				log.Infof("key from other %s \n", (string(jsonMessage.Key))) // this doesnt point to the "Key" element of the struct!
+
+				// msg = fmt.Sprintf("received message from other raspi: %s", jsonMessage)
+				// log.Info(msg)
+				// web.Render(msg)
+
+				// write to duino:
+				s.Flush()
+				_, err := s.Write([]byte(string(jsonMessage.Key)))
+				// message[4] gives me the letter "t", perhaps as message = {Latf:52.534587 Longf:13.347233 ID:raspi 1 Key:0}
+
+				if err != nil {
+					log.Errorf("3. failed to write to serial port: %s", err)
+					//return err
+				}
+				s.Flush()
+
+			}
+
+			// // write to LCD:
+			// lcd.Clear()
+			// lcd.SetPosition(0, 0)
+			// // fmt.Fprint(lcd, t.Format("Message received:"))
+			// _ = lcd.ShowMessage("Message received:", device.SHOW_LINE_1)
+			// lcd.SetPosition(1, 0)
+			// // fmt.Fprint(lcd, t.Format(string(message[4])))
+			// _ = lcd.ShowMessage(string(message[4]), device.SHOW_LINE_2)
 
 		}
 
@@ -305,6 +319,7 @@ func broadcastLoop(keys <-chan rune, gps <-chan gps.GPSMessage, s port.Port, ras
 				Latf:  gpsMessage.Lat,
 				Longf: gpsMessage.Long,
 				ID:    raspID,
+				Key:   'x',
 			}
 
 			// make json:
@@ -373,6 +388,7 @@ func broadcastLoop(keys <-chan rune, gps <-chan gps.GPSMessage, s port.Port, ras
 				log.Errorf("2. failed to write to serial port: %s", err)
 				return err
 			}
+
 			// // read response from duin (not necessary)
 			// n, err = s.Read(buf)
 			// if err != nil {
@@ -386,10 +402,8 @@ func broadcastLoop(keys <-chan rune, gps <-chan gps.GPSMessage, s port.Port, ras
 }
 
 // findArduino looks for the file that represents the Arduino
-// serial connection. Returns the fully qualified path to the
-// device if we are able to find a likely candidate for an
-// Arduino, otherwise an empty string if unable to find
-// something that 'looks' like an Arduino device.
+// serial connection.
+
 func findArduino() string {
 	contents, _ := ioutil.ReadDir("/dev")
 
@@ -401,23 +415,6 @@ func findArduino() string {
 		if strings.Contains(f.Name(), "ttyUSB") || strings.Contains(f.Name(), "ttyACM0") {
 			fmt.Println("Duino found at /dev/", f.Name())
 			return "/dev/" + f.Name()
-		}
-	}
-
-	// Have not been able to find a USB device that 'looks'
-	// like an Arduino.
-	return ""
-}
-
-func findUSBKeyboard() string {
-	contents, _ := ioutil.ReadDir("/dev/input")
-
-	// Look for what is mostly likely the local USB KB
-
-	for _, f := range contents {
-		if strings.Contains(f.Name(), "event") {
-			fmt.Println("USB KB found at /dev/input/", f.Name())
-			return "/dev/input/" + f.Name()
 		}
 	}
 
