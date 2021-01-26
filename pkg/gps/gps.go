@@ -101,7 +101,7 @@ func (g *gps) Run() error {
 
 			} else {
 				// fmt.Println("no gps fix available")
-				log.Infof("low fixQuality")
+				log.Infof("low fixQuality %s \n", gps.fixQuality)
 			}
 			time.Sleep(2 * time.Second)
 		} else {

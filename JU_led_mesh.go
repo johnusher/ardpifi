@@ -244,9 +244,10 @@ func messageLoop(messages <-chan []byte, s port.Port, raspID string, lcd lcd.LCD
 		// 	uint32(message[7])<<24
 
 		if jsonMessage.ID == raspID {
-			msg := fmt.Sprintf("received message from self: %+v", jsonMessage)
-			log.Info(msg)
-			web.Render(msg)
+			// message from self:
+			// msg := fmt.Sprintf("received message from self: %+v", jsonMessage)
+			// log.Info(msg)
+			// web.Render(msg)
 		} else {
 			msg := fmt.Sprintf("received message from other raspi: %s", jsonMessage)
 			log.Info(msg)
@@ -297,7 +298,7 @@ func broadcastLoop(keys <-chan rune, gps <-chan gps.GPSMessage, s port.Port, ras
 				return nil
 			}
 
-			log.Infof("GPS Message received: %+v", gpsMessage)
+			// log.Infof("Local GPS Message received: %+v", gpsMessage)
 
 			// make struct we send over udp:
 			initChatRequest := ChatRequest{

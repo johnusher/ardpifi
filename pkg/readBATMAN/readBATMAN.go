@@ -110,9 +110,9 @@ func (k *ReadBATMAN) Run() error {
 		// 	uint32(buffIn[6])<<16 +
 		// 	uint32(buffIn[7])<<24
 		// 	// 4 bytes
-		msg := buffIn[0:n]
+		// msg := buffIn[0:n]
 
-		k.log.Infof("received: %s", string(msg))
+		//k.log.Infof("received: %s", string(msg))
 
 		k.messages <- buffIn[0:n] // send to output
 		// k.FarEndIP = net.IP(buffIn[0:4])
