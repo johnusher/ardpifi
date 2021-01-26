@@ -107,7 +107,7 @@ func main() {
 	s, err := port.OpenPort(c, *noHardware)
 	if err != nil {
 		log.Errorf("OpenPort error: %s", err)
-		return
+		//return
 	}
 
 	// When connecting to an older revision Arduino, you need to wait
@@ -258,7 +258,7 @@ func messageLoop(messages <-chan []byte, s port.Port, raspID string, lcd lcd.LCD
 			_, err := s.Write([]byte(string(message[4]))) // note we only send first byte
 			if err != nil {
 				log.Errorf("3. failed to write to serial port: %s", err)
-				return err
+				//return err
 			}
 			s.Flush()
 

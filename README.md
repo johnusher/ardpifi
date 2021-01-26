@@ -21,6 +21,8 @@ https://www.christians-shop.de/Nano-V3-developer-board-for-Arduino-IDE-ATMEL-ATm
 NEO-6M GPS module connect with GPIO serial (uses /dev/ttyS0, you need to disable serial console output, and disable bluetooth.):
 https://www.amazon.de/dp/B088LR3488/ref=pe_3044161_185740101_TE_item
 
+sudo raspi-config, select interfacing options > serial to disable shell, ebnable hardware, reboot
+
 LCD 1602 I2C Module | 16x2 conected via I2C: https://www.christians-shop.de/Set-LCD-1602-I2C-Module-16x2-Figures-Illumination-Blue-I2C-Module-for-Arduino
 
 There are "no harware" options for running without LCD or GPS.
@@ -204,7 +206,7 @@ arduino-cli compile --fqbn arduino:avr:diecimila:cpu=atmega328 duino_src
 
 arduino-cli upload -p /dev/ttyUSB0 --fqbn arduino:avr:diecimila:cpu=atmega328 duino_src
 
-
+arduino-cli upload -p /dev/ttyACM0 --fqbn arduino:avr:diecimila:cpu=atmega328 duino_src
 
 
 ## Run
