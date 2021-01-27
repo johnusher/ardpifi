@@ -227,6 +227,10 @@ func main() {
 func messageLoop(messages <-chan []byte, duino port.Port, raspID string, lcd lcd.LCD, web *web.Web) error {
 	log.Info("Starting message loop")
 
+	// allPIs keeps track of the last message received from each PI, keyed by
+	// raspID
+	allPIs := map[string]ChatRequest{}
+
 	for {
 		// listen on the keys channel for key presses AND listen for new BATMAN message
 		message, _ := <-messages
@@ -239,6 +243,10 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, lcd lcd
 			log.Errorf("Unmarshal failed: %s", err)
 			return err
 		}
+
+		allPIs[jsonMessage.ID] = jsonMessage
+		log.Infof("allPIs: %+v", allPIs)
+
 		// ip := net.IP(message[0:4])
 		// pings := uint32(message[4]) +
 		// 	uint32(message[5])<<8 +
@@ -295,7 +303,7 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, lcd lcd
 }
 
 func broadcastLoop(keys <-chan rune, gps <-chan gps.GPSMessage, duino port.Port, raspID string, bcastIP net.IP, bm *readBATMAN.ReadBATMAN) error {
-	log.Info("Starting key loop")
+	log.Info("Starting broadcast loop")
 
 	// buf := make([]byte, 5)   // this was used for serial return from duino
 
