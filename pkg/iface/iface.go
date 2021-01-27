@@ -15,8 +15,8 @@ type mockInterface struct {
 	log *log.Entry
 }
 
-func InterfaceByName(name string, noHardware bool, mockBcastIP net.IP) (Interface, error) {
-	if noHardware {
+func InterfaceByName(name string, mock bool, mockBcastIP net.IP) (Interface, error) {
+	if mock {
 		return &mockInterface{
 			ip: mockBcastIP,
 			log: log.WithFields(log.Fields{

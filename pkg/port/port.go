@@ -20,8 +20,8 @@ type mockPort struct {
 	log        *log.Entry
 }
 
-func OpenPort(c *serial.Config, noHardware bool) (Port, error) {
-	if noHardware {
+func OpenPort(c *serial.Config, mock bool) (Port, error) {
+	if mock {
 		return &mockPort{
 			log: log.WithFields(log.Fields{
 				"mock":   "port",

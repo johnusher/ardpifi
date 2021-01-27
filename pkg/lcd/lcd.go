@@ -25,8 +25,8 @@ type mockLCD struct {
 	log        *log.Entry
 }
 
-func New(i2c *i2c.I2C, noHardware bool) (LCD, error) {
-	if noHardware {
+func New(i2c *i2c.I2C, mock bool) (LCD, error) {
+	if mock {
 		return &mockLCD{
 			log: log.WithFields(log.Fields{
 				"mock": "lcd",

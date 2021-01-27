@@ -26,7 +26,7 @@ const (
 	// ifaceName = "en0" // pc
 )
 
-func Init(messages chan<- []byte, noHardware bool, bcastIP net.IP) (*ReadBATMAN, error) {
+func Init(messages chan<- []byte, mock bool, bcastIP net.IP) (*ReadBATMAN, error) {
 	// err := termbox.Init()
 	// if err != nil {
 	// 	return nil, err
@@ -35,7 +35,7 @@ func Init(messages chan<- []byte, noHardware bool, bcastIP net.IP) (*ReadBATMAN,
 	myIP := net.IP{}
 	// myPings := uint32(0)
 
-	i, err := iface.InterfaceByName(ifaceName, noHardware, bcastIP)
+	i, err := iface.InterfaceByName(ifaceName, mock, bcastIP)
 	if err != nil {
 		log.Errorf("InterfaceByName failed: %s", err)
 		return nil, err

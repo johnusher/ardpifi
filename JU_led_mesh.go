@@ -52,7 +52,9 @@ type ChatRequest struct {
 func main() {
 	raspID := flag.String("rasp-id", "raspi 1", "unique raspberry pi ID")
 	webAddr := flag.String("web-addr", ":8080", "address to serve web on")
-	noHardware := flag.Bool("no-hardware", false, "run without hardware dependencies")
+	noBatman := flag.Bool("no-batman", false, "run without batman network")
+	noDuino := flag.Bool("no-duino", false, "run without arduino")
+	noGPS := flag.Bool("no-gps", false, "run without gps")
 	noLCD := flag.Bool("no-lcd", false, "run without lcd display")
 	logLevel := flag.String("log-level", "info", "log level, must be one of: panic, fatal, error, warn, info, debug, trace")
 
@@ -92,7 +94,7 @@ func main() {
 	log.Infof("web: %+v", web)
 
 	bcastIP := net.ParseIP(batBcast)
-	if *noHardware {
+	if *noBatman {
 		bcastIP = net.ParseIP(localBcast)
 	}
 
@@ -104,7 +106,7 @@ func main() {
 	// c := &serial.Config{Name: findArduino(), Baud: 19200, ReadTimeout: time.Second * 1}
 	c := &serial.Config{Name: findArduino(), Baud: 115200, ReadTimeout: time.Second * 1}
 
-	s, err := port.OpenPort(c, *noHardware)
+	duino, err := port.OpenPort(c, *noDuino)
 	if err != nil {
 		log.Errorf("OpenPort error: %s", err)
 		return
@@ -129,7 +131,7 @@ func main() {
 
 	myIP := net.IP{}
 
-	i, err := iface.InterfaceByName(ifaceName, *noHardware, bcastIP)
+	i, err := iface.InterfaceByName(ifaceName, *noBatman, bcastIP)
 	if err != nil {
 		log.Errorf("InterfaceByName failed: %s", err)
 		return
@@ -171,14 +173,14 @@ func main() {
 
 	// init BATMAN:
 	messages := make(chan []byte)
-	bm, err := readBATMAN.Init(messages, *noHardware, bcastIP)
+	bm, err := readBATMAN.Init(messages, *noBatman, bcastIP)
 	if err != nil {
 		log.Errorf("failed to initialize readBATMAN: %s", err)
 		return
 	}
 
 	gpsChan := make(chan gps.GPSMessage)
-	g, err := gps.Init(gpsChan, *noHardware)
+	g, err := gps.Init(gpsChan, *noGPS)
 	if err != nil {
 		log.Errorf("failed to initialize gps: %s", err)
 		return
@@ -193,10 +195,10 @@ func main() {
 	errs := make(chan error)
 
 	go func() {
-		errs <- messageLoop(messages, s, *raspID, lcd, web)
+		errs <- messageLoop(messages, duino, *raspID, lcd, web)
 	}()
 	go func() {
-		errs <- broadcastLoop(keys, gpsChan, s, *raspID, bcastIP, bm)
+		errs <- broadcastLoop(keys, gpsChan, duino, *raspID, bcastIP, bm)
 	}()
 	go func() {
 		// handle key presses from web, send to messages channel
@@ -222,7 +224,7 @@ func main() {
 	}
 }
 
-func messageLoop(messages <-chan []byte, s port.Port, raspID string, lcd lcd.LCD, web *web.Web) error {
+func messageLoop(messages <-chan []byte, duino port.Port, raspID string, lcd lcd.LCD, web *web.Web) error {
 	log.Info("Starting message loop")
 
 	for {
@@ -264,15 +266,15 @@ func messageLoop(messages <-chan []byte, s port.Port, raspID string, lcd lcd.LCD
 				// web.Render(msg)
 
 				// write to duino:
-				s.Flush()
-				_, err := s.Write([]byte(string(jsonMessage.Key)))
+				duino.Flush()
+				_, err := duino.Write([]byte(string(jsonMessage.Key)))
 				// message[4] gives me the letter "t", perhaps as message = {Latf:52.534587 Longf:13.347233 ID:raspi 1 Key:0}
 
 				if err != nil {
 					log.Errorf("3. failed to write to serial port: %s", err)
 					//return err
 				}
-				s.Flush()
+				duino.Flush()
 
 			}
 
@@ -292,7 +294,7 @@ func messageLoop(messages <-chan []byte, s port.Port, raspID string, lcd lcd.LCD
 	}
 }
 
-func broadcastLoop(keys <-chan rune, gps <-chan gps.GPSMessage, s port.Port, raspID string, bcastIP net.IP, bm *readBATMAN.ReadBATMAN) error {
+func broadcastLoop(keys <-chan rune, gps <-chan gps.GPSMessage, duino port.Port, raspID string, bcastIP net.IP, bm *readBATMAN.ReadBATMAN) error {
 	log.Info("Starting key loop")
 
 	// buf := make([]byte, 5)   // this was used for serial return from duino
@@ -383,7 +385,7 @@ func broadcastLoop(keys <-chan rune, gps <-chan gps.GPSMessage, s port.Port, ras
 			// myPings++
 
 			// write to duino: NB maybe insert a wait before here so all pi's send the new duino command at a similar time
-			_, err = s.Write([]byte(string(key)))
+			_, err = duino.Write([]byte(string(key)))
 			if err != nil {
 				log.Errorf("2. failed to write to serial port: %s", err)
 				return err

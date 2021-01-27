@@ -31,8 +31,8 @@ type gps struct {
 	SerialPort io.ReadWriteCloser // i was trying to pass this out of init and then back in to run
 }
 
-func Init(gpsChan chan<- GPSMessage, noHardware bool) (GPS, error) {
-	if noHardware {
+func Init(gpsChan chan<- GPSMessage, mock bool) (GPS, error) {
+	if mock {
 		return initMockGPS(gpsChan)
 	}
 
