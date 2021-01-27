@@ -40,6 +40,10 @@ const (
 
 	batBcast   = "172.27.255.255"
 	localBcast = "127.0.0.1"
+
+	// piTTL defines how long we wait to expire a PI if we haven't received a
+	// message from it.
+	piTTL = 30 * time.Second
 )
 
 type ChatRequest struct {
@@ -47,6 +51,21 @@ type ChatRequest struct {
 	Longf float64
 	ID    string
 	Key   rune
+}
+
+type chatRequestWithTimestamp struct {
+	ChatRequest
+	lastMessageReceived time.Time
+}
+
+// String satisfies the Stringer interface
+func (c ChatRequest) String() string {
+	return fmt.Sprintf("id: %s, coords: (%f, %f)", c.ID, c.Latf, c.Longf)
+}
+
+// String satisfies the Stringer interface
+func (c chatRequestWithTimestamp) String() string {
+	return fmt.Sprintf("%s, age: %s]", c.ChatRequest, time.Now().Sub(c.lastMessageReceived))
 }
 
 func main() {
@@ -229,7 +248,7 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, lcd lcd
 
 	// allPIs keeps track of the last message received from each PI, keyed by
 	// raspID
-	allPIs := map[string]ChatRequest{}
+	allPIs := map[string]chatRequestWithTimestamp{}
 
 	for {
 		// listen on the keys channel for key presses AND listen for new BATMAN message
@@ -244,8 +263,29 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, lcd lcd
 			return err
 		}
 
-		allPIs[jsonMessage.ID] = jsonMessage
-		log.Infof("allPIs: %+v", allPIs)
+		if _, ok := allPIs[jsonMessage.ID]; !ok {
+			log.Infof("new PI detected: %+v", jsonMessage)
+		}
+
+		now := time.Now()
+
+		allPIs[jsonMessage.ID] = chatRequestWithTimestamp{
+			ChatRequest:         jsonMessage,
+			lastMessageReceived: now,
+		}
+
+		// remove any PIs we haven't heard from in a while
+		for k, v := range allPIs {
+			if v.lastMessageReceived.Add(piTTL).Before(now) {
+				log.Infof("deleting expired pi: %+v", v)
+				delete(allPIs, k)
+			}
+		}
+
+		log.Infof("current PIs: %d", len(allPIs))
+		for _, v := range allPIs {
+			log.Infof("  %s", v)
+		}
 
 		// ip := net.IP(message[0:4])
 		// pings := uint32(message[4]) +
