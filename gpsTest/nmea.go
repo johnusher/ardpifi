@@ -52,6 +52,7 @@ func ParseDegrees(value string, direction string) (string, error) {
         decimal *= -1
     }
     return fmt.Sprintf("%.6f", decimal), nil
+    
 }
 
 func (nmea NMEA) GetLatitude() (string, error) {

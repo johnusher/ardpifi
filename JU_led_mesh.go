@@ -9,6 +9,7 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"net"
 	"os"
 	"os/signal"
@@ -44,6 +45,8 @@ const (
 	// piTTL defines how long we wait to expire a PI if we haven't received a
 	// message from it.
 	piTTL = 30 * time.Second
+
+	Pi = 3.14159265358979323846264338327950288419716939937510582097494459 // https://oeis.org/A000796
 )
 
 type ChatRequest struct {
@@ -287,14 +290,32 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, lcd lcd
 			log.Infof("  %s", v)
 		}
 
+		if len(allPIs) > 1 {
+			// we have >1 Pis, find bearing and distance from local to each pi
+
+			// NB should we also do this when we have a new estimate for our local GPS location?
+
+			// lat1 and long1 should be for the current pi. this is always first in the map
+			lat1 := jsonMessage.Latf
+			long1 := jsonMessage.Longf
+
+			for _, _ = range allPIs { // how do you make this 	for _, _ = range allPIs -1{  ?? ie ignore first element?
+
+				// this should iterate over the map allPIs
+				lat2 := jsonMessage.Latf
+				long2 := jsonMessage.Longf
+
+				bearing, _ := calcGPSBearing(lat1, long1, lat2, long2)
+
+				log.Infof("GPS bearing to ID %s is %f", jsonMessage.ID, bearing)
+			}
+
+		}
+
 		// ip := net.IP(message[0:4])
-		// pings := uint32(message[4]) +
-		// 	uint32(message[5])<<8 +
-		// 	uint32(message[6])<<16 +
-		// 	uint32(message[7])<<24
 
 		if jsonMessage.ID == raspID {
-			// message from self:
+			// we have received message from self:
 			// msg := fmt.Sprintf("received message from self: %+v", jsonMessage)
 			// log.Info(msg)
 			// web.Render(msg)
@@ -347,9 +368,6 @@ func broadcastLoop(keys <-chan rune, gps <-chan gps.GPSMessage, duino port.Port,
 
 	// buf := make([]byte, 5)   // this was used for serial return from duino
 
-	// buffOut := make([]byte, msgSize) // sent to mesh
-	// copy(buffOut[0:4], myIP)
-
 	bcast := &net.UDPAddr{Port: batPort, IP: bcastIP}
 
 	for {
@@ -369,7 +387,7 @@ func broadcastLoop(keys <-chan rune, gps <-chan gps.GPSMessage, duino port.Port,
 				Latf:  gpsMessage.Lat,
 				Longf: gpsMessage.Long,
 				ID:    raspID,
-				Key:   'x',
+				Key:   'x', // no key has been pressed
 			}
 
 			// make json:
@@ -383,11 +401,6 @@ func broadcastLoop(keys <-chan rune, gps <-chan gps.GPSMessage, duino port.Port,
 				log.Error(err)
 				return err
 			}
-
-			// if _, err := bm.Conn.WriteToUDP(gpsMessage, bcast); err != nil {
-			// 	log.Error(err)
-			// 	return err
-			// }
 
 		case key, more := <-keys:
 			if !more {
@@ -414,23 +427,6 @@ func broadcastLoop(keys <-chan rune, gps <-chan gps.GPSMessage, duino port.Port,
 				log.Error(err)
 				return err
 			}
-
-			// // now send the key over BATMAN:
-			// // buf := make([]byte, 1)
-			// // _ = utf8.EncodeRune(buf, key)
-			// myPings := uint32(key) // convert rune to uint32
-			// // write
-			// // if time.Now().After(pingAt) {
-			// buffOut[4] = byte(myPings & 0x000000ff)
-			// buffOut[5] = byte(myPings & 0x0000ff00 >> 8)
-			// buffOut[6] = byte(myPings & 0x00ff0000 >> 16)
-			// buffOut[7] = byte(myPings & 0xff000000 >> 24)
-			// if _, err := bm.Conn.WriteToUDP(buffOut, bcast); err != nil {
-			// 	log.Error(err)
-			// 	return err
-			// }
-			// // pingAt = time.Now().Add(interval)
-			// myPings++
 
 			// write to duino: NB maybe insert a wait before here so all pi's send the new duino command at a similar time
 			_, err = duino.Write([]byte(string(key)))
@@ -472,3 +468,31 @@ func findArduino() string {
 	// like an Arduino.
 	return ""
 }
+
+func calcGPSBearing(lat1 float64, long1 float64, lat2 float64, long2 float64) (float64, error) {
+
+	// find bearing between two decimal GPS coordinates
+
+	// if lat1 == "" || long1 == "" {
+	// 	return "", errors.New("lat1 or lat2 value does not exist")
+	// }
+	// lat, _ := strconv.ParseFloat(value, 64)
+	// degrees := math.Floor(lat / 100)
+	// minutes := ((lat / 100) - math.Floor(lat/100)) * 100 / 60
+	// decimal := degrees + minutes
+
+	// if we are stradling the equartor or the Prime Meridian, we may have a problem!!
+	// todo: impliement
+	// if direction == "W" || direction == "S" {
+	//     decimal *= -1
+	// }
+
+	dy := lat2 - lat1
+	dx := math.Cos(Pi/180.0*lat1) * (long2 - long1)
+	angle := math.Atan2(dy, dx)
+	angle = angle / Pi * 180.0
+	// return int(math.Round(angle)), nil
+	return angle, nil
+}
+
+// fmt.Sprintf("%.6f", decimal), nil

@@ -230,6 +230,16 @@ Press any key, sent to mesh, and if it is a 0 or 1, we change led pattern
 
 To exit, press "q" to exit termbox, and then ctrl-c to exit the program.
 
+Flags:
+
+	raspID := flag.String("rasp-id", "raspi 1", "unique raspberry pi ID")
+	webAddr := flag.String("web-addr", ":8080", "address to serve web on")
+	noBatman := flag.Bool("no-batman", false, "run without batman network")
+	noDuino := flag.Bool("no-duino", false, "run without arduino")
+	noGPS := flag.Bool("no-gps", false, "run without gps")
+	noLCD := flag.Bool("no-lcd", false, "run without lcd display")
+	logLevel := flag.String("log-level", "info", "log level, must be one of: panic, fatal, error, warn, info, debug, trace")
+
 ### Run without hardware
 
 Run with hardware (serial, network) API calls mocked out:
