@@ -290,26 +290,27 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, lcd lcd
 			log.Infof("  %s", v)
 		}
 
-		if len(allPIs) > 1 {
-			// we have >1 Pis, find bearing and distance from local to each pi
+		if self, ok := allPIs[raspID]; ok && len(allPIs) > 1 {
+			// we have >1 Pis, including ourself, find bearing and distance from local to each pi
 
 			// NB should we also do this when we have a new estimate for our local GPS location?
 
-			// lat1 and long1 should be for the current pi. this is always first in the map
-			lat1 := jsonMessage.Latf
-			long1 := jsonMessage.Longf
+			lat1 := self.Latf
+			long1 := self.Longf
 
-			for _, _ = range allPIs { // how do you make this 	for _, _ = range allPIs -1{  ?? ie ignore first element?
+			for piID, crwt := range allPIs {
+				if piID == raspID {
+					// this is ourself, skip
+					continue
+				}
 
-				// this should iterate over the map allPIs
-				lat2 := jsonMessage.Latf
-				long2 := jsonMessage.Longf
+				lat2 := crwt.Latf
+				long2 := crwt.Longf
 
 				bearing, _ := calcGPSBearing(lat1, long1, lat2, long2)
 
-				log.Infof("GPS bearing to ID %s is %f", jsonMessage.ID, bearing)
+				log.Infof("GPS bearing to ID %s is %f", crwt.ID, bearing)
 			}
-
 		}
 
 		// ip := net.IP(message[0:4])

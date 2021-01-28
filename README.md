@@ -230,15 +230,25 @@ Press any key, sent to mesh, and if it is a 0 or 1, we change led pattern
 
 To exit, press "q" to exit termbox, and then ctrl-c to exit the program.
 
-Flags:
+### Flags
 
-	raspID := flag.String("rasp-id", "raspi 1", "unique raspberry pi ID")
-	webAddr := flag.String("web-addr", ":8080", "address to serve web on")
-	noBatman := flag.Bool("no-batman", false, "run without batman network")
-	noDuino := flag.Bool("no-duino", false, "run without arduino")
-	noGPS := flag.Bool("no-gps", false, "run without gps")
-	noLCD := flag.Bool("no-lcd", false, "run without lcd display")
-	logLevel := flag.String("log-level", "info", "log level, must be one of: panic, fatal, error, warn, info, debug, trace")
+```bash
+$ go run JU_led_mesh.go -h
+  -log-level string
+    	log level, must be one of: panic, fatal, error, warn, info, debug, trace (default "info")
+  -no-batman
+    	run without batman network
+  -no-duino
+    	run without arduino
+  -no-gps
+    	run without gps
+  -no-lcd
+    	run without lcd display
+  -rasp-id string
+    	unique raspberry pi ID (default "raspi 1")
+  -web-addr string
+    	address to serve web on (default ":8080")
+```
 
 ### Run without hardware
 
