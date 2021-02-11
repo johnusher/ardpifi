@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# based on https://github.com/siggy/ledmesh/blob/master/bin/bootstrap
+
 
 # set quiet boot
 #sudo sed -i '${s/$/ quiet loglevel=1/}' /boot/cmdline.txt
@@ -31,32 +31,8 @@ git clone https://git.open-mesh.org/batctl.git
   sudo make install
 )
 
-# Activate batman-adv
-sudo modprobe batman-adv
-# Disable and configure wlan0
-sudo ip link set wlan0 down
-# sudo ifconfig wlan0 mtu 1532
-sudo killall wpa_supplicant # ???
-sudo iwconfig wlan0 mode ad-hoc
-sudo iwconfig wlan0 essid ledmesh
-sudo iwconfig wlan0 ap any
-sudo iwconfig wlan0 channel 8
-sleep 1s
-sudo ip link set wlan0 up
-sleep 1s
-sudo batctl if add wlan0
-sleep 1s
-sudo ifconfig bat0 up
-sleep 5s
-# Use different IPv4 addresses for each device
-# This is the only change necessary to the script for
-# different devices. Make sure to indicate the number
-# of bits used for the mask.
-sudo ifconfig bat0 172.27.0.1/16
-sudo iwconfig wlan0 ap CA:B4:54:B1:5A:75
+# NB we dont test BM now: run runBATMAN.sh later  (else we will lose ssh connection with the WLAN0)
 
-# test batctl
-sudo batctl o
 
 # install Go
 wget https://dl.google.com/go/go1.15.6.linux-armv6l.tar.gz -O /tmp/go1.15.6.linux-armv6l.tar.gz
@@ -65,20 +41,12 @@ sudo tar -C /usr/local -xzf /tmp/go1.15.6.linux-armv6l.tar.gz
 
 
 # get application code
+
 mkdir -p ~/code/go/src/github.com/siggy
 git clone https://github.com/siggy/ledmesh.git ~/code/go/src/github.com/siggy/ledmesh
 
 mkdir -p ~/code/go/src/github.com/johnusher
 git clone https://github.com/johnusher/ardpifi.git ~/code/go/src/github.com/johnusher/ardpifi
-
-mkdir -p ~/code/go/src/github.com/d2r2
-git clone https://github.com/d2r2/go-i2c.git ~/code/go/src/github.com/d2r2/go-i2c
-
-mkdir -p ~/code/go/src/github.com/nsf
-git clone https://github.com/nsf/termbox-go.git ~/code/go/src/github.com/nsf/termbox-go.git
-
-mkdir -p ~/code/go/src/github.com/tarm
-git clone https://github.com/tarm/serial.git ~/code/go/src/github.com/tarm/serial
 
 
 
