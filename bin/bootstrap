@@ -49,8 +49,34 @@ mkdir -p ~/code/go/src/github.com/johnusher
 git clone https://github.com/johnusher/ardpifi.git ~/code/go/src/github.com/johnusher/ardpifi
 
 
+# configu git here!!
+
+# disable services
+sudo systemctl disable hciuart
+sudo systemctl disable bluetooth
+sudo systemctl disable plymouth
+
+# remove unnecessary packages
+sudo apt-get -y purge libx11-6 libgtk-3-common xkb-data lxde-icon-theme raspberrypi-artwork penguinspuzzle ntp plymouth*
+sudo apt-get -y autoremove
+
+sudo raspi-config nonint do_boot_behaviour B2 0
+sudo raspi-config nonint do_boot_wait 1
+sudo raspi-config nonint do_serial 1
+
+
+
+# install arduino cli:
+
+curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh
+
+
+
 
 # copy .local.bash to system, enable on reboot
 cp ~/code/go/src/github.com/siggy/ledmesh/.local.bash ~/
 source ~/.local.bash
 echo "[[ -s ${HOME}/.local.bash ]] && source ${HOME}/.local.bash" >> ~/.bashrc
+
+
+
