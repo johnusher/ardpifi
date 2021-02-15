@@ -123,8 +123,8 @@ func ParseMagnetometer(magVector *bno055.Vector) float64 {
 
 	// invalid operation: (*magVector)[0] (type bno055.Vector does not support indexing)
 
-	xData := float64((*magVector)[0])
-	yData := float64((*magVector)[1])
+	xData := float64((*magVector).X)
+	yData := float64((*magVector).Y)
 
 	angle := math.Atan2(xData, yData)
 
