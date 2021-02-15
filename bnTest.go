@@ -2,13 +2,17 @@ package main
 
 import (
 	"fmt"
-	"math"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
 	"github.com/kpeu3i/bno055"
+)
+
+const (
+	Pi = 3.14159265358979323846264338327950288419716939937510582097494459 // pi https://oeis.org/A000796
 )
 
 func main() {
@@ -68,6 +72,13 @@ func main() {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 
+	f, err := os.Create("acc_data.txt")
+	if err != nil {
+		panic(err)
+	}
+
+	defer f.Close()
+
 	for {
 		select {
 		case <-signals:
@@ -76,31 +87,44 @@ func main() {
 				panic(err)
 			}
 		default:
+
 			vector, err := sensor.Euler()
 			if err != nil {
 				panic(err)
 			}
 
-			fmt.Printf("\r*** Euler angles: x=%5.3f, y=%5.3f, z=%5.3f\n", vector.X, vector.Y, vector.Z)
+			fmt.Printf("\r*** Bearing =%5.3f, roll=%5.3f, tilt=%5.3f\n", vector.X, vector.Y, vector.Z)
 
-			temperature, err := sensor.Temperature()
+			acc, err := sensor.Accelerometer()
 			if err != nil {
 				panic(err)
 			}
-			fmt.Printf("*** Temperature: t=%d\n", temperature) // temp is int8
+			fmt.Printf("\r*** Acc x =%5.3f, Acc y =%5.3f, Acc z=%5.3f\n", acc.X, acc.Y, acc.Z)
 
-			magnetometer, err := sensor.Magnetometer()
+			// write accelerometer data to file:
+
+			// s := strconv.FormatFloat(acc.X)
+
+			sx := strconv.FormatFloat(float64(acc.X), 'f', -1, 32)
+			sy := strconv.FormatFloat(float64(acc.Y), 'f', -1, 32)
+			sz := strconv.FormatFloat(float64(acc.Z), 'f', -1, 32)
+
+			_, err = f.WriteString(sx + " " + sy + " " + sz + "\n")
+
+			// d2 := []byte{fmt.Sprintf("%f", acc.X), 111, 109, 101, 10}
+
 			if err != nil {
 				panic(err)
 			}
+			// fmt.Printf("%.6f %.6f %.6f\n", acc.X, acc.Y, acc.Z)
 
-			fmt.Printf("*** magnetometer: t=%v\n", magnetometer)
+			// temperature, err := sensor.Temperature()
+			// if err != nil {
+			// 	panic(err)
+			// }
+			// fmt.Printf("*** Temperature: t=%d\n", temperature) // temp is int8
 
-			bearing := ParseMagnetometer(magnetometer)
-
-			fmt.Printf("*** bearing: t=%v\n", bearing)
-
-			time.Sleep(2 * time.Second)
+			// time.Sleep(100 * time.Millisecond)
 
 		}
 
@@ -115,21 +139,24 @@ func main() {
 	// *** Euler angles: x=2.312, y=2.000, z=91.688
 }
 
-// func ParseDegrees(value string, direction string) (string, error) {
+// ParseMagnetometer converts mag vector int angle. ignores z
+// func ParseMagnetometer(magVector *bno055.Vector) float64 {
 
-func ParseMagnetometer(magVector *bno055.Vector) float64 {
+// 	// angle = atan2(Y, X);
 
-	// angle = atan2(Y, X);
+// 	xData := float64((*magVector).X)
+// 	yData := float64((*magVector).Y)
 
-	// invalid operation: (*magVector)[0] (type bno055.Vector does not support indexing)
+// 	angle := math.Atan2(xData, yData)
 
-	xData := float64((*magVector).X)
-	yData := float64((*magVector).Y)
+// 	if angle >= 0 {
+// 		angle = angle * (180.0 / Pi)
+// 	} else {
+// 		angle = (angle + 2.0*Pi) * (180.0 / Pi)
+// 	}
 
-	angle := math.Atan2(xData, yData)
-
-	return angle
-}
+// 	return angle
+// }
 
 // https://github.com/kpeu3i/bno055/blob/master/sensor.go
 
