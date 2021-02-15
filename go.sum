@@ -14,6 +14,8 @@ github.com/huin/goserial v0.0.0-20121012073615-7b90efdb22b1 h1:v6symRpmVeKVUqq1g
 github.com/huin/goserial v0.0.0-20121012073615-7b90efdb22b1/go.mod h1:x4wgpgRJT44loaDTf8/wWCkvTlhrKlVlaHATk7Leqlw=
 github.com/jacobsa/go-serial v0.0.0-20180131005756-15cf729a72d4 h1:G2ztCwXov8mRvP0ZfjE6nAlaCX2XbykaeHdbT6KwDz0=
 github.com/jacobsa/go-serial v0.0.0-20180131005756-15cf729a72d4/go.mod h1:2RvX5ZjVtsznNZPEt4xwJXNJrM3VTZoQf7V6gk0ysvs=
+github.com/kpeu3i/bno055 v1.0.3 h1:BqKERfIVw+sZY9VP5MazvTOTdj11dA9MOyQKynofcro=
+github.com/kpeu3i/bno055 v1.0.3/go.mod h1:06V680HS+ozhtmKq2zAoelbhaVOetTqItucZ2wqTg24=
 github.com/kr/pretty v0.2.1 h1:Fmg33tUaq4/8ym9TJN1x7sLJnHVwhP33CNkpYV/7rwI=
 github.com/kr/pretty v0.2.1/go.mod h1:ipq/a2n7PKx3OHsz4KJII5eveXtPO4qwEXGdVfWzfnI=
 github.com/kr/pty v1.1.1/go.mod h1:pFQYn66WHrOpPYNljwOMqo10TkYh1fy3cYio2l3bCsQ=
