@@ -88,18 +88,18 @@ func main() {
 			}
 		default:
 
-			vector, err := sensor.Euler()
-			if err != nil {
-				panic(err)
-			}
+			// vector, err := sensor.Euler()
+			// if err != nil {
+			// 	panic(err)
+			// }
 
-			fmt.Printf("\r*** Bearing =%5.3f, roll=%5.3f, tilt=%5.3f\n", vector.X, vector.Y, vector.Z)
+			// fmt.Printf("\r*** Bearing =%5.3f, roll=%5.3f, tilt=%5.3f\n", vector.X, vector.Y, vector.Z)
 
 			acc, err := sensor.Accelerometer()
 			if err != nil {
 				panic(err)
 			}
-			fmt.Printf("\r*** Acc x =%5.3f, Acc y =%5.3f, Acc z=%5.3f\n", acc.X, acc.Y, acc.Z)
+			// fmt.Printf("\r*** Acc x =%5.3f, Acc y =%5.3f, Acc z=%5.3f\n", acc.X, acc.Y, acc.Z)
 
 			// write accelerometer data to file:
 
@@ -128,7 +128,7 @@ func main() {
 
 		}
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(10 * time.Millisecond)
 	}
 
 	// Output:

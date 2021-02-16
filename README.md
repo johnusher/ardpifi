@@ -23,9 +23,34 @@ https://www.amazon.de/dp/B088LR3488/ref=pe_3044161_185740101_TE_item
 
 sudo raspi-config, select interfacing options > serial to disable shell, ebnable hardware, reboot
 
+Bosch BNO055:  triaxial accelerometer, gyroscope, geomagnetic sensor.
+
+From https://github.com/kpeu3i/bno055/:
+
+"it seems all versions of Raspberry Pi have an I²C bus hardware problem preventing them from working correctly with Bosch BNO055. The problem has been variously diagnosed as being due to the Pi’s inability to handle clock stretching in arbitrary parts of the I²C transaction and the BNO055 chip’s exquisite sensitivity to I²C bus levels."
+
+Solutions:
+
+Configuring software I²C driver
+
+Raspbian has a software I²C driver that can be enabled by adding the following line to /boot/config.txt:
+
+dtoverlay=i2c-gpio,bus=3
+This will create an I²C bus called /dev/i2c-3. SDA will be on GPIO23 and SCL will be on GPIO24 which are pins 16 and 18 on the GPIO header respectively.
+
+This works for me, only occasional glitches: <ins>Slowing the I²C bus transactions
+
+The solution require slowing the I²C bus transactions to 25 kb/s, by inserting a line in the /boot/config.txt file:
+
+dtparam=i2c_arm_baudrate=25000
+
+</ins>
+
+
+
 LCD 1602 I2C Module | 16x2 conected via I2C: https://www.christians-shop.de/Set-LCD-1602-I2C-Module-16x2-Figures-Illumination-Blue-I2C-Module-for-Arduino
 
-There are "no harware" options for running without LCD or GPS.
+There are "no harware" options for running without these HW modules.
 
 Run the go script, and keyboard numbers will send a command to the mesh network, eg controlling LED sequence on the LED strip.
 
@@ -92,7 +117,25 @@ interface wlan0
 static ip_address=192.168.1.164/24
 static routers=192.168.1.1
 static domain_name_servers=192.168.1.1
+
+
 EOF
+
+
+if we have an additional wlan usb:
+
+sudo tee --append /etc/dhcpcd.conf > /dev/null << 'EOF'
+
+# set static ip
+
+interface wlan1
+static ip_address=192.168.1.164/24
+static routers=192.168.1.1
+static domain_name_servers=192.168.1.1
+
+
+EOF
+
 
 # reboot to connect over wifi
 sudo shutdown -r now
