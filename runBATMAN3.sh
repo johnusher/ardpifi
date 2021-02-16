@@ -25,13 +25,13 @@ sudo iwconfig wlan0 mode ad-hoc
 sudo iwconfig wlan0 essid ledmesh
 sudo iwconfig wlan0 ap any
 sudo iwconfig wlan0 channel 8
-sleep 1s
+sleep 3s
 sudo ip link set wlan0 up
-sleep 1s
+sleep 3s
 sudo batctl if add wlan0
-sleep 1s
+sleep 3s
 sudo ifconfig bat0 up
-sleep 5s
+sleep 10s
 # Use different IPv4 addresses for each device
 # This is the only change necessary to the script for
 # different devices. Make sure to indicate the number
@@ -42,7 +42,11 @@ sudo iwconfig wlan0 ap CA:B4:54:B1:5A:75
 # test batctl
 sudo batctl o
 
-sleep 2s
+sleep 10s
+
+./runBATMAN3.sh
+
+sleep 60s
 
 go run JU_led_mesh.go -rasp-id=maxi --web-addr :8082 -no-duino -no-lcd -log-level debug
 
