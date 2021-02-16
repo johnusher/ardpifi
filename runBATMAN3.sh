@@ -41,3 +41,8 @@ sudo iwconfig wlan0 ap CA:B4:54:B1:5A:75
 
 # test batctl
 sudo batctl o
+
+sleep 2s
+
+go run JU_led_mesh.go -rasp-id=maxi --web-addr :8082 -no-duino -no-lcd -log-level debug
+
