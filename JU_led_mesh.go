@@ -242,11 +242,18 @@ func main() {
 
 	errs := make(chan error)
 
+	// clear the OLED
+	if err := oled.Clear(); err != nil {
+		panic(err)
+	}
+
+	img := image.NewRGBA(image.Rect(0, 0, 128, 64))
+
 	go func() {
-		errs <- messageLoop(messages, duino, *raspID, oled, web)
+		errs <- messageLoop(messages, duino, *raspID, img, oled, web)
 	}()
 	go func() {
-		errs <- broadcastLoop(keys, gpsChan, duino, *raspID, bcastIP, bm)
+		errs <- broadcastLoop(keys, gpsChan, duino, *raspID, bcastIP, bm, img, oled)
 	}()
 	go func() {
 		// handle key presses from web, send to messages channel
@@ -272,7 +279,7 @@ func main() {
 	}
 }
 
-func messageLoop(messages <-chan []byte, duino port.Port, raspID string, oled *monochromeoled.OLED, web *web.Web) error {
+func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *image.RGBA, oled *monochromeoled.OLED, web *web.Web) error {
 	log.Info("Starting message loop")
 
 	// allPIs keeps track of the last message received from each PI, keyed by
@@ -374,6 +381,16 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, oled *m
 				}
 				duino.Flush()
 
+				// OLED display:
+				clearLine(img, 1)
+				t := time.Now()
+				addLabel(img, 0, 1, t.Format("15:04:05 2006"))
+
+				oled.SetImage(0, 0, img)
+				oled.Draw()
+
+				// TODO: OLED error handling
+
 			}
 
 			// // write to LCD:
@@ -392,7 +409,7 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, oled *m
 	}
 }
 
-func broadcastLoop(keys <-chan rune, gps <-chan gps.GPSMessage, duino port.Port, raspID string, bcastIP net.IP, bm *readBATMAN.ReadBATMAN) error {
+func broadcastLoop(keys <-chan rune, gps <-chan gps.GPSMessage, duino port.Port, raspID string, bcastIP net.IP, bm *readBATMAN.ReadBATMAN, img *image.RGBA, oled *monochromeoled.OLED) error {
 	log.Info("Starting broadcast loop")
 
 	// buf := make([]byte, 5)   // this was used for serial return from duino
@@ -463,6 +480,13 @@ func broadcastLoop(keys <-chan rune, gps <-chan gps.GPSMessage, duino port.Port,
 				log.Errorf("2. failed to write to serial port: %s", err)
 				return err
 			}
+
+			// OLED display:
+			clearLine(img, 2)
+			keyPressStr := fmt.Sprintf("key pressed: %s", string(key))
+			addLabel(img, 0, 2, keyPressStr)
+			oled.SetImage(0, 0, img)
+			oled.Draw()
 
 			// // read response from duin (not necessary)
 			// n, err = s.Read(buf)
@@ -561,10 +585,12 @@ func calcGPSdistance(lat1, lon1, lat2, lon2 float64) float64 {
 }
 
 // OLED display:
-func addLabel(img *image.RGBA, x, y int, label string) {
+func addLabel(img *image.RGBA, x, line int, label string) {
+
+	lineOffset := (line) * 10
 
 	col := color.RGBA{200, 100, 0, 255}
-	point := fixed.Point26_6{fixed.Int26_6(x * 64), fixed.Int26_6(y * 64)}
+	point := fixed.Point26_6{fixed.Int26_6(x * 64), fixed.Int26_6(lineOffset * 64)}
 
 	d := &font.Drawer{
 		Dst:  img,
