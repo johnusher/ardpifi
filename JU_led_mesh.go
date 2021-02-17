@@ -19,17 +19,29 @@ import (
 
 	// "github.com/qinxin0720/lcd1602"
 
-	device "github.com/d2r2/go-hd44780"
-	i2c "github.com/d2r2/go-i2c"
+	// i2c "github.com/d2r2/go-i2c"
 	"github.com/johnusher/ardpifi/pkg/gps"
 	"github.com/johnusher/ardpifi/pkg/iface"
 	"github.com/johnusher/ardpifi/pkg/keyboard"
-	"github.com/johnusher/ardpifi/pkg/lcd"
+
+	// "github.com/johnusher/ardpifi/pkg/lcd"
 	"github.com/johnusher/ardpifi/pkg/port"
 	"github.com/johnusher/ardpifi/pkg/readBATMAN"
 	"github.com/johnusher/ardpifi/pkg/web"
 	log "github.com/sirupsen/logrus"
 	"github.com/tarm/serial"
+
+	"image"
+
+	"golang.org/x/image/font"
+	"golang.org/x/image/font/basicfont"
+	"golang.org/x/image/math/fixed"
+
+	"image/color"
+	_ "image/png"
+
+	"github.com/goiot/devices/monochromeoled"
+	"golang.org/x/exp/io/i2c"
 )
 
 const (
@@ -77,7 +89,7 @@ func main() {
 	noBatman := flag.Bool("no-batman", false, "run without batman network")
 	noDuino := flag.Bool("no-duino", false, "run without arduino")
 	noGPS := flag.Bool("no-gps", false, "run without gps")
-	noLCD := flag.Bool("no-lcd", false, "run without lcd display")
+	// noOLED := flag.Bool("no-oled", false, "run without oled display")
 	logLevel := flag.String("log-level", "info", "log level, must be one of: panic, fatal, error, warn, info, debug, trace")
 
 	flag.Parse()
@@ -89,28 +101,42 @@ func main() {
 	}
 	log.SetLevel(level)
 
-	// // LCD:
+	// // OLED:
 
-	var i2cDevice *i2c.I2C
-	if !*noLCD {
-		var err error
-		i2cDevice, err = i2c.NewI2C(0x27, 1)
-		if err != nil {
-			log.Errorf("error opening LCD on I2C, %s", err)
-			return
-		}
-		defer i2cDevice.Close()
-	}
-
-	lcd, err := lcd.New(i2cDevice, *noLCD)
+	// var i2cDevice *i2c.I2C
+	// if !*noOLED {
+	oled, err := monochromeoled.Open(&i2c.Devfs{Dev: "/dev/i2c-1"})
 	if err != nil {
-		log.Errorf("errormaking LCD device, %s", err)
-		return
+		panic(err)
+	}
+	defer oled.Close()
+
+	// load png and display on OLED
+	rc, err := os.Open("./maxi.png")
+
+	if err != nil {
+		panic(err)
+	}
+	defer rc.Close()
+
+	m, _, err := image.Decode(rc)
+	if err != nil {
+		panic(err)
 	}
 
-	lcd.BacklightOn()
-	lcd.Clear()
-	// lcd.SetStrobeDelays(300)   // TODO: doenst work but should!
+	// clear the display before putting on anything
+	if err := oled.Clear(); err != nil {
+		panic(err)
+	}
+
+	if err := oled.SetImage(0, 0, m); err != nil {
+		panic(err)
+	}
+	if err := oled.Draw(); err != nil {
+		panic(err)
+	}
+
+	// }
 
 	web := web.InitWeb(*webAddr)
 	log.Infof("web: %+v", web)
@@ -175,9 +201,9 @@ func main() {
 
 	log.Infof("Serving at %s", myIP)
 
-	// write to LCD:
-	lcd.SetPosition(0, 0)
-	_ = lcd.ShowMessage("Starting", device.SHOW_LINE_1)
+	// // write to LCD:
+	// lcd.SetPosition(0, 0)
+	// _ = lcd.ShowMessage("Starting", device.SHOW_LINE_1)
 
 	// lcd.SetPosition(1, 0)
 
@@ -217,7 +243,7 @@ func main() {
 	errs := make(chan error)
 
 	go func() {
-		errs <- messageLoop(messages, duino, *raspID, lcd, web)
+		errs <- messageLoop(messages, duino, *raspID, oled, web)
 	}()
 	go func() {
 		errs <- broadcastLoop(keys, gpsChan, duino, *raspID, bcastIP, bm)
@@ -246,7 +272,7 @@ func main() {
 	}
 }
 
-func messageLoop(messages <-chan []byte, duino port.Port, raspID string, lcd lcd.LCD, web *web.Web) error {
+func messageLoop(messages <-chan []byte, duino port.Port, raspID string, oled *monochromeoled.OLED, web *web.Web) error {
 	log.Info("Starting message loop")
 
 	// allPIs keeps track of the last message received from each PI, keyed by
@@ -532,4 +558,32 @@ func calcGPSdistance(lat1, lon1, lat2, lon2 float64) float64 {
 	h := hsin(la2-la1) + math.Cos(la1)*math.Cos(la2)*hsin(lo2-lo1)
 
 	return 2 * r * math.Asin(math.Sqrt(h))
+}
+
+// OLED display:
+func addLabel(img *image.RGBA, x, y int, label string) {
+
+	col := color.RGBA{200, 100, 0, 255}
+	point := fixed.Point26_6{fixed.Int26_6(x * 64), fixed.Int26_6(y * 64)}
+
+	d := &font.Drawer{
+		Dst:  img,
+		Src:  image.NewUniform(col),
+		Face: basicfont.Face7x13,
+		Dot:  point,
+	}
+	d.DrawString(label)
+}
+
+func clearLine(img *image.RGBA, line int) {
+	col := color.RGBA{0, 0, 0, 0}
+	// w := d.Width()
+	w := 128 // pixel width of OLED screen
+	lineOffset := (line - 1) * 10
+	for y := 1; y < 10; y++ {
+		for x := 1; x < w; x++ {
+			img.Set(x, y+lineOffset, col)
+		}
+	}
+
 }
