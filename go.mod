@@ -23,6 +23,7 @@ require (
 	github.com/stretchr/testify v1.6.1 // indirect
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
 	golang.org/x/exp v0.0.0-20210212053707-62dc52270d37
+	golang.org/x/image v0.0.0-20190802002840-cff245a6509b
 	golang.org/x/sys v0.0.0-20210105210732-16f7687f5001 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210105161348-2e78108cf5f8 // indirect

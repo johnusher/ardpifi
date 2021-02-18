@@ -25,22 +25,19 @@ import (
 	"github.com/johnusher/ardpifi/pkg/keyboard"
 
 	// "github.com/johnusher/ardpifi/pkg/lcd"
+	"github.com/johnusher/ardpifi/pkg/oled"
 	"github.com/johnusher/ardpifi/pkg/port"
 	"github.com/johnusher/ardpifi/pkg/readBATMAN"
 	"github.com/johnusher/ardpifi/pkg/web"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/tarm/serial"
 
 	"image"
 
-	"golang.org/x/image/font"
-	"golang.org/x/image/font/basicfont"
-	"golang.org/x/image/math/fixed"
-
-	"image/color"
 	_ "image/png"
 
-	"github.com/goiot/devices/monochromeoled"
+	// "github.com/goiot/devices/monochromeoled"
 	"golang.org/x/exp/io/i2c"
 )
 
@@ -105,7 +102,7 @@ func main() {
 
 	// var i2cDevice *i2c.I2C
 	// if !*noOLED {
-	oled, err := monochromeoled.Open(&i2c.Devfs{Dev: "/dev/i2c-1"})
+	oled, err := oled.Open(&i2c.Devfs{Dev: "/dev/i2c-1"})
 	if err != nil {
 		panic(err)
 	}
@@ -279,7 +276,7 @@ func main() {
 	}
 }
 
-func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *image.RGBA, oled *monochromeoled.OLED, web *web.Web) error {
+func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *image.RGBA, oled *oled.OLED, web *web.Web) error {
 	log.Info("Starting message loop")
 
 	// allPIs keeps track of the last message received from each PI, keyed by
@@ -343,9 +340,15 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *im
 				bearing, _ := calcGPSBearing(lat1, long1, lat2, long2)
 				disance := calcGPSdistance(lat1, long1, lat2, long2)
 
-				log.Infof("GPS bearing to ID %s is %f\xB0", crwt.ID, bearing)
+				msg1 := fmt.Sprintf("bearing to %s = %f\xB0", crwt.ID, bearing)
+				log.Infof(msg1)
+				msg2 := fmt.Sprintf("dist to %s = %f m", crwt.ID, disance)
+				log.Infof(msg2)
 
-				log.Infof("GPS distance to ID %s is %f metres", crwt.ID, disance)
+				msg1 = fmt.Sprintf("bearing = %f\xB0", bearing)
+				msg2 = fmt.Sprintf("dist = %f m", disance)
+				oled.ShowText(img, 3, msg1)
+				oled.ShowText(img, 4, msg2)
 			}
 		}
 
@@ -359,9 +362,12 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *im
 		} else {
 
 			//  message from other:
-			msg := fmt.Sprintf("received message from other: %+v", jsonMessage)
+			msg := fmt.Sprintf("received: %+v", jsonMessage)
 			log.Info(msg)
 			web.Render(msg)
+			// OLED display:
+			OLEDmsg := fmt.Sprintf("received: %+v", jsonMessage.Key)
+			oled.ShowText(img, 2, fmt.Sprintf(OLEDmsg))
 
 			if string(jsonMessage.Key) != "x" {
 
@@ -381,16 +387,6 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *im
 				}
 				duino.Flush()
 
-				// OLED display:
-				clearLine(img, 1)
-				t := time.Now()
-				addLabel(img, 0, 1, t.Format("15:04:05 2006"))
-
-				oled.SetImage(0, 0, img)
-				oled.Draw()
-
-				// TODO: OLED error handling
-
 			}
 
 			// // write to LCD:
@@ -409,7 +405,7 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *im
 	}
 }
 
-func broadcastLoop(keys <-chan rune, gps <-chan gps.GPSMessage, duino port.Port, raspID string, bcastIP net.IP, bm *readBATMAN.ReadBATMAN, img *image.RGBA, oled *monochromeoled.OLED) error {
+func broadcastLoop(keys <-chan rune, gps <-chan gps.GPSMessage, duino port.Port, raspID string, bcastIP net.IP, bm *readBATMAN.ReadBATMAN, img *image.RGBA, oled *oled.OLED) error {
 	log.Info("Starting broadcast loop")
 
 	// buf := make([]byte, 5)   // this was used for serial return from duino
@@ -450,6 +446,7 @@ func broadcastLoop(keys <-chan rune, gps <-chan gps.GPSMessage, duino port.Port,
 
 		case key, more := <-keys:
 			if !more {
+				oled.ShowText(img, 2, fmt.Sprintf("exiting"))
 				log.Infof("keyboard listener closed\n")
 				// termbox closed, block until ctrl-c is called
 				log.Infof("exiting")
@@ -482,11 +479,7 @@ func broadcastLoop(keys <-chan rune, gps <-chan gps.GPSMessage, duino port.Port,
 			}
 
 			// OLED display:
-			clearLine(img, 2)
-			keyPressStr := fmt.Sprintf("key pressed: %s", string(key))
-			addLabel(img, 0, 2, keyPressStr)
-			oled.SetImage(0, 0, img)
-			oled.Draw()
+			oled.ShowText(img, 2, fmt.Sprintf("key pressed: %s", string(key)))
 
 			// // read response from duin (not necessary)
 			// n, err = s.Read(buf)
@@ -548,8 +541,6 @@ func calcGPSBearing(lat1 float64, long1 float64, lat2 float64, long2 float64) (f
 	return angle, nil
 }
 
-// fmt.Sprintf("%.6f", decimal), nil
-
 // distance between two points.
 // from https://gist.github.com/cdipaolo/d3f8db3848278b49db68
 
@@ -565,7 +556,7 @@ func hsin(theta float64) float64 {
 //
 // point coordinates are supplied in degrees and converted into rad. in the func
 //
-// distance returned is METERS!!!!!!
+// distance returned is METERS
 // http://en.wikipedia.org/wiki/Haversine_formula
 func calcGPSdistance(lat1, lon1, lat2, lon2 float64) float64 {
 	// convert to radians
@@ -582,34 +573,4 @@ func calcGPSdistance(lat1, lon1, lat2, lon2 float64) float64 {
 	h := hsin(la2-la1) + math.Cos(la1)*math.Cos(la2)*hsin(lo2-lo1)
 
 	return 2 * r * math.Asin(math.Sqrt(h))
-}
-
-// OLED display:
-func addLabel(img *image.RGBA, x, line int, label string) {
-
-	lineOffset := (line) * 10
-
-	col := color.RGBA{200, 100, 0, 255}
-	point := fixed.Point26_6{fixed.Int26_6(x * 64), fixed.Int26_6(lineOffset * 64)}
-
-	d := &font.Drawer{
-		Dst:  img,
-		Src:  image.NewUniform(col),
-		Face: basicfont.Face7x13,
-		Dot:  point,
-	}
-	d.DrawString(label)
-}
-
-func clearLine(img *image.RGBA, line int) {
-	col := color.RGBA{0, 0, 0, 0}
-	// w := d.Width()
-	w := 128 // pixel width of OLED screen
-	lineOffset := (line - 1) * 10
-	for y := 1; y < 10; y++ {
-		for x := 1; x < w; x++ {
-			img.Set(x, y+lineOffset, col)
-		}
-	}
-
 }
