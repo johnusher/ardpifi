@@ -4,26 +4,34 @@
 
 Mesh network with Raspis to control Arduino controlled LED strips using GPS and accelerometers.
 
-A  webserver on the pi provides a bi-directional UI (currently only via ethernet SSH).
+A webserver on the pi provides a bi-directional UI (currently only via ethernet SSH to the headless pi).
 
-LED code can be updated, compiled and flashed locally via USB from Raspi to Arduino.
+LED code can be updated, compiled and flashed locally via USB from Raspi to Arduino using the duino CLI.
 
 Keyboard inputs on each Raspi will send LED pattern info and sync across all Raspis in the network.
 
-We install everything now with /bin/bootstrap (not tested!!)
 
-Mesh code from: https://github.com/siggy/ledmesh
+
 
 ## Hardware set-up
-Connect Arduino Uno (also Nano clone tested) to Raspi 3 via USB. Programmable NeoPixelLED stips connected to Arduino and should be powered seperately:
-https://www.christians-shop.de/Nano-V3-developer-board-for-Arduino-IDE-ATMEL-ATmega328P-AVR-Microcontroller-CH340-Chip-Christians-Technikshop
 
-NEO-6M GPS module connect with GPIO serial (uses /dev/ttyS0, you need to disable serial console output, and disable bluetooth.):
-https://www.amazon.de/dp/B088LR3488/ref=pe_3044161_185740101_TE_item
+See shopping list section for details on components.
 
-sudo raspi-config, select interfacing options > serial to disable shell, ebnable hardware, reboot
+Connect Arduino Uno (also Nano clone tested) to Raspi 3 via USB. Programmable NeoPixelLED strips connected to Arduino and should be powered separately:
+
+
+NEO-6M GPS module connect with GPIO serial (uses serial port /dev/ttyS0. In raspi-config settings, you need to disable serial console output, and disable bluetooth.). I have used an external antenna and a small ceramic antenna: both seem to work.
 
 Bosch BNO055:  triaxial accelerometer, gyroscope, geomagnetic sensor.
+
+OLED 128*64.
+
+Both BNo055 and OLED connect via I2C. ie SDA and SCL are shared lines (pin 3 and 5), so connect in parallel. I powered  BNo055 with +3.3 V (pin 1), and OLED with +5 V.
+
+WLAN dongle: not tested yet!  This messes up BATMAN as the dongle defaults to WLAN0.
+To change this and make WLAN0 the built-in: see https://github.com/RaspAP/raspap-webgui/issues/335
+
+Notes on I2c:
 
 From https://github.com/kpeu3i/bno055/:
 
@@ -48,13 +56,38 @@ dtparam=i2c_arm_baudrate=25000
 
 
 
-LCD 1602 I2C Module | 16x2 conected via I2C: https://www.christians-shop.de/Set-LCD-1602-I2C-Module-16x2-Figures-Illumination-Blue-I2C-Module-for-Arduino
 
-There are "no harware" options for running without these HW modules.
+There are "no hardware" options for running the main Go file without these HW modules.
 
 Run the go script, and keyboard numbers will send a command to the mesh network, eg controlling LED sequence on the LED strip.
 
 LED sequences can be programmed on the Raspi, compiled using arduino-cli, and flashed from the Raspi.
+
+
+
+## Hardware shopping list
+
+Rasperry Pi 3 Model B+ testesd.
+
+Arduino clone:
+https://www.christians-shop.de/Nano-V3-developer-board-for-Arduino-IDE-ATMEL-ATmega328P-AVR-Microcontroller-CH340-Chip-Christians-Technikshop
+
+https://www.amazon.de/-/en/gp/product/B078SBBST6/ref=ppx_yo_dt_b_asin_title_o02_s00?ie=UTF8&psc=1
+
+NEO-6M GPS:
+https://www.amazon.de/dp/B088LR3488/ref=pe_3044161_185740101_TE_item
+
+OLED display:
+https://www.amazon.de/-/en/gp/product/B01L9GC470/ref=ppx_od_dt_b_asin_title_s00?ie=UTF8&psc=1
+
+Bosch BNO055: 
+https://www.amazon.de/-/en/gp/product/B072NLTPTJ/ref=ppx_yo_dt_b_asin_title_o01_s00?ie=UTF8&psc=1
+
+BROgrammable LED strip WS2812: 
+https://www.mouser.de/ProductDetail/digilent/122-000/?qs=WbxR7jUW5e9xhU9oZFzZgA==&countrycode=DE&currencycode=EUR
+
+WLAN dongle TP-Link TL-WN725N:
+https://www.amazon.de/gp/product/B008IFXQFU/ref=ppx_yo_dt_b_asin_title_o03_s00?ie=UTF8&psc=1
 
 
 ## Upcoming attractions:
@@ -65,6 +98,8 @@ LED sequences can be programmed on the Raspi, compiled using arduino-cli, and fl
 # thanks @siggy!
 
 ### OS
+
+Install Raspi lite from onlione or try this:
 
 1. Download Raspian Lite: https://downloads.raspberrypi.org/raspbian_lite_latest
 2. Flash `20XX-XX-XX-raspbian-stretch-lite.zip` using Etcher
@@ -85,7 +120,6 @@ ssh pi@raspberrypi.local
 
 # change default password
 passwd
-
 
 
 # set quiet boot
@@ -164,14 +198,11 @@ sudo raspi-config nonint do_serial 1
 
 # now you are setup! run bootstrap to download packages
 
-/bootstrap
+Run Bootstrap from https://github.com/johnusher/ardpifi/tree/master/bin
+./bootstrap
 ```
 
-## Build and run (in ~/code/go/src/github.com/siggy/ledmesh)
 
-```bash
-go run JU_led_mesh.go
-```
 
 
 ### Mesh network
@@ -184,23 +215,6 @@ On raspi #2 run
 
 ./runBATMAN2.sh
 
-NB you may need to run these commands twice!
-
-See file main.go, from https://github.com/siggy/ledmesh
-
-Based on:
-
-https://www.reddit.com/r/darknetplan/comments/68s6jp/how_to_configure_batmanadv_on_the_raspberry_pi_3/
-
-see install instructions here:
-
-https://github.com/siggy/ledmesh/blob/master/bin/bootstrap
-
-eg
-
-sudo ifconfig bat0 172.27.0.1/16
-
-and sudo ifconfig bat0 172.27.0.2/16
 
 
 ## Code
@@ -217,17 +231,16 @@ All code (and go) is installed via bootstrap.
 
 # Arduino CLI install
 
-folow instructions here:
+follow instructions here:
 https://siytek.com/arduino-cli-raspberry-pi/
 
 this additional command was needed:
 arduino-cli core install arduino:avr
 
-Note the directory for the Arudio project must have the same name as the main file .ino.
+Note the directory for the Duino project must have the same name as the main file .ino.
 
-Tested with Aurdion Uno and Aurdion clone: "Nano V3 | ATMEL ATmega328P AVR Microcontroller | CH340-Chip".
+Tested with Duino Uno and Duino clone: "Nano V3 | ATMEL ATmega328P AVR Microcontroller | CH340-Chip".
 The Uno shows on port ttyACM0 and the clone on ttyUSB.
-NB only 1 from 2 clones works for me!
 
 
 ## add libraries:
@@ -259,19 +272,22 @@ On raspi #1 run
 
 ```bash
 ./runBATMAN.sh
-go run JU_led_mesh.go -rasp-id=wee --web-addr :8080 -no-lcd -log-level debug
+go run JU_led_mesh.go -rasp-id=me --web-addr :8080 -log-level debug
 ```
 
 On raspi #2 run
 
 ```bash
 ./runBATMAN2.sh
-go run JU_led_mesh.go -rasp-id=poo --web-addr :8081 -no-lcd -log-level debug
+go run JU_led_mesh.go -rasp-id=poo --web-addr :8081 -no-lcd -log-level debug.
 ```
 
-Press any key, sent to mesh, and if it is a 0 or 1, we change led pattern
+Press any key, sent to mesh, and if it is a 0 or 1, we change led pattern.
 
 To exit, press "q" to exit termbox, and then ctrl-c to exit the program.
+
+There are various flags if certain HW modules are not attached to the raspi:
+
 
 ### Flags
 
@@ -285,8 +301,8 @@ $ go run JU_led_mesh.go -h
     	run without arduino
   -no-gps
     	run without gps
-  -no-lcd
-    	run without lcd display
+  -no-oled
+    	run without oled display (not implemented yet!)
   -rasp-id string
     	unique raspberry pi ID (default "raspi 1")
   -web-addr string
@@ -333,3 +349,21 @@ ssh $USER@pi
 ```
 
 Open a browser window to localhost:8080
+
+
+## Other useful scripts
+```bash
+run BNo055_save_data.go
+```
+This saves accelerometer and gyroscope data to a txt file.
+
+```bash
+run OLEDtest.go
+```
+This displays a real-time clock on the OLED.
+
+convAccData.m
+
+MATLAB script to process accelerometer data.
+
+
