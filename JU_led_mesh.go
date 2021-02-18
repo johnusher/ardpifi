@@ -367,7 +367,7 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *im
 			web.Render(msg)
 			// OLED display:
 			OLEDmsg := fmt.Sprintf("received: %+v", jsonMessage.Key)
-			oled.ShowText(img, 2, fmt.Sprintf(OLEDmsg))
+			oled.ShowText(img, 2, OLEDmsg)
 
 			if string(jsonMessage.Key) != "x" {
 
