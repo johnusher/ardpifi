@@ -7,7 +7,7 @@ require (
 	github.com/d2r2/go-i2c v0.0.0-20191123181816-73a8a799d6bc
 	github.com/d2r2/go-logger v0.0.0-20181221090742-9998a510495e
 	github.com/fogleman/gg v1.3.0 // indirect
-	github.com/goiot/devices v0.0.0-20160708214026-09d1226fc8ea // indirect
+	github.com/goiot/devices v0.0.0-20160708214026-09d1226fc8ea
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/gorilla/websocket v1.4.2
 	github.com/huin/goserial v0.0.0-20121012073615-7b90efdb22b1

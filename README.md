@@ -80,10 +80,10 @@ https://www.amazon.de/dp/B088LR3488/ref=pe_3044161_185740101_TE_item
 OLED display:
 https://www.amazon.de/-/en/gp/product/B01L9GC470/ref=ppx_od_dt_b_asin_title_s00?ie=UTF8&psc=1
 
-Bosch BNO055: 
+Bosch BNO055:
 https://www.amazon.de/-/en/gp/product/B072NLTPTJ/ref=ppx_yo_dt_b_asin_title_o01_s00?ie=UTF8&psc=1
 
-BROgrammable LED strip WS2812: 
+BROgrammable LED strip WS2812:
 https://www.mouser.de/ProductDetail/digilent/122-000/?qs=WbxR7jUW5e9xhU9oZFzZgA==&countrycode=DE&currencycode=EUR
 
 WLAN dongle TP-Link TL-WN725N:
@@ -302,7 +302,7 @@ $ go run JU_led_mesh.go -h
   -no-gps
     	run without gps
   -no-oled
-    	run without oled display (not implemented yet!)
+    	run without oled display
   -rasp-id string
     	unique raspberry pi ID (default "raspi 1")
   -web-addr string
@@ -365,5 +365,3 @@ This displays a real-time clock on the OLED.
 convAccData.m
 
 MATLAB script to process accelerometer data.
-
-

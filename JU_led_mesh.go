@@ -86,7 +86,7 @@ func main() {
 	noBatman := flag.Bool("no-batman", false, "run without batman network")
 	noDuino := flag.Bool("no-duino", false, "run without arduino")
 	noGPS := flag.Bool("no-gps", false, "run without gps")
-	// noOLED := flag.Bool("no-oled", false, "run without oled display")
+	noOLED := flag.Bool("no-oled", false, "run without oled display")
 	logLevel := flag.String("log-level", "info", "log level, must be one of: panic, fatal, error, warn, info, debug, trace")
 
 	flag.Parse()
@@ -102,7 +102,7 @@ func main() {
 
 	// var i2cDevice *i2c.I2C
 	// if !*noOLED {
-	oled, err := oled.Open(&i2c.Devfs{Dev: "/dev/i2c-1"})
+	oled, err := oled.Open(&i2c.Devfs{Dev: "/dev/i2c-1"}, *noOLED)
 	if err != nil {
 		panic(err)
 	}
@@ -276,7 +276,7 @@ func main() {
 	}
 }
 
-func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *image.RGBA, oled *oled.OLED, web *web.Web) error {
+func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *image.RGBA, oled oled.OLED, web *web.Web) error {
 	log.Info("Starting message loop")
 
 	// allPIs keeps track of the last message received from each PI, keyed by
@@ -405,7 +405,7 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *im
 	}
 }
 
-func broadcastLoop(keys <-chan rune, gps <-chan gps.GPSMessage, duino port.Port, raspID string, bcastIP net.IP, bm *readBATMAN.ReadBATMAN, img *image.RGBA, oled *oled.OLED) error {
+func broadcastLoop(keys <-chan rune, gps <-chan gps.GPSMessage, duino port.Port, raspID string, bcastIP net.IP, bm *readBATMAN.ReadBATMAN, img *image.RGBA, oled oled.OLED) error {
 	log.Info("Starting broadcast loop")
 
 	// buf := make([]byte, 5)   // this was used for serial return from duino
