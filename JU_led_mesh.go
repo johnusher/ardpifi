@@ -409,17 +409,19 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *im
 	}
 }
 
-func broadcastLoop(keys <-chan rune, gps <-chan gps.GPSMessage, duino port.Port, raspID string, bcastIP net.IP, bm *readBATMAN.ReadBATMAN, img *image.RGBA, oled oled.OLED) error {
+func broadcastLoop(keys <-chan rune, gpsCh <-chan gps.GPSMessage, duino port.Port, raspID string, bcastIP net.IP, bm *readBATMAN.ReadBATMAN, img *image.RGBA, oled oled.OLED) error {
 	log.Info("Starting broadcast loop")
 
 	// buf := make([]byte, 5)   // this was used for serial return from duino
 
 	bcast := &net.UDPAddr{Port: batPort, IP: bcastIP}
+	gpsMessage := gps.GPSMessage{}
+	more := false
 
 	for {
 		select {
 
-		case gpsMessage, more := <-gps:
+		case gpsMessage, more = <-gpsCh:
 			if !more {
 				log.Infof("gps channel closed\n")
 				log.Infof("exiting")
@@ -459,8 +461,10 @@ func broadcastLoop(keys <-chan rune, gps <-chan gps.GPSMessage, duino port.Port,
 			log.Infof("key pressed: %s / %d / 0x%X / 0%o \n", string(key), key, key, key)
 
 			initChatRequest := ChatRequest{
-				ID:  raspID,
-				Key: key,
+				Latf:  gpsMessage.Lat,
+				Longf: gpsMessage.Long,
+				ID:    raspID,
+				Key:   key,
 			}
 
 			// make json:
