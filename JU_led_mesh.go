@@ -300,6 +300,55 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *im
 			continue
 		}
 
+		// ip := net.IP(message[0:4])
+
+		if jsonMessage.ID == raspID {
+			// we have received message from self:
+			// msg := fmt.Sprintf("received message from self: %+v", jsonMessage)
+			// log.Info(msg)
+			// web.Render(msg)
+		} else {
+
+			//  message from other:
+			msg := fmt.Sprintf("received: %+v", jsonMessage)
+			log.Info(msg)
+			web.Render(msg)
+
+			if string(jsonMessage.Key) != "x" {
+
+				log.Infof("key from other %s \n", (string(jsonMessage.Key))) // this doesnt point to the "Key" element of the struct!
+
+				// msg = fmt.Sprintf("received message from other raspi: %s", jsonMessage)
+				// log.Info(msg)
+				// web.Render(msg)
+
+				// write to duino:
+				duino.Flush()
+				_, err := duino.Write([]byte(string(jsonMessage.Key)))
+
+				if err != nil {
+					log.Errorf("3. failed to write to serial port: %s", err)
+					//return err
+				}
+				duino.Flush()
+
+				// OLED display:
+				OLEDmsg := fmt.Sprintf("received: %+v", jsonMessage.Key)
+				oled.ShowText(img, 2, OLEDmsg)
+
+			}
+
+			// // write to LCD:
+			// lcd.Clear()
+			// lcd.SetPosition(0, 0)
+			// // fmt.Fprint(lcd, t.Format("Message received:"))
+			// _ = lcd.ShowMessage("Message received:", device.SHOW_LINE_1)
+			// lcd.SetPosition(1, 0)
+			// // fmt.Fprint(lcd, t.Format(string(message[4])))
+			// _ = lcd.ShowMessage(string(message[4]), device.SHOW_LINE_2)
+
+		}
+
 		if _, ok := allPIs[jsonMessage.ID]; !ok {
 			log.Infof("new PI detected: %+v", jsonMessage)
 		}
@@ -354,54 +403,6 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *im
 				oled.ShowText(img, 3, msg1)
 				oled.ShowText(img, 4, msg2)
 			}
-		}
-
-		// ip := net.IP(message[0:4])
-
-		if jsonMessage.ID == raspID {
-			// we have received message from self:
-			// msg := fmt.Sprintf("received message from self: %+v", jsonMessage)
-			// log.Info(msg)
-			// web.Render(msg)
-		} else {
-
-			//  message from other:
-			msg := fmt.Sprintf("received: %+v", jsonMessage)
-			log.Info(msg)
-			web.Render(msg)
-			// OLED display:
-			OLEDmsg := fmt.Sprintf("received: %+v", jsonMessage.Key)
-			oled.ShowText(img, 2, OLEDmsg)
-
-			if string(jsonMessage.Key) != "x" {
-
-				log.Infof("key from other %s \n", (string(jsonMessage.Key))) // this doesnt point to the "Key" element of the struct!
-
-				// msg = fmt.Sprintf("received message from other raspi: %s", jsonMessage)
-				// log.Info(msg)
-				// web.Render(msg)
-
-				// write to duino:
-				duino.Flush()
-				_, err := duino.Write([]byte(string(jsonMessage.Key)))
-
-				if err != nil {
-					log.Errorf("3. failed to write to serial port: %s", err)
-					//return err
-				}
-				duino.Flush()
-
-			}
-
-			// // write to LCD:
-			// lcd.Clear()
-			// lcd.SetPosition(0, 0)
-			// // fmt.Fprint(lcd, t.Format("Message received:"))
-			// _ = lcd.ShowMessage("Message received:", device.SHOW_LINE_1)
-			// lcd.SetPosition(1, 0)
-			// // fmt.Fprint(lcd, t.Format(string(message[4])))
-			// _ = lcd.ShowMessage(string(message[4]), device.SHOW_LINE_2)
-
 		}
 
 		// log.Infof("BATMAN message : %s / %d / 0x%X / 0%o \n", string(pings), pings, pings, pings)
