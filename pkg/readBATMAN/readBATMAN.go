@@ -86,7 +86,6 @@ func (k *ReadBATMAN) Run() error {
 
 	k.log.Infof("Listening as %+v", k.Conn.LocalAddr().(*net.UDPAddr))
 
-	buffIn := make([]byte, msgSize) // received via BATMAM
 	// buffOut := make([]byte, msgSize) // sent to batman
 	// copy(buffOut[0:4], myIP)
 
@@ -94,6 +93,7 @@ func (k *ReadBATMAN) Run() error {
 	// pingAt := time.Now()
 
 	for {
+		buffIn := make([]byte, msgSize) // received via BATMAM
 		n, addr, err := k.Conn.ReadFromUDP(buffIn)
 		if err != nil {
 			k.log.Errorf("ReadFromUDP failed with %s", err)
