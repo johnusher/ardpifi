@@ -128,18 +128,22 @@ type NMEA struct {
 
 func ParseNMEALine(line string) (NMEA, error) {
 	tokens := strings.Split(line, ",")
-	if tokens[0] == "$GPGGA" {
-		return NMEA{
-			fixTimestamp:       tokens[1],
-			latitude:           tokens[2],
-			latitudeDirection:  tokens[3],
-			longitude:          tokens[4],
-			longitudeDirection: tokens[5],
-			fixQuality:         tokens[6],
-			satellites:         tokens[7],
-		}, nil
+	if len(tokens) < 8 {
+		return NMEA{}, fmt.Errorf("unsupported nmea string, expected 8 tokens got %d: %s", len(tokens), line)
 	}
-	return NMEA{}, errors.New("unsupported nmea string")
+	if tokens[0] != "$GPGGA" {
+		return NMEA{}, fmt.Errorf("unsupported nmea string: %s", line)
+	}
+
+	return NMEA{
+		fixTimestamp:       tokens[1],
+		latitude:           tokens[2],
+		latitudeDirection:  tokens[3],
+		longitude:          tokens[4],
+		longitudeDirection: tokens[5],
+		fixQuality:         tokens[6],
+		satellites:         tokens[7],
+	}, nil
 }
 
 func ParseDegrees(value string, direction string) (string, error) {
