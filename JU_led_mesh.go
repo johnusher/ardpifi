@@ -58,6 +58,7 @@ const (
 	Pi = 3.14159265358979323846264338327950288419716939937510582097494459 // pi https://oeis.org/A000796
 )
 
+// ChatRequest is ChatRequest, stop telling me about comments
 type ChatRequest struct {
 	Latf  float64
 	Longf float64
