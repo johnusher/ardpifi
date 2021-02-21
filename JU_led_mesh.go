@@ -309,14 +309,7 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *im
 			// web.Render(msg)
 		} else {
 
-			//  message from other:
-			msg := fmt.Sprintf("received: %+v", jsonMessage)
-			log.Info(msg)
-			web.Render(msg)
-
 			if string(jsonMessage.Key) != "x" {
-
-				log.Infof("key from other %s \n", (string(jsonMessage.Key))) // this doesnt point to the "Key" element of the struct!
 
 				// msg = fmt.Sprintf("received message from other raspi: %s", jsonMessage)
 				// log.Info(msg)
@@ -332,11 +325,18 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *im
 				}
 				duino.Flush()
 
+				log.Infof("key from other %s \n", (string(jsonMessage.Key))) // this doesnt point to the "Key" element of the struct!
+
 				// OLED display:
 				OLEDmsg := fmt.Sprintf("received: %+v", jsonMessage.Key)
 				oled.ShowText(img, 2, OLEDmsg)
 
 			}
+
+			//  message from other:
+			msg := fmt.Sprintf("received: %+v", jsonMessage)
+			log.Info(msg)
+			web.Render(msg)
 
 			// // write to LCD:
 			// lcd.Clear()
