@@ -293,7 +293,10 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *im
 		err := json.Unmarshal(message, &jsonMessage)
 		if err != nil {
 			log.Errorf("Unmarshal failed: %s", err)
-			return err
+			log.Errorf("Probably not valid JSON: %s", message)
+
+			// carry on gracefully
+			continue
 		}
 
 		if _, ok := allPIs[jsonMessage.ID]; !ok {
