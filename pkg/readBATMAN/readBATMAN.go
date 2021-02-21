@@ -86,6 +86,7 @@ func (k *ReadBATMAN) Run() error {
 
 	k.log.Infof("Listening as %+v", k.Conn.LocalAddr().(*net.UDPAddr))
 
+	buffIn := make([]byte, msgSize) // received via BATMAM
 	// buffOut := make([]byte, msgSize) // sent to batman
 	// copy(buffOut[0:4], myIP)
 
@@ -93,7 +94,6 @@ func (k *ReadBATMAN) Run() error {
 	// pingAt := time.Now()
 
 	for {
-		buffIn := make([]byte, msgSize) // received via BATMAM
 		n, addr, err := k.Conn.ReadFromUDP(buffIn)
 		if err != nil {
 			k.log.Errorf("ReadFromUDP failed with %s", err)
@@ -114,7 +114,14 @@ func (k *ReadBATMAN) Run() error {
 
 		// k.log.Infof("received mesh-age")
 
-		k.messages <- buffIn[0:n] // send to output
+		buffOut := make([]byte, n)
+		copied := copy(buffOut, buffIn)
+		if copied != n {
+			k.log.Errorf("Copied wrong number of bytes, expected %d, got %d, for message: %s", n, copied, buffIn)
+			continue
+		}
+
+		k.messages <- buffOut // send to output
 		// k.FarEndIP = net.IP(buffIn[0:4])
 	}
 }
