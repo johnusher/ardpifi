@@ -45,6 +45,7 @@ func main() {
 		revision.Accelerometer,
 		revision.Gyroscope,
 		revision.Magnetometer,
+		// revision.LinearAccelerometer,
 	)
 
 	axisConfig, err := sensor.AxisConfig()
@@ -72,7 +73,12 @@ func main() {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 
-	f1, err := os.Create("acc_data.txt")
+	f0, err := os.Create("eulerSwift_data.txt")
+	if err != nil {
+		panic(err)
+	}
+
+	f1, err := os.Create("LinAcc_data.txt")
 	if err != nil {
 		panic(err)
 	}
@@ -82,8 +88,10 @@ func main() {
 		panic(err)
 	}
 
+	defer f0.Close()
 	defer f1.Close()
 	defer f2.Close()
+	
 
 	for {
 		select {
@@ -94,14 +102,20 @@ func main() {
 			}
 		default:
 
-			// vector, err := sensor.Euler()
-			// if err != nil {
-			// 	panic(err)
-			// }
+			vector, err := sensor.Euler()
+			if err != nil {
+				panic(err)
+			}
+
+			bearing := strconv.FormatFloat(float64(vector.X), 'f', -1, 32)
+			roll := strconv.FormatFloat(float64(vector.Y), 'f', -1, 32)
+			tilt := strconv.FormatFloat(float64(vector.Z), 'f', -1, 32)
+
+			_, err = f0.WriteString(bearing + " " + roll + " " + tilt + "\n")
 
 			// fmt.Printf("\r*** Bearing =%5.3f, roll=%5.3f, tilt=%5.3f\n", vector.X, vector.Y, vector.Z)
 
-			acc, err := sensor.Accelerometer()
+			acc, err := sensor.LinearAccelerometer()
 			if err != nil {
 				panic(err)
 			}
@@ -110,6 +124,26 @@ func main() {
 			// write accelerometer data to file:
 
 			// s := strconv.FormatFloat(acc.X)
+
+			// save to file '-1 flag
+			// func FormatFloat(f float64, fmt byte, prec, bitSize int) string
+			// 			The format fmt is one of
+			// 			'b' (-ddddp±ddd, a binary exponent),
+			// 			'e' (-d.dddde±dd, a decimal exponent),
+			// 			'E' (-d.ddddE±dd, a decimal exponent),
+			// 			'f' (-ddd.dddd, no exponent),
+			// 			'g' ('e' for large exponents,
+			// 			'f' otherwise),
+			// 			'G' ('E' for large exponents,
+			// 			'f' otherwise),
+			// 			'x' (-0xd.ddddp±ddd, a hexadecimal fraction and binary exponent), or '
+			// 			X' (-0Xd.ddddP±ddd, a hexadecimal fraction and binary exponent).
+
+			// The precision prec controls the number of digits (excluding the exponent)
+			// printed by the 'e', 'E', 'f', 'g', 'G', 'x', and 'X' formats.
+			// For 'e', 'E', 'f', 'x', and 'X', it is the number of digits after the decimal point.
+			// For 'g' and 'G' it is the maximum number of significant digits (trailing zeros are removed).
+			// The special precision -1 uses the smallest number of digits necessary such that ParseFloat will return f exactly.
 
 			sx := strconv.FormatFloat(float64(acc.X), 'f', -1, 32)
 			sy := strconv.FormatFloat(float64(acc.Y), 'f', -1, 32)
@@ -145,7 +179,7 @@ func main() {
 
 		}
 
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(5 * time.Millisecond)
 	}
 
 	// Output:
