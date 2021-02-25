@@ -5,7 +5,7 @@
 package main
 
 import (
-	"encoding/json"
+	"encoding/binary"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -56,14 +56,17 @@ const (
 	piTTL = 30 * time.Second
 
 	Pi = 3.14159265358979323846264338327950288419716939937510582097494459 // pi https://oeis.org/A000796
+
+	magicByte = ("BA")
 )
 
 // ChatRequest is ChatRequest, stop telling me about comments
 type ChatRequest struct {
 	Latf  float64
 	Longf float64
-	ID    string
-	Key   rune
+	// ID    string
+	ID  string
+	Key rune
 }
 
 type chatRequestWithTimestamp struct {
@@ -82,7 +85,7 @@ func (c chatRequestWithTimestamp) String() string {
 }
 
 func main() {
-	raspID := flag.String("rasp-id", "raspi 1", "unique raspberry pi ID")
+	raspID := flag.String("rasp-id", "r1", "unique raspberry pi ID") // we need to make this 2 bytes!
 	webAddr := flag.String("web-addr", ":8080", "address to serve web on")
 	noBatman := flag.Bool("no-batman", false, "run without batman network")
 	noDuino := flag.Bool("no-duino", false, "run without arduino")
@@ -98,6 +101,10 @@ func main() {
 		return
 	}
 	log.SetLevel(level)
+
+	// make raspID into 2 bytes: take first 2 letter if needed:
+
+	*raspID = (*raspID)[0:1]
 
 	// // OLED:
 
@@ -277,6 +284,9 @@ func main() {
 	}
 }
 
+// messageLoop receives incoming messages
+// <2 magic bytes><total message length, bytes><sender ID = 2 bytes, (IP?)><who For = 2 bytes, (0= everyone, or ID of)><message type (0=gps, 1=duino command, 2=gesture type)><message, >0 bytes>
+
 func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *image.RGBA, oled oled.OLED, web *web.Web) error {
 	log.Info("Starting message loop")
 
@@ -288,75 +298,72 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *im
 		// listen on the keys channel for key presses AND listen for new BATMAN message
 		message, _ := <-messages
 
-		jsonMessage := ChatRequest{}
+		magicBytesRx := string(append(message[0:1])) // combine the magicBytes
 
-		// make json:
-		err := json.Unmarshal(message, &jsonMessage)
-		if err != nil {
-			log.Errorf("Unmarshal failed: %s", err)
-			log.Errorf("Probably not valid JSON: %s", message)
-
-			// carry on gracefully
+		if magicBytesRx != magicByte {
+			log.Errorf("Received magicBytes %s, expected %s", string(magicBytesRx), magicByte)
 			continue
 		}
 
-		// ip := net.IP(message[0:4])
+		// messageLength := uint8(message[2])
 
-		if jsonMessage.ID == raspID {
-			// we have received message from self:
-			// msg := fmt.Sprintf("received message from self: %+v", jsonMessage)
-			// log.Info(msg)
-			// web.Render(msg)
+		senderID := string(append(message[3:4])) // this is length of raspID = 2 bytes
+
+		whoFor := string(append(message[5:6])) // also if length of raspID = 2 bytes
+
+		messageType := message[7]
+
+		if senderID == raspID {
+			// senderID and raspID should both be two bytes, ie two characters
+
 		} else {
 
-			if string(jsonMessage.Key) != "x" {
+			if (whoFor == string('0')) || (whoFor == raspID) {
+				// message is for everyone or for me
+				if messageType == 1 {
+					// duino command: send straight to duino
+					// first unpack the message:
+					duinoMessage := message[8] // we should maybe look at total message legnth and combine other bytes if longer than 7
 
-				// msg = fmt.Sprintf("received message from other raspi: %s", jsonMessage)
-				// log.Info(msg)
-				// web.Render(msg)
+					// write to duino:
+					duino.Flush()
+					// _, err := duino.Write([]byte(string(jsonMessage.Key)))
+					_, err := duino.Write([]byte(string(duinoMessage)))
 
-				// write to duino:
-				duino.Flush()
-				_, err := duino.Write([]byte(string(jsonMessage.Key)))
+					if err != nil {
+						log.Errorf("3. failed to write to serial port: %s", err)
+						//return err
+					}
+					duino.Flush()
 
-				if err != nil {
-					log.Errorf("3. failed to write to serial port: %s", err)
-					//return err
+					log.Infof("key from other %s \n", (string(duinoMessage)))
+
+					// OLED display:
+					OLEDmsg := fmt.Sprintf("received: %+v", duinoMessage)
+					oled.ShowText(img, 2, OLEDmsg)
 				}
-				duino.Flush()
-
-				log.Infof("key from other %s \n", (string(jsonMessage.Key))) // this doesnt point to the "Key" element of the struct!
-
-				// OLED display:
-				OLEDmsg := fmt.Sprintf("received: %+v", jsonMessage.Key)
-				oled.ShowText(img, 2, OLEDmsg)
 
 			}
-
-			//  message from other:
-			msg := fmt.Sprintf("received: %+v", jsonMessage)
-			log.Info(msg)
-			web.Render(msg)
-
-			// // write to LCD:
-			// lcd.Clear()
-			// lcd.SetPosition(0, 0)
-			// // fmt.Fprint(lcd, t.Format("Message received:"))
-			// _ = lcd.ShowMessage("Message received:", device.SHOW_LINE_1)
-			// lcd.SetPosition(1, 0)
-			// // fmt.Fprint(lcd, t.Format(string(message[4])))
-			// _ = lcd.ShowMessage(string(message[4]), device.SHOW_LINE_2)
-
+			// //  message from other:
+			// msg := fmt.Sprintf("received: %+v", duinoMessage)
+			// log.Info(msg)
+			// web.Render(msg)
 		}
 
-		if _, ok := allPIs[jsonMessage.ID]; !ok {
-			log.Infof("new PI detected: %+v", jsonMessage)
+		// now we update our list of active pis on the network:
+
+		// replace jsonMessage.ID with senderID:
+
+		// if _, ok := allPIs[jsonMessage.ID]; !ok {
+
+		if _, ok := allPIs[senderID]; !ok {
+			log.Infof("new PI detected: %+v", senderID)
 		}
 
 		now := time.Now()
 
-		allPIs[jsonMessage.ID] = chatRequestWithTimestamp{
-			ChatRequest:         jsonMessage,
+		allPIs[senderID] = chatRequestWithTimestamp{
+			// ChatRequest:         message,     // error: cannot use message (type []byte) as type ChatRequest in field value
 			lastMessageReceived: now,
 		}
 
@@ -371,6 +378,53 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *im
 		log.Infof("current PIs: %d", len(allPIs))
 		for _, v := range allPIs {
 			log.Infof("  %s", v)
+		}
+
+		// type ChatRequest struct {
+		// 	Latf  float64
+		// 	Longf float64
+		// 	// ID    string
+		// 	ID  byte
+		// 	Key rune
+		// }
+
+		// type chatRequestWithTimestamp struct {
+		// 	ChatRequest
+		// 	lastMessageReceived time.Time
+		// }
+
+		// now check if the new message is a gps package, and if so update our list of gps locations of each pi
+
+		if messageType == 0 {
+			// gps package
+
+			// Received Lattitude is a float 64 in message bytes 8:15
+			// Received Long is a float 64 in message bytes 16:23
+
+			rxLatBytes := make([]byte, 8)
+
+			for i := 8; i < 16; i++ {
+				rxLatBytes = append(rxLatBytes, message[i])
+			}
+
+			bits := binary.LittleEndian.Uint64(rxLatBytes)
+			rxLatFloat := math.Float64frombits(bits)
+
+			// nb change following so we update for appropriate ID!
+			ChatRequest.Latf = rxLatFloat
+
+			rxLongBytes := make([]byte, 8)
+
+			for i := 16; i < 24; i++ {
+				rxLongBytes = append(rxLongBytes, message[i])
+			}
+
+			bits = binary.LittleEndian.Uint64(rxLongBytes)
+			rxLongFloat := math.Float64frombits(bits)
+
+			// nb change following so we update for appropriate ID!
+			ChatRequest.Longf = rxLongFloat
+
 		}
 
 		if self, ok := allPIs[raspID]; ok && len(allPIs) > 1 {
@@ -405,8 +459,6 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *im
 			}
 		}
 
-		// log.Infof("BATMAN message : %s / %d / 0x%X / 0%o \n", string(pings), pings, pings, pings)
-
 	}
 }
 
@@ -423,29 +475,31 @@ func broadcastLoop(keys <-chan rune, gpsCh <-chan gps.GPSMessage, duino port.Por
 		select {
 
 		case gpsMessage, more = <-gpsCh:
+
 			if !more {
 				log.Infof("gps channel closed\n")
 				log.Infof("exiting")
 				return nil
 			}
 
-			// log.Infof("Local GPS Message received: %+v", gpsMessage)
+			GPSmsgSize := 23                       // 23 bytes for  a gps message
+			messageOut := make([]byte, GPSmsgSize) // sent to batman
 
-			// make struct we send over udp:
-			initChatRequest := ChatRequest{
-				Latf:  gpsMessage.Lat,
-				Longf: gpsMessage.Long,
-				ID:    raspID,
-				Key:   'x', // no key has been pressed
-			}
+			copy(messageOut[0:1], magicByte)
+			messageOut[2] = uint8(GPSmsgSize)
+			copy(messageOut[3:4], raspID)
 
-			// make json:
-			jsonRequest, err := json.Marshal(initChatRequest)
-			if err != nil {
-				log.Errorf("Marshal Register information failed: %s", err)
-				return err
-			}
-			_, err = bm.Conn.WriteToUDP(jsonRequest, bcast)
+			whoFor := '0' // message for everyone
+			copy(messageOut[5:6], string(whoFor))
+
+			messageType := 0 // GPS
+			messageOut[7] = uint8(messageType)
+
+			// now split the float64 lat and long values into bytes and shove them in the message
+			binary.LittleEndian.PutUint64(messageOut[8:15], math.Float64bits(gpsMessage.Lat))
+			binary.LittleEndian.PutUint64(messageOut[16:23], math.Float64bits(gpsMessage.Lat))
+
+			_, err := bm.Conn.WriteToUDP(messageOut, bcast)
 			if err != nil {
 				log.Error(err)
 				return err
@@ -461,20 +515,30 @@ func broadcastLoop(keys <-chan rune, gpsCh <-chan gps.GPSMessage, duino port.Por
 			}
 			log.Infof("key pressed: %s / %d / 0x%X / 0%o \n", string(key), key, key, key)
 
-			initChatRequest := ChatRequest{
-				Latf:  gpsMessage.Lat,
-				Longf: gpsMessage.Long,
-				ID:    raspID,
-				Key:   key,
-			}
+			// initChatRequest := ChatRequest{
+			// 	Latf:  gpsMessage.Lat,
+			// 	Longf: gpsMessage.Long,
+			// 	ID:    raspID,
+			// 	Key:   key,
+			// }
 
-			// make json:
-			jsonRequest, err := json.Marshal(initChatRequest)
-			if err != nil {
-				log.Errorf("Marshal Register information failed: %s", err)
-				return err
-			}
-			_, err = bm.Conn.WriteToUDP(jsonRequest, bcast)
+			GPSmsgSize := 9                        // 23 bytes for a duino message
+			messageOut := make([]byte, GPSmsgSize) // sent to batman
+
+			copy(messageOut[0:1], magicByte)
+			messageOut[2] = uint8(GPSmsgSize)
+			copy(messageOut[3:4], raspID)
+
+			whoFor := '0' // everyone
+			copy(messageOut[5:6], string(whoFor))
+
+			messageType := 1 // duino message
+			messageOut[7] = uint8(messageType)
+
+			messageOut[8] = uint8(key)
+
+			_, err := bm.Conn.WriteToUDP(messageOut, bcast)
+
 			if err != nil {
 				log.Error(err)
 				return err
