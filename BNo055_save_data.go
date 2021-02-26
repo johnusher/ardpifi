@@ -91,7 +91,6 @@ func main() {
 	defer f0.Close()
 	defer f1.Close()
 	defer f2.Close()
-	
 
 	for {
 		select {
@@ -113,7 +112,7 @@ func main() {
 
 			_, err = f0.WriteString(bearing + " " + roll + " " + tilt + "\n")
 
-			// fmt.Printf("\r*** Bearing =%5.3f, roll=%5.3f, tilt=%5.3f\n", vector.X, vector.Y, vector.Z)
+			fmt.Printf("\r*** Bearing =%5.3f, roll=%5.3f, tilt=%5.3f\n", vector.X, vector.Y, vector.Z)
 
 			acc, err := sensor.LinearAccelerometer()
 			if err != nil {
