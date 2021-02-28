@@ -369,22 +369,14 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *im
 
 		now := time.Now()
 
-		crwt := chatRequestWithTimestamp{
-			// ChatRequest:         message,     // error: cannot use message (type []byte) as type ChatRequest in field value
-			lastMessageReceived: now,
+		crwt, ok := allPIs[senderID]
+		if !ok {
+			log.Infof("new PI detected: %+v", senderID)
 		}
+		crwt.lastMessageReceived = now
+		crwt.ID = senderID
 
 		// now do some general house-keeping, set device IDs on the network etc:
-
-		// update ID label:
-		// NB this is surely not the best way to do this! ie user ID should be initialized at the beginning
-
-		if senderID == raspID {
-			crwt.ID = senderID
-
-		} else {
-			crwt.ID = senderID
-		}
 
 		if messageType == messageTypeGPS {
 			// gps package
@@ -406,10 +398,6 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *im
 
 			// nb change following so we update for appropriate ID!
 			crwt.Longf = rxLongFloat
-		}
-
-		if _, ok := allPIs[senderID]; !ok {
-			log.Infof("new PI detected: %+v", senderID)
 		}
 
 		allPIs[senderID] = crwt
