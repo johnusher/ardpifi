@@ -58,6 +58,9 @@ const (
 	Pi = 3.14159265358979323846264338327950288419716939937510582097494459 // pi https://oeis.org/A000796
 
 	magicByte = ("BA")
+
+	messageTypeGPS   = 0
+	messageTypeDuino = 1
 )
 
 // ChatRequest is ChatRequest, stop telling me about comments
@@ -104,7 +107,7 @@ func main() {
 
 	// make raspID into 2 bytes: take first 2 letter if needed:
 
-	*raspID = (*raspID)[0:1]
+	*raspID = (*raspID)[0:2]
 
 	// // OLED:
 
@@ -285,8 +288,12 @@ func main() {
 }
 
 // messageLoop receives incoming messages
-// <2 magic bytes><total message length, bytes><sender ID = 2 bytes, (IP?)><who For = 2 bytes, (0= everyone, or ID of)><message type (0=gps, 1=duino command, 2=gesture type)><message, >0 bytes>
-
+// 2 bytes: <2 magic bytes>
+// 1 byte:  <total message length, bytes>
+// 2 bytes: <sender ID = 2 bytes, (IP?)>
+// 2 bytes: <who For = 2 bytes, (0= everyone, or ID of)>
+// 1 byte:  <message type (0=gps, 1=duino command, 2=gesture type)>
+// N bytes: <message, >0 bytes>
 func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *image.RGBA, oled oled.OLED, web *web.Web) error {
 	log.Info("Starting message loop")
 
@@ -298,7 +305,7 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *im
 		// listen on the keys channel for key presses AND listen for new BATMAN message
 		message, _ := <-messages
 
-		magicBytesRx := string(append(message[0:1])) // combine the magicBytes
+		magicBytesRx := string(message[0:2]) // combine the magicBytes
 
 		if magicBytesRx != magicByte {
 			log.Errorf("Received magicBytes %s, expected %s", string(magicBytesRx), magicByte)
@@ -307,9 +314,9 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *im
 
 		// messageLength := uint8(message[2])
 
-		senderID := string(append(message[3:4])) // this is length of raspID = 2 bytes
+		senderID := string(message[3:5]) // this is length of raspID = 2 bytes
 
-		whoFor := string(append(message[5:6])) // also if length of raspID = 2 bytes
+		whoFor := string(message[5:7]) // also if length of raspID = 2 bytes
 
 		messageType := message[7]
 
@@ -318,9 +325,9 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *im
 
 		} else {
 
-			if (whoFor == string('0')) || (whoFor == raspID) {
+			if whoFor == "0'" || whoFor == raspID {
 				// message is for everyone or for me
-				if messageType == 1 {
+				if messageType == messageTypeDuino {
 					// duino command: send straight to duino
 					// first unpack the message:
 					duinoMessage := message[8] // we should maybe look at total message legnth and combine other bytes if longer than 7
@@ -356,28 +363,11 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *im
 
 		// if _, ok := allPIs[jsonMessage.ID]; !ok {
 
-		if _, ok := allPIs[senderID]; !ok {
-			log.Infof("new PI detected: %+v", senderID)
-		}
-
 		now := time.Now()
 
-		allPIs[senderID] = chatRequestWithTimestamp{
+		crwt := chatRequestWithTimestamp{
 			// ChatRequest:         message,     // error: cannot use message (type []byte) as type ChatRequest in field value
 			lastMessageReceived: now,
-		}
-
-		// remove any PIs we haven't heard from in a while
-		for k, v := range allPIs {
-			if v.lastMessageReceived.Add(piTTL).Before(now) {
-				log.Infof("deleting expired pi: %+v", v)
-				delete(allPIs, k)
-			}
-		}
-
-		log.Infof("current PIs: %d", len(allPIs))
-		for _, v := range allPIs {
-			log.Infof("  %s", v)
 		}
 
 		// type ChatRequest struct {
@@ -395,36 +385,45 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *im
 
 		// now check if the new message is a gps package, and if so update our list of gps locations of each pi
 
-		if messageType == 0 {
+		if messageType == messageTypeGPS {
 			// gps package
 
 			// Received Lattitude is a float 64 in message bytes 8:15
 			// Received Long is a float 64 in message bytes 16:23
 
-			rxLatBytes := make([]byte, 8)
-
-			for i := 8; i < 16; i++ {
-				rxLatBytes = append(rxLatBytes, message[i])
-			}
-
+			rxLatBytes := message[8:16]
 			bits := binary.LittleEndian.Uint64(rxLatBytes)
 			rxLatFloat := math.Float64frombits(bits)
 
 			// nb change following so we update for appropriate ID!
-			ChatRequest.Latf = rxLatFloat
 
-			rxLongBytes := make([]byte, 8)
+			crwt.Latf = rxLatFloat
 
-			for i := 16; i < 24; i++ {
-				rxLongBytes = append(rxLongBytes, message[i])
-			}
-
+			rxLongBytes := message[16:24]
 			bits = binary.LittleEndian.Uint64(rxLongBytes)
 			rxLongFloat := math.Float64frombits(bits)
 
 			// nb change following so we update for appropriate ID!
-			ChatRequest.Longf = rxLongFloat
+			crwt.Longf = rxLongFloat
+		}
 
+		if _, ok := allPIs[senderID]; !ok {
+			log.Infof("new PI detected: %+v", senderID)
+		}
+
+		allPIs[senderID] = crwt
+
+		// remove any PIs we haven't heard from in a while
+		for k, v := range allPIs {
+			if v.lastMessageReceived.Add(piTTL).Before(now) {
+				log.Infof("deleting expired pi: %+v", v)
+				delete(allPIs, k)
+			}
+		}
+
+		log.Infof("current PIs: %d", len(allPIs))
+		for _, v := range allPIs {
+			log.Infof("  %s", v)
 		}
 
 		if self, ok := allPIs[raspID]; ok && len(allPIs) > 1 {
@@ -482,22 +481,31 @@ func broadcastLoop(keys <-chan rune, gpsCh <-chan gps.GPSMessage, duino port.Por
 				return nil
 			}
 
-			GPSmsgSize := 23                       // 23 bytes for  a gps message
+			// GPS message (24 bytes)
+			// 2 bytes: <2 magic bytes>
+			// 1 byte:  <total message length, bytes>
+			// 2 bytes: <sender ID = 2 bytes, (IP?)>
+			// 2 bytes: <who For = 2 bytes, (0= everyone, or ID of)>
+			// 1 byte:  <message type (0=gps, 1=duino command, 2=gesture type)>
+			// 8 bytes: Lat
+			// 8 bytes: Long
+
+			GPSmsgSize := 24                       // 24 bytes for  a gps message
 			messageOut := make([]byte, GPSmsgSize) // sent to batman
 
-			copy(messageOut[0:1], magicByte)
+			copy(messageOut[0:2], magicByte)
 			messageOut[2] = uint8(GPSmsgSize)
-			copy(messageOut[3:4], raspID)
+			copy(messageOut[3:5], raspID)
 
 			whoFor := '0' // message for everyone
-			copy(messageOut[5:6], string(whoFor))
+			copy(messageOut[5:7], string(whoFor))
 
-			messageType := 0 // GPS
+			messageType := messageTypeGPS // GPS
 			messageOut[7] = uint8(messageType)
 
 			// now split the float64 lat and long values into bytes and shove them in the message
-			binary.LittleEndian.PutUint64(messageOut[8:15], math.Float64bits(gpsMessage.Lat))
-			binary.LittleEndian.PutUint64(messageOut[16:23], math.Float64bits(gpsMessage.Lat))
+			binary.LittleEndian.PutUint64(messageOut[8:16], math.Float64bits(gpsMessage.Lat))
+			binary.LittleEndian.PutUint64(messageOut[16:24], math.Float64bits(gpsMessage.Long))
 
 			_, err := bm.Conn.WriteToUDP(messageOut, bcast)
 			if err != nil {
@@ -522,17 +530,25 @@ func broadcastLoop(keys <-chan rune, gpsCh <-chan gps.GPSMessage, duino port.Por
 			// 	Key:   key,
 			// }
 
-			GPSmsgSize := 9                        // 23 bytes for a duino message
-			messageOut := make([]byte, GPSmsgSize) // sent to batman
+			// duino message (9 bytes)
+			// 2 bytes: <2 magic bytes>
+			// 1 byte:  <total message length, bytes>
+			// 2 bytes: <sender ID = 2 bytes, (IP?)>
+			// 2 bytes: <who For = 2 bytes, (0= everyone, or ID of)>
+			// 1 byte:  <message type (0=gps, 1=duino command, 2=gesture type)>
+			// 1 byte:  key
 
-			copy(messageOut[0:1], magicByte)
-			messageOut[2] = uint8(GPSmsgSize)
-			copy(messageOut[3:4], raspID)
+			duinoMsgSize := 9                        // 23 bytes for a duino message
+			messageOut := make([]byte, duinoMsgSize) // sent to batman
+
+			copy(messageOut[0:2], magicByte)
+			messageOut[2] = uint8(duinoMsgSize)
+			copy(messageOut[3:5], raspID)
 
 			whoFor := '0' // everyone
-			copy(messageOut[5:6], string(whoFor))
+			copy(messageOut[5:7], string(whoFor))
 
-			messageType := 1 // duino message
+			messageType := messageTypeDuino // duino message
 			messageOut[7] = uint8(messageType)
 
 			messageOut[8] = uint8(key)
