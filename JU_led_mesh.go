@@ -61,6 +61,8 @@ const (
 
 	messageTypeGPS   = 0
 	messageTypeDuino = 1
+
+	raspiIDEveryone = "00"
 )
 
 // ChatRequest is ChatRequest, stop telling me about comments
@@ -324,8 +326,8 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *im
 
 		} else {
 
-			// if whoFor == "0" || whoFor == raspID {   // the strcmp with whoFor doesnt work!!
-			if message[6] == 0 || whoFor == raspID { // message[6] == 0  means for everyone.
+			if whoFor == raspiIDEveryone || whoFor == raspID { // the strcmp with whoFor doesnt work!!
+				// if message[6] == 0 || whoFor == raspID { // message[6] == 0  means for everyone.
 				// message is for everyone or for me
 
 				if messageType == messageTypeDuino {
@@ -498,8 +500,8 @@ func broadcastLoop(keys <-chan rune, gpsCh <-chan gps.GPSMessage, duino port.Por
 			messageOut[2] = uint8(GPSmsgSize)
 			copy(messageOut[3:5], raspID)
 
-			whoFor := '0' // message for everyone
-			copy(messageOut[5:7], string(whoFor))
+			whoFor := raspiIDEveryone // message for everyone
+			copy(messageOut[5:7], whoFor)
 
 			messageType := messageTypeGPS // GPS
 			messageOut[7] = uint8(messageType)
@@ -546,8 +548,8 @@ func broadcastLoop(keys <-chan rune, gpsCh <-chan gps.GPSMessage, duino port.Por
 			messageOut[2] = uint8(duinoMsgSize)
 			copy(messageOut[3:5], raspID)
 
-			whoFor := '0' // everyone
-			copy(messageOut[5:7], string(whoFor))
+			whoFor := raspiIDEveryone // everyone
+			copy(messageOut[5:7], whoFor)
 
 			messageType := messageTypeDuino // duino message
 			messageOut[7] = uint8(messageType)
