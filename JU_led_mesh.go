@@ -67,9 +67,8 @@ const (
 type ChatRequest struct {
 	Latf  float64
 	Longf float64
-	// ID    string
-	ID  string
-	Key rune
+	ID    string
+	Key   rune
 }
 
 type chatRequestWithTimestamp struct {
@@ -325,9 +324,12 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *im
 
 		} else {
 
-			if whoFor == "0'" || whoFor == raspID {
+			// if whoFor == "0" || whoFor == raspID {   // the strcmp with whoFor doesnt work!!
+			if message[6] == 0 || whoFor == raspID { // message[6] == 0  means for everyone.
 				// message is for everyone or for me
+
 				if messageType == messageTypeDuino {
+
 					// duino command: send straight to duino
 					// first unpack the message:
 					duinoMessage := message[8] // we should maybe look at total message legnth and combine other bytes if longer than 7
@@ -370,20 +372,17 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *im
 			lastMessageReceived: now,
 		}
 
-		// type ChatRequest struct {
-		// 	Latf  float64
-		// 	Longf float64
-		// 	// ID    string
-		// 	ID  byte
-		// 	Key rune
-		// }
+		// now do some general house-keeping, set device IDs on the network etc:
 
-		// type chatRequestWithTimestamp struct {
-		// 	ChatRequest
-		// 	lastMessageReceived time.Time
-		// }
+		// update ID label:
+		// NB this is surely not the best way to do this! ie user ID should be initialized at the beginning
 
-		// now check if the new message is a gps package, and if so update our list of gps locations of each pi
+		if senderID == raspID {
+			crwt.ID = senderID
+
+		} else {
+			crwt.ID = senderID
+		}
 
 		if messageType == messageTypeGPS {
 			// gps package
@@ -426,35 +425,37 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *im
 			log.Infof("  %s", v)
 		}
 
-		if self, ok := allPIs[raspID]; ok && len(allPIs) > 1 {
-			// we have >1 Pis, including ourself, find bearing and distance from local to each pi
+		if messageType == messageTypeGPS {
+			if self, ok := allPIs[raspID]; ok && len(allPIs) > 1 {
+				// we have >1 Pis, including ourself, find bearing and distance from local to each pi
 
-			// NB should we also do this when we have a new estimate for our local GPS location?
+				// NB should we also do this when we have a new estimate for our local GPS location?
 
-			lat1 := self.Latf
-			long1 := self.Longf
+				lat1 := self.Latf
+				long1 := self.Longf
 
-			for piID, crwt := range allPIs {
-				if piID == raspID {
-					// this is ourself, skip
-					continue
+				for piID, crwt := range allPIs {
+					if piID == raspID {
+						// this is ourself, skip
+						continue
+					}
+
+					lat2 := crwt.Latf
+					long2 := crwt.Longf
+
+					bearing, _ := calcGPSBearing(lat1, long1, lat2, long2)
+					disance := calcGPSdistance(lat1, long1, lat2, long2)
+
+					msg1 := fmt.Sprintf("bearing to %s = %f\xB0", crwt.ID, bearing)
+					log.Infof(msg1)
+					msg2 := fmt.Sprintf("dist to %s = %f m", crwt.ID, disance)
+					log.Infof(msg2)
+
+					msg1 = fmt.Sprintf("bearing = %f\xB0", bearing)
+					msg2 = fmt.Sprintf("dist = %f m", disance)
+					oled.ShowText(img, 3, msg1)
+					oled.ShowText(img, 4, msg2)
 				}
-
-				lat2 := crwt.Latf
-				long2 := crwt.Longf
-
-				bearing, _ := calcGPSBearing(lat1, long1, lat2, long2)
-				disance := calcGPSdistance(lat1, long1, lat2, long2)
-
-				msg1 := fmt.Sprintf("bearing to %s = %f\xB0", crwt.ID, bearing)
-				log.Infof(msg1)
-				msg2 := fmt.Sprintf("dist to %s = %f m", crwt.ID, disance)
-				log.Infof(msg2)
-
-				msg1 = fmt.Sprintf("bearing = %f\xB0", bearing)
-				msg2 = fmt.Sprintf("dist = %f m", disance)
-				oled.ShowText(img, 3, msg1)
-				oled.ShowText(img, 4, msg2)
 			}
 		}
 
