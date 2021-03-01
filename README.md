@@ -46,15 +46,26 @@ Raspbian has a software I²C driver that can be enabled by adding the following 
 dtoverlay=i2c-gpio,bus=3
 This will create an I²C bus called /dev/i2c-3. SDA will be on GPIO23 and SCL will be on GPIO24 which are pins 16 and 18 on the GPIO header respectively.
 
-This works for me, only occasional glitches: <ins>Slowing the I²C bus transactions
+Slowing the I²C bus transactions
 
 The solution require slowing the I²C bus transactions to 25 kb/s, by inserting a line in the /boot/config.txt file:
 
 dtparam=i2c_arm_baudrate=25000
 
-</ins>
 
 
+sudo i2cdetect -l
+
+You will now see that i2c bus 3 also listed. Also run:
+
+sudo i2cdetect -y 1
+
+This should show OLED on 3c
+
+
+sudo i2cdetect -y 3
+
+This should show the BNo055 on 28
 
 
 There are "no hardware" options for running the main Go file without these HW modules.

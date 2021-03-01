@@ -350,7 +350,7 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *im
 					log.Infof("key from other %s \n", (string(duinoMessage)))
 
 					// OLED display:
-					OLEDmsg := fmt.Sprintf("received: %+v", duinoMessage)
+					OLEDmsg := fmt.Sprintf("received:  %s", (string(duinoMessage)))
 					oled.ShowText(img, 2, OLEDmsg)
 				}
 

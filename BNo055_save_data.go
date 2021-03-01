@@ -16,7 +16,7 @@ const (
 )
 
 func main() {
-	sensor, err := bno055.NewSensor(0x28, 1)
+	sensor, err := bno055.NewSensor(0x28, 3)
 	if err != nil {
 		panic(err)
 	}
