@@ -22,37 +22,31 @@ Connect Arduino Uno (also Nano clone tested) to Raspi 3 via USB. Programmable Ne
 
 NEO-6M GPS module connect with GPIO serial (uses serial port /dev/ttyS0. In raspi-config settings, you need to disable serial console output, and disable bluetooth.). I have used an external antenna and a small ceramic antenna: both seem to work.
 
-Bosch BNO055:  triaxial accelerometer, gyroscope, geomagnetic sensor.
 
 OLED 128*64.
 
-Both BNo055 and OLED connect via I2C. ie SDA and SCL are shared lines (pin 3 and 5), so connect in parallel. I powered  BNo055 with +3.3 V (pin 1), and OLED with +5 V.
+Power with +5 V. OLED connects via I2C bus 1. SDA -> pin 3  SCL -> pin 5). 
 
-WLAN dongle: not tested yet!  This messes up BATMAN as the dongle defaults to WLAN0.
-To change this and make WLAN0 the built-in: see https://github.com/RaspAP/raspap-webgui/issues/335
+Bosch BNO055:  triaxial accelerometer, gyroscope, geomagnetic sensor.
 
-Notes on I2c:
+Power with +3.3 V.
+connect BNO055 SDA to pin 16 and SCLK to pin 18.
+
+I2c configure:
 
 From https://github.com/kpeu3i/bno055/:
 
 "it seems all versions of Raspberry Pi have an I²C bus hardware problem preventing them from working correctly with Bosch BNO055. The problem has been variously diagnosed as being due to the Pi’s inability to handle clock stretching in arbitrary parts of the I²C transaction and the BNO055 chip’s exquisite sensitivity to I²C bus levels."
 
-Solutions:
 
-Configuring software I²C driver
-
-Raspbian has a software I²C driver that can be enabled by adding the following line to /boot/config.txt:
+Raspbian has a software I2C driver that can be enabled by adding the following line to /boot/config.txt:
 
 dtoverlay=i2c-gpio,bus=3
-This will create an I²C bus called /dev/i2c-3. SDA will be on GPIO23 and SCL will be on GPIO24 which are pins 16 and 18 on the GPIO header respectively.
-
-Slowing the I²C bus transactions
-
-The solution require slowing the I²C bus transactions to 25 kb/s, by inserting a line in the /boot/config.txt file:
-
-dtparam=i2c_arm_baudrate=25000
+This will create an I2C bus called /dev/i2c-3. SDA will be on GPIO23 and SCL will be on GPIO24 which are pins 16 and 18 on the GPIO header respectively.
 
 
+
+Check your I2c is set up correctly:
 
 sudo i2cdetect -l
 
@@ -66,6 +60,10 @@ This should show OLED on 3c
 sudo i2cdetect -y 3
 
 This should show the BNo055 on 28
+
+
+WLAN dongle: not tested yet!  This messes up BATMAN as the dongle defaults to WLAN0.
+To change this and make WLAN0 the built-in: see https://github.com/RaspAP/raspap-webgui/issues/335
 
 
 There are "no hardware" options for running the main Go file without these HW modules.
