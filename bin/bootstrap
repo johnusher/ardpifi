@@ -75,8 +75,8 @@ curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.
 
 # copy .local.bash to system, enable on reboot
 cp ~/code/go/src/github.com/siggy/ledmesh/.local.bash ~/
-source ~/.local.bash
-echo "[[ -s ${HOME}/.local.bash ]] && source ${HOME}/.local.bash" >> ~/.bashrc
+. ~/.local.bash
+echo "[[ -s ${HOME}/.local.bash ]] && . ${HOME}/.local.bash" >> ~/.bashrc
 
 
 
