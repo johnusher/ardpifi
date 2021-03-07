@@ -272,7 +272,7 @@ func main() {
 		errs <- messageLoop(messages, duino, *raspID, img, oled, web)
 	}()
 	go func() {
-		errs <- broadcastLoop(keys, gpsChan, duino, *raspID, bcastIP, bm, img, oled)
+		errs <- broadcastLoop(keys, gpsChan, accChan, duino, *raspID, bcastIP, bm, img, oled)
 	}()
 	go func() {
 		// handle key presses from web, send to messages channel
@@ -455,8 +455,6 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *im
 
 					// msg1 = fmt.Sprintf("bearing = %d\xB0", bearingI)
 					msg1 = fmt.Sprintf("bearing = %d", bearingI)
-					// U+00B0
-
 					msg2 = fmt.Sprintf("dist = %d m", distI)
 					oled.ShowText(img, 3, msg1)
 					oled.ShowText(img, 4, msg2)
@@ -467,17 +465,32 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *im
 	}
 }
 
-func broadcastLoop(keys <-chan rune, gpsCh <-chan gps.GPSMessage, duino port.Port, raspID string, bcastIP net.IP, bm *readBATMAN.ReadBATMAN, img *image.RGBA, oled oled.OLED) error {
+func broadcastLoop(keys <-chan rune, gpsCh <-chan gps.GPSMessage, accCh <-chan acc.ACCMessage, duino port.Port, raspID string, bcastIP net.IP, bm *readBATMAN.ReadBATMAN, img *image.RGBA, oled oled.OLED) error {
 	log.Info("Starting broadcast loop")
 
 	// buf := make([]byte, 5)   // this was used for serial return from duino
 
 	bcast := &net.UDPAddr{Port: batPort, IP: bcastIP}
 	gpsMessage := gps.GPSMessage{}
+	accMessage := acc.ACCMessage{}
 	more := false
 
 	for {
 		select {
+
+		case accMessage, more = <-accCh:
+
+			if !more {
+				log.Infof("acc channel closed\n")
+				log.Infof("exiting")
+				return nil
+			}
+
+			// OLED display:
+			bearingI := int64(math.Round(accMessage.Bearing))
+			msgP := fmt.Sprintf("Pointing = %d", bearingI)
+
+			oled.ShowText(img, 1, msgP)
 
 		case gpsMessage, more = <-gpsCh:
 
