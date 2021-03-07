@@ -20,6 +20,7 @@ import (
 	// "github.com/qinxin0720/lcd1602"
 
 	// i2c "github.com/d2r2/go-i2c"
+	"github.com/johnusher/ardpifi/pkg/acc"
 	"github.com/johnusher/ardpifi/pkg/gps"
 	"github.com/johnusher/ardpifi/pkg/iface"
 	"github.com/johnusher/ardpifi/pkg/keyboard"
@@ -95,6 +96,8 @@ func main() {
 	noDuino := flag.Bool("no-duino", false, "run without arduino")
 	noGPS := flag.Bool("no-gps", false, "run without gps")
 	noOLED := flag.Bool("no-oled", false, "run without oled display")
+	noACC := flag.Bool("no-acc", false, "run without Bosch accelerometer")
+
 	logLevel := flag.String("log-level", "info", "log level, must be one of: panic, fatal, error, warn, info, debug, trace")
 
 	flag.Parse()
@@ -110,10 +113,8 @@ func main() {
 
 	*raspID = (*raspID)[0:2]
 
-	// // OLED:
+	// OLED:
 
-	// var i2cDevice *i2c.I2C
-	// if !*noOLED {
 	oled, err := oled.Open(&i2c.Devfs{Dev: "/dev/i2c-1"}, *noOLED)
 	if err != nil {
 		panic(err)
@@ -144,8 +145,6 @@ func main() {
 	if err := oled.Draw(); err != nil {
 		panic(err)
 	}
-
-	// }
 
 	web := web.InitWeb(*webAddr)
 	log.Infof("web: %+v", web)
@@ -236,6 +235,16 @@ func main() {
 		return
 	}
 
+	// init accelerometer module (Bosch)
+	accChan := make(chan acc.ACCMessage)
+	a, err := acc.Init(accChan, *noACC)
+	if err != nil {
+		log.Errorf("failed to initialize acc: %s", err)
+		return
+	}
+	// defer a.Close()
+
+	// init GPS module:
 	gpsChan := make(chan gps.GPSMessage)
 	g, err := gps.Init(gpsChan, *noGPS)
 	if err != nil {
@@ -244,10 +253,11 @@ func main() {
 	}
 	defer g.Close()
 
-	// run kb and BATMAN:
+	// go forth
 	go kb.Run()
 	go bm.Run()
 	go g.Run()
+	go a.Run()
 
 	errs := make(chan error)
 
@@ -435,14 +445,19 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *im
 
 					bearing, _ := calcGPSBearing(lat1, long1, lat2, long2)
 					disance := calcGPSdistance(lat1, long1, lat2, long2)
+					bearingI := int64(math.Round(bearing))
+					distI := int64(math.Round(disance))
 
-					msg1 := fmt.Sprintf("bearing to %s = %f\xB0", crwt.ID, bearing)
+					msg1 := fmt.Sprintf("bearing to %s = %d\xB0", crwt.ID, bearingI)
 					log.Infof(msg1)
-					msg2 := fmt.Sprintf("dist to %s = %f m", crwt.ID, disance)
+					msg2 := fmt.Sprintf("dist to %s = %d m", crwt.ID, distI)
 					log.Infof(msg2)
 
-					msg1 = fmt.Sprintf("bearing = %f\xB0", bearing)
-					msg2 = fmt.Sprintf("dist = %f m", disance)
+					// msg1 = fmt.Sprintf("bearing = %d\xB0", bearingI)
+					msg1 = fmt.Sprintf("bearing = %d", bearingI)
+					// U+00B0
+
+					msg2 = fmt.Sprintf("dist = %d m", distI)
 					oled.ShowText(img, 3, msg1)
 					oled.ShowText(img, 4, msg2)
 				}

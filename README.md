@@ -44,6 +44,14 @@ Raspbian has a software I2C driver that can be enabled by adding the following l
 dtoverlay=i2c-gpio,bus=3
 This will create an I2C bus called /dev/i2c-3. SDA will be on GPIO23 and SCL will be on GPIO24 which are pins 16 and 18 on the GPIO header respectively.
 
+SDA = pin 16, SCL = pin 18.
+
+```bash
+sudo tee --append /boot/config.txt > /dev/null << 'EOF'
+dtoverlay=i2c-gpio,bus=3
+EOF
+```
+++sudo reboot now
 
 
 Check your I2c is set up correctly:
@@ -216,6 +224,8 @@ Run Bootstrap from https://github.com/johnusher/ardpifi/tree/master/bin
 
 ### Mesh network
 
+NB need to runt his command twice!
+
 On raspi #1 run
 
 ./runBATMAN.sh
@@ -310,8 +320,10 @@ $ go run JU_led_mesh.go -h
     	run without arduino
   -no-gps
     	run without gps
+  -no-acc
+    	run without Bosch accelerometer      
   -no-oled
-    	run without oled display
+    	run without oled display      
   -rasp-id string
     	unique raspberry pi ID (default "raspi 1")
   -web-addr string
