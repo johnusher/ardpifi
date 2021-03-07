@@ -28,7 +28,7 @@ type GPSMessage struct {
 
 type gps struct {
 	gps        chan<- GPSMessage
-	SerialPort io.ReadWriteCloser // i was trying to pass this out of init and then back in to run
+	SerialPort io.ReadWriteCloser
 }
 
 func Init(gpsChan chan<- GPSMessage, mock bool) (GPS, error) {
@@ -39,9 +39,7 @@ func Init(gpsChan chan<- GPSMessage, mock bool) (GPS, error) {
 	return initGPS(gpsChan)
 }
 
-func initGPS(gpsChan chan<- GPSMessage) (GPS, error) { // !!! not sure about this!
-
-	// NB I wanted to open the serial port here, then return the serial port, and use it in the run()
+func initGPS(gpsChan chan<- GPSMessage) (GPS, error) {
 
 	options := serial.OpenOptions{
 		PortName:        "/dev/ttyS0",
