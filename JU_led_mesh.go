@@ -333,6 +333,25 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *im
 
 		if senderID == raspID {
 			// senderID and raspID should both be two bytes, ie two characters
+			if messageType == messageTypeDuino {
+				// write to duino:
+				// this is currently kinda redundant, ie whether the message is from self or other, we send it to duino
+				// ... but one day we may send a different message for self-sent message
+
+				// first unpack the message:
+				duinoMessage := message[8] // we should maybe look at total message legnth and combine other bytes if longer than 7
+
+				// write to duino:
+				duino.Flush()
+				// _, err := duino.Write([]byte(string(jsonMessage.Key)))
+				_, err := duino.Write([]byte(string(duinoMessage)))
+
+				if err != nil {
+					log.Errorf("3. failed to write to serial port: %s", err)
+					//return err
+				}
+				duino.Flush()
+			}
 
 		} else {
 
@@ -579,12 +598,13 @@ func broadcastLoop(keys <-chan rune, gpsCh <-chan gps.GPSMessage, accCh <-chan a
 				return err
 			}
 
-			// write to duino: NB maybe insert a wait before here so all pi's send the new duino command at a similar time
-			_, err = duino.Write([]byte(string(key)))
-			if err != nil {
-				log.Errorf("2. failed to write to serial port: %s", err)
-				return err
-			}
+			// NB now we send message ot duino after we have received it on the net- this way we sync with other duinos better
+			// // write to duino: NB maybe insert a wait before here so all pi's send the new duino command at a similar time
+			// _, err = duino.Write([]byte(string(key)))
+			// if err != nil {
+			// 	log.Errorf("2. failed to write to serial port: %s", err)
+			// 	return err
+			// }
 
 			// OLED display:
 			oled.ShowText(img, 2, fmt.Sprintf("key pressed: %s", string(key)))
