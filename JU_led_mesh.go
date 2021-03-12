@@ -43,7 +43,8 @@ import (
 )
 
 const (
-	batPort = 4200
+	bearingThreshold = 10 // value in degrees. if we are within eg 10 degrees pointing at another, then consider it a lock on
+	batPort          = 4200
 	// msgSize   = net.IPv4len + 4 // IP + uint32
 	interval  = 1 * time.Second
 	ifaceName = "bat0" // rpi
@@ -68,10 +69,11 @@ const (
 
 // ChatRequest is ChatRequest, stop telling me about comments
 type ChatRequest struct {
-	Latf  float64
-	Longf float64
-	ID    string
-	Key   rune
+	Latf     float64
+	Longf    float64
+	ID       string
+	Key      rune
+	PointDir int64
 }
 
 type chatRequestWithTimestamp struct {
@@ -209,24 +211,6 @@ func main() {
 
 	log.Infof("Serving at %s", myIP)
 
-	// // write to LCD:
-	// lcd.SetPosition(0, 0)
-	// _ = lcd.ShowMessage("Starting", device.SHOW_LINE_1)
-
-	// lcd.SetPosition(1, 0)
-
-	// _ = lcd.ShowMessage(string(myIP), device.SHOW_LINE_2)
-
-	// sig := make(chan os.Signal, 1)
-	// signal.Notify(sig, os.Interrupt, os.Kill)
-
-	// conn, err := net.ListenUDP("udp", &net.UDPAddr{Port: port})
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// pingAt := time.Now()
-
 	// init BATMAN:
 	messages := make(chan []byte)
 	bm, err := readBATMAN.Init(messages, *noBatman, bcastIP)
@@ -269,10 +253,10 @@ func main() {
 	img := image.NewRGBA(image.Rect(0, 0, 128, 64))
 
 	go func() {
-		errs <- messageLoop(messages, duino, *raspID, img, oled, web)
+		errs <- messageLoop(messages, accChan, duino, *raspID, img, oled, web, bcastIP, bm)
 	}()
 	go func() {
-		errs <- broadcastLoop(keys, gpsChan, accChan, duino, *raspID, bcastIP, bm, img, oled)
+		errs <- broadcastLoop(keys, gpsChan, duino, *raspID, bcastIP, bm, img, oled)
 	}()
 	go func() {
 		// handle key presses from web, send to messages channel
@@ -305,69 +289,74 @@ func main() {
 // 2 bytes: <who For = 2 bytes, (0= everyone, or ID of)>
 // 1 byte:  <message type (0=gps, 1=duino command, 2=gesture type)>
 // N bytes: <message, >0 bytes>
-func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *image.RGBA, oled oled.OLED, web *web.Web) error {
+func messageLoop(messages <-chan []byte, accCh <-chan acc.ACCMessage, duino port.Port, raspID string, img *image.RGBA, oled oled.OLED, web *web.Web, bcastIP net.IP, bm *readBATMAN.ReadBATMAN) error {
 	log.Info("Starting message loop")
-
+	// listen on the keys channel for key presses AND listen for new BATMAN message
 	// allPIs keeps track of the last message received from each PI, keyed by
 	// raspID
 	allPIs := map[string]chatRequestWithTimestamp{}
+	accMessage := acc.ACCMessage{}
+	bcast := &net.UDPAddr{Port: batPort, IP: bcastIP}
+
+	more := false
 
 	for {
-		// listen on the keys channel for key presses AND listen for new BATMAN message
-		message, _ := <-messages
 
-		magicBytesRx := string(message[0:2]) // combine the magicBytes
+		select {
 
-		if magicBytesRx != magicByte {
-			log.Errorf("Received magicBytes %s, expected %s", string(magicBytesRx), magicByte)
-			continue
-		}
+		case accMessage, more = <-accCh:
 
-		// messageLength := uint8(message[2])
-
-		senderID := string(message[3:5]) // this is length of raspID = 2 bytes
-
-		whoFor := string(message[5:7]) // also if length of raspID = 2 bytes
-
-		messageType := message[7]
-
-		if senderID == raspID {
-			// senderID and raspID should both be two bytes, ie two characters
-			if messageType == messageTypeDuino {
-				// write to duino:
-				// this is currently kinda redundant, ie whether the message is from self or other, we send it to duino
-				// ... but one day we may send a different message for self-sent message
-
-				// first unpack the message:
-				duinoMessage := message[8] // we should maybe look at total message legnth and combine other bytes if longer than 7
-
-				// write to duino:
-				duino.Flush()
-				// _, err := duino.Write([]byte(string(jsonMessage.Key)))
-				_, err := duino.Write([]byte(string(duinoMessage)))
-
-				if err != nil {
-					log.Errorf("3. failed to write to serial port: %s", err)
-					//return err
-				}
-				duino.Flush()
+			// received message from BNo055 module.
+			// eg bearing, ie NSEW direction we are pointing
+			if !more {
+				log.Infof("acc channel closed\n")
+				log.Infof("exiting")
+				return nil
 			}
 
-		} else {
+			// bearingI is "pointing direction" of self
+			bearingI := int64(math.Round(accMessage.Bearing))
 
-			if whoFor == raspiIDEveryone || whoFor == raspID { // the strcmp with whoFor doesnt work!!
-				// if message[6] == 0 || whoFor == raspID { // message[6] == 0  means for everyone.
-				// message is for everyone or for me
+			// save to self
+			crwt, _ := allPIs[raspID]
+			crwt.PointDir = bearingI // trying to save here but later, it just pulls a zero!
 
+			msgP := fmt.Sprintf("Pointing direction = %d", bearingI)
+			log.Infof(msgP)
+
+			// OLED display:
+			msgP = fmt.Sprintf("Pointing = %d", bearingI)
+			oled.ShowText(img, 1, msgP)
+
+		case message, _ := <-messages:
+
+			magicBytesRx := string(message[0:2]) // combine the magicBytes
+
+			if magicBytesRx != magicByte {
+				log.Errorf("Received magicBytes %s, expected %s", string(magicBytesRx), magicByte)
+				continue
+			}
+
+			// messageLength := uint8(message[2])  // todo: check message is correct length!
+
+			senderID := string(message[3:5]) // this is length of raspID = 2 bytes
+
+			whoFor := string(message[5:7]) // whoFor is also length of raspID = 2 bytes
+
+			messageType := message[7]
+
+			if senderID == raspID {
+				// senderID and raspID should both be two bytes, ie two characters
 				if messageType == messageTypeDuino {
+					// write to duino:
+					// this is currently kinda redundant, ie whether the message is from self or other, we send it to duino
+					// ... but one day we may send a different message for self-sent message
 
-					// duino command: send straight to duino
 					// first unpack the message:
 					duinoMessage := message[8] // we should maybe look at total message legnth and combine other bytes if longer than 7
 
 					// write to duino:
 					duino.Flush()
-					// _, err := duino.Write([]byte(string(jsonMessage.Key)))
 					_, err := duino.Write([]byte(string(duinoMessage)))
 
 					if err != nil {
@@ -375,108 +364,172 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *im
 						//return err
 					}
 					duino.Flush()
-
-					log.Infof("key from other %s \n", (string(duinoMessage)))
-
-					// OLED display:
-					OLEDmsg := fmt.Sprintf("received:  %s", (string(duinoMessage)))
-					oled.ShowText(img, 2, OLEDmsg)
 				}
 
-			}
-			// //  message from other:
-			// msg := fmt.Sprintf("received: %+v", duinoMessage)
-			// log.Info(msg)
-			// web.Render(msg)
-		}
+			} else {
 
-		// now we update our list of active pis on the network:
+				if whoFor == raspiIDEveryone || whoFor == raspID { // the strcmp with whoFor doesnt work!!
+					// if message[6] == 0 || whoFor == raspID { // message[6] == 0  means for everyone.
+					// message is not sent by self and is for everyone or for me
 
-		// replace jsonMessage.ID with senderID:
+					if messageType == messageTypeDuino {
 
-		// if _, ok := allPIs[jsonMessage.ID]; !ok {
+						// duino command: send straight to duino
+						// first unpack the message:
+						duinoMessage := message[8] // we should maybe look at total message legnth and combine other bytes if longer than 7
 
-		now := time.Now()
+						// write to duino:
+						duino.Flush()
+						_, err := duino.Write([]byte(string(duinoMessage)))
 
-		crwt, ok := allPIs[senderID]
-		if !ok {
-			log.Infof("new PI detected: %+v", senderID)
-		}
-		crwt.lastMessageReceived = now
-		crwt.ID = senderID
+						if err != nil {
+							log.Errorf("3. failed to write to serial port: %s", err)
+							//return err
+						}
+						duino.Flush()
 
-		// now do some general house-keeping, set device IDs on the network etc:
+						log.Infof("key from other %s \n", (string(duinoMessage)))
 
-		if messageType == messageTypeGPS {
-			// gps package
-
-			// Received Lattitude is a float 64 in message bytes 8:15
-			// Received Long is a float 64 in message bytes 16:23
-
-			rxLatBytes := message[8:16]
-			bits := binary.LittleEndian.Uint64(rxLatBytes)
-			rxLatFloat := math.Float64frombits(bits)
-
-			// nb change following so we update for appropriate ID!
-
-			crwt.Latf = rxLatFloat
-
-			rxLongBytes := message[16:24]
-			bits = binary.LittleEndian.Uint64(rxLongBytes)
-			rxLongFloat := math.Float64frombits(bits)
-
-			// nb change following so we update for appropriate ID!
-			crwt.Longf = rxLongFloat
-		}
-
-		allPIs[senderID] = crwt
-
-		// remove any PIs we haven't heard from in a while
-		for k, v := range allPIs {
-			if v.lastMessageReceived.Add(piTTL).Before(now) {
-				log.Infof("deleting expired pi: %+v", v)
-				delete(allPIs, k)
-			}
-		}
-
-		log.Infof("current PIs: %d", len(allPIs))
-		for _, v := range allPIs {
-			log.Infof("  %s", v)
-		}
-
-		if messageType == messageTypeGPS {
-			if self, ok := allPIs[raspID]; ok && len(allPIs) > 1 {
-				// we have >1 Pis, including ourself, find bearing and distance from local to each pi
-
-				// NB should we also do this when we have a new estimate for our local GPS location?
-
-				lat1 := self.Latf
-				long1 := self.Longf
-
-				for piID, crwt := range allPIs {
-					if piID == raspID {
-						// this is ourself, skip
-						continue
+						// OLED display:
+						OLEDmsg := fmt.Sprintf("received:  %s", (string(duinoMessage)))
+						oled.ShowText(img, 2, OLEDmsg)
 					}
+				}
+			}
 
-					lat2 := crwt.Latf
-					long2 := crwt.Longf
+			// now we update our list of active pis on the network:
+			now := time.Now()
 
-					bearing, _ := calcGPSBearing(lat1, long1, lat2, long2)
-					disance := calcGPSdistance(lat1, long1, lat2, long2)
-					bearingI := int64(math.Round(bearing))
-					distI := int64(math.Round(disance))
+			crwt, ok := allPIs[senderID]
+			if !ok {
+				log.Infof("new PI detected: %+v", senderID)
+			}
+			crwt.lastMessageReceived = now
+			crwt.ID = senderID
 
-					msg1 := fmt.Sprintf("bearing to %s = %d\xB0", crwt.ID, bearingI)
-					log.Infof(msg1)
-					msg2 := fmt.Sprintf("dist to %s = %d m", crwt.ID, distI)
-					log.Infof(msg2)
+			// now do some general house-keeping, set device IDs on the network etc:
 
-					// msg1 = fmt.Sprintf("bearing = %d\xB0", bearingI)
-					msg1 = fmt.Sprintf("bearing = %d", bearingI)
-					msg2 = fmt.Sprintf("dist = %d m", distI)
-					oled.ShowText(img, 3, msg1)
-					oled.ShowText(img, 4, msg2)
+			if messageType == messageTypeGPS {
+				// gps package
+
+				// Received Lattitude is a float 64 in message bytes 8:15
+				// Received Long is a float 64 in message bytes 16:23
+
+				rxLatBytes := message[8:16]
+				bits := binary.LittleEndian.Uint64(rxLatBytes)
+				rxLatFloat := math.Float64frombits(bits)
+
+				crwt.Latf = rxLatFloat
+
+				rxLongBytes := message[16:24]
+				bits = binary.LittleEndian.Uint64(rxLongBytes)
+				rxLongFloat := math.Float64frombits(bits)
+
+				crwt.Longf = rxLongFloat
+			}
+
+			allPIs[senderID] = crwt
+
+			// remove any PIs we haven't heard from in a while
+			for k, v := range allPIs {
+				if v.lastMessageReceived.Add(piTTL).Before(now) {
+					log.Infof("deleting expired pi: %+v", v)
+					delete(allPIs, k)
+				}
+			}
+
+			log.Infof("current PIs: %d", len(allPIs))
+			for _, v := range allPIs {
+				log.Infof("  %s", v)
+			}
+
+			if messageType == messageTypeGPS {
+				if self, ok := allPIs[raspID]; ok && len(allPIs) > 1 {
+					// we have >1 Pis, including ourself, find bearing and distance from local to each pi
+
+					// NB should we also do this when we have a new estimate for our local GPS location?
+
+					lat1 := self.Latf
+					long1 := self.Longf
+
+					currentPD := self.PointDir // current pointing direction of self/ this returns zeros!!
+
+					for piID, crwt := range allPIs {
+						if piID == raspID {
+							// this is ourself, skip
+							continue
+						}
+
+						lat2 := crwt.Latf
+						long2 := crwt.Longf
+
+						bearing, _ := calcGPSBearing(lat1, long1, lat2, long2)
+						disance := calcGPSdistance(lat1, long1, lat2, long2)
+						bearingI := int64(math.Round(bearing))
+						distI := int64(math.Round(disance))
+
+						// now see if bearing to this other pi matches pointing direction of the current pi:
+						bearingMistmatch := Abs(currentPD - bearingI)
+
+						// msgP := fmt.Sprintf("currentPD, %d", currentPD)
+						// log.Infof(msgP)
+
+						msgP := fmt.Sprintf("bearingMistmatch, %d", bearingMistmatch)
+						log.Infof(msgP)
+
+						if bearingMistmatch < bearingThreshold {
+							// we are pointing at another!!
+							// send key=1 to network, to the piID. ie using broadcastLoop
+
+							// duino message (9 bytes)
+							// 2 bytes: <2 magic bytes>
+							// 1 byte:  <total message length, bytes>
+							// 2 bytes: <sender ID = 2 bytes, (IP?)>
+							// 2 bytes: <who For = 2 bytes, (0= everyone, or ID of)>
+							// 1 byte:  <message type (0=gps, 1=duino command, 2=gesture type)>
+							// 1 byte:  key
+
+							duinoMsgSize := 9                        // 23 bytes for a duino message
+							messageOut := make([]byte, duinoMsgSize) // sent to batman
+
+							copy(messageOut[0:2], magicByte)
+							messageOut[2] = uint8(duinoMsgSize)
+							copy(messageOut[3:5], raspID)
+
+							// send just to the one we are pointing at:
+							whoFor := crwt.ID // or should this be piID??
+							copy(messageOut[5:7], whoFor)
+
+							messageType := messageTypeDuino // duino message
+							messageOut[7] = uint8(messageType)
+
+							messageOut[8] = uint8(1)
+
+							_, err := bm.Conn.WriteToUDP(messageOut, bcast)
+
+							if err != nil {
+								log.Error(err)
+								return err
+							}
+
+							msgP := fmt.Sprintf("We are pointing at", crwt.ID)
+							log.Infof(msgP)
+							msgP = fmt.Sprintf("Pointing at", crwt.ID)
+							oled.ShowText(img, 5, msgP)
+
+						}
+
+						msg1 := fmt.Sprintf("bearing to %s = %d\xB0", crwt.ID, bearingI)
+						log.Infof(msg1)
+						msg2 := fmt.Sprintf("dist to %s = %d m", crwt.ID, distI)
+						log.Infof(msg2)
+
+						// msg1 = fmt.Sprintf("bearing = %d\xB0", bearingI)
+						msg1 = fmt.Sprintf("bearing = %d", bearingI)
+						msg2 = fmt.Sprintf("dist = %d m", distI)
+						oled.ShowText(img, 3, msg1)
+						oled.ShowText(img, 4, msg2)
+					}
 				}
 			}
 		}
@@ -484,34 +537,22 @@ func messageLoop(messages <-chan []byte, duino port.Port, raspID string, img *im
 	}
 }
 
-func broadcastLoop(keys <-chan rune, gpsCh <-chan gps.GPSMessage, accCh <-chan acc.ACCMessage, duino port.Port, raspID string, bcastIP net.IP, bm *readBATMAN.ReadBATMAN, img *image.RGBA, oled oled.OLED) error {
+func broadcastLoop(keys <-chan rune, gpsCh <-chan gps.GPSMessage, duino port.Port, raspID string, bcastIP net.IP, bm *readBATMAN.ReadBATMAN, img *image.RGBA, oled oled.OLED) error {
 	log.Info("Starting broadcast loop")
 
-	// buf := make([]byte, 5)   // this was used for serial return from duino
+	// this is for local messages, eg key-presses, GPS update, pointing direction
 
 	bcast := &net.UDPAddr{Port: batPort, IP: bcastIP}
 	gpsMessage := gps.GPSMessage{}
-	accMessage := acc.ACCMessage{}
+
 	more := false
 
 	for {
 		select {
 
-		case accMessage, more = <-accCh:
-
-			if !more {
-				log.Infof("acc channel closed\n")
-				log.Infof("exiting")
-				return nil
-			}
-
-			// OLED display:
-			bearingI := int64(math.Round(accMessage.Bearing))
-			msgP := fmt.Sprintf("Pointing = %d", bearingI)
-
-			oled.ShowText(img, 1, msgP)
-
 		case gpsMessage, more = <-gpsCh:
+
+			// received GPS from local GPS module
 
 			if !more {
 				log.Infof("gps channel closed\n")
@@ -552,6 +593,9 @@ func broadcastLoop(keys <-chan rune, gpsCh <-chan gps.GPSMessage, accCh <-chan a
 			}
 
 		case key, more := <-keys:
+			// received local key press
+			// todo: replace/ augment this with a GPIO button press
+
 			if !more {
 				oled.ShowText(img, 2, fmt.Sprintf("exiting"))
 				log.Infof("keyboard listener closed\n")
@@ -560,13 +604,6 @@ func broadcastLoop(keys <-chan rune, gpsCh <-chan gps.GPSMessage, accCh <-chan a
 				return nil
 			}
 			log.Infof("key pressed: %s / %d / 0x%X / 0%o \n", string(key), key, key, key)
-
-			// initChatRequest := ChatRequest{
-			// 	Latf:  gpsMessage.Lat,
-			// 	Longf: gpsMessage.Long,
-			// 	ID:    raspID,
-			// 	Key:   key,
-			// }
 
 			// duino message (9 bytes)
 			// 2 bytes: <2 magic bytes>
@@ -608,14 +645,6 @@ func broadcastLoop(keys <-chan rune, gpsCh <-chan gps.GPSMessage, accCh <-chan a
 
 			// OLED display:
 			oled.ShowText(img, 2, fmt.Sprintf("key pressed: %s", string(key)))
-
-			// // read response from duin (not necessary)
-			// n, err = s.Read(buf)
-			// if err != nil {
-			// 	log.Errorf("serial port read error, %s", err)
-			// }
-			// log.Infof("serial return %s / %d / 0x%X / 0%o \n", string(buf[:n]), buf[:n], buf[:n], buf[:n])
-			// // }
 
 		}
 	}
@@ -701,4 +730,12 @@ func calcGPSdistance(lat1, lon1, lat2, lon2 float64) float64 {
 	h := hsin(la2-la1) + math.Cos(la1)*math.Cos(la2)*hsin(lo2-lo1)
 
 	return 2 * r * math.Asin(math.Sqrt(h))
+}
+
+// Abs returns the absolute value of x.
+func Abs(x int64) int64 {
+	if x < 0 {
+		return -x
+	}
+	return x
 }
