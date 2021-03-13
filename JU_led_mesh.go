@@ -324,7 +324,7 @@ func messageLoop(messages <-chan []byte, accCh <-chan acc.ACCMessage, duino port
 			crwt.PointDir = bearingI // trying to save here but later, it just pulls a zero!
 
 			msgP := fmt.Sprintf("Pointing direction = %d", bearingI)
-			log.Infof(msgP)
+			// log.Infof(msgP)
 
 			// OLED display:
 			msgP = fmt.Sprintf("Pointing = %d", bearingI)
@@ -473,10 +473,10 @@ func messageLoop(messages <-chan []byte, accCh <-chan acc.ACCMessage, duino port
 						// now see if bearing to this other pi matches pointing direction of the current pi:
 						bearingMistmatch := Abs(currentPD - bearingI)
 
-						// msgP := fmt.Sprintf("currentPD, %d", currentPD)
-						// log.Infof(msgP)
+						msgP := fmt.Sprintf("currentPD, %d", currentPD)
+						log.Infof(msgP)
 
-						msgP := fmt.Sprintf("bearingMistmatch, %d", bearingMistmatch)
+						msgP = fmt.Sprintf("bearingMistmatch, %d", bearingMistmatch)
 						log.Infof(msgP)
 
 						if bearingMistmatch < bearingThreshold {
