@@ -324,11 +324,11 @@ func messageLoop(messages <-chan []byte, accCh <-chan acc.ACCMessage, duino port
 			crwt.PointDir = bearingI // trying to save here but later, it just pulls a zero!
 			allPIs[raspID] = crwt
 
-			msgP := fmt.Sprintf("Pointing direction = %d", bearingI)
+			// msgP := fmt.Sprintf("Pointing direction = %d", bearingI)
 			// log.Infof(msgP)
 
 			// OLED display:
-			msgP = fmt.Sprintf("Pointing = %d", bearingI)
+			msgP := fmt.Sprintf("Pointing = %d", bearingI)
 			oled.ShowText(img, 1, msgP)
 
 		case message, _ := <-messages:
@@ -457,6 +457,9 @@ func messageLoop(messages <-chan []byte, accCh <-chan acc.ACCMessage, duino port
 
 					currentPD := self.PointDir // current pointing direction of self/ this returns zeros!!
 
+					// msgP := fmt.Sprintf("Pointing direction = %d", currentPD)
+					// log.Infof(msgP)
+
 					for piID, crwt := range allPIs {
 						if piID == raspID {
 							// this is ourself, skip
@@ -474,11 +477,11 @@ func messageLoop(messages <-chan []byte, accCh <-chan acc.ACCMessage, duino port
 						// now see if bearing to this other pi matches pointing direction of the current pi:
 						bearingMistmatch := Abs(currentPD - bearingI)
 
-						msgP := fmt.Sprintf("currentPD, %d", currentPD)
-						log.Infof(msgP)
+						// msgP := fmt.Sprintf("currentPD, %d", currentPD)
+						// log.Infof(msgP)
 
-						msgP = fmt.Sprintf("bearingMistmatch, %d", bearingMistmatch)
-						log.Infof(msgP)
+						// msgP = fmt.Sprintf("bearingMistmatch, %d", bearingMistmatch)
+						// log.Infof(msgP)
 
 						if bearingMistmatch < bearingThreshold {
 							// we are pointing at another!!
@@ -515,10 +518,10 @@ func messageLoop(messages <-chan []byte, accCh <-chan acc.ACCMessage, duino port
 								return err
 							}
 
-							msgP := fmt.Sprintf("We are pointing at", crwt.ID)
+							msgP := fmt.Sprintf("We are pointing at %s", crwt.ID)
 							log.Infof(msgP)
-							msgP = fmt.Sprintf("Pointing at", crwt.ID)
-							oled.ShowText(img, 5, msgP)
+							// msgP = fmt.Sprintf("Pointing at", crwt.ID)
+							// oled.ShowText(img, 5, msgP)
 
 						}
 

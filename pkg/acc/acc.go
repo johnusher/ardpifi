@@ -123,7 +123,7 @@ func (a *acc) Run() error {
 
 		}
 
-		time.Sleep(5 * time.Millisecond)
+		time.Sleep(50 * time.Millisecond)
 	}
 
 }
