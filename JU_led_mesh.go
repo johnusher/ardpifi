@@ -322,6 +322,7 @@ func messageLoop(messages <-chan []byte, accCh <-chan acc.ACCMessage, duino port
 			// save to self
 			crwt, _ := allPIs[raspID]
 			crwt.PointDir = bearingI // trying to save here but later, it just pulls a zero!
+			allPIs[raspID] = crwt
 
 			msgP := fmt.Sprintf("Pointing direction = %d", bearingI)
 			// log.Infof(msgP)
