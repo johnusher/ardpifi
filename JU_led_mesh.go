@@ -315,6 +315,8 @@ func messageLoop(messages <-chan []byte, accCh <-chan acc.ACCMessage, duino port
 			}
 
 			// bearingI is "pointing direction" of self
+			// from the mock, accMessage.Bearing was always rand * 0.0001, so never
+			// larger than 0.0001, so always rounded to zero
 			bearingI := int64(math.Round(accMessage.Bearing))
 
 			// save to self

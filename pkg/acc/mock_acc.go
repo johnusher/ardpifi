@@ -39,11 +39,11 @@ func (m *mockACC) Run() error {
 		case <-ticker.C:
 			// temp := rand.int32()
 			temp := int8(27)
-			bearing := rand.Float64() * 0.0001
-			roll := rand.Float64() * 0.0001
-			tilt := rand.Float64() * 0.0001
+			bearing := rand.Float64() * 360
+			roll := rand.Float64()
+			tilt := rand.Float64()
 
-			m.log.Infof("Sending %f %f %f %f", temp, bearing, roll, tilt)
+			m.log.Infof("Sending %d %f %f %f", temp, bearing, roll, tilt)
 
 			m.acc <- ACCMessage{
 				Temp:    temp,
