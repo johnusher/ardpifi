@@ -314,7 +314,8 @@ func messageLoop(messages <-chan []byte, accCh <-chan acc.ACCMessage, duino port
 				return nil
 			}
 
-			// bearingI is "pointing direction" of self
+			// accMessage.Bearing is "pointing direction" of self
+			// note we also use the term "Bearing" for the relative direction between pis
 			// from the mock, accMessage.Bearing was always rand * 0.0001, so never
 			// larger than 0.0001, so always rounded to zero
 			bearingI := int64(math.Round(accMessage.Bearing))
@@ -349,25 +350,25 @@ func messageLoop(messages <-chan []byte, accCh <-chan acc.ACCMessage, duino port
 			messageType := message[7]
 
 			if senderID == raspID {
-				// senderID and raspID should both be two bytes, ie two characters
-				if messageType == messageTypeDuino {
-					// write to duino:
-					// this is currently kinda redundant, ie whether the message is from self or other, we send it to duino
-					// ... but one day we may send a different message for self-sent message
+				// // senderID and raspID should both be two bytes, ie two characters
+				// if messageType == messageTypeDuino {
+				// 	// write to duino:
+				// 	// this is currently kinda redundant, ie whether the message is from self or other, we send it to duino
+				// 	// ... but one day we may send a different message for self-sent message
 
-					// first unpack the message:
-					duinoMessage := message[8] // we should maybe look at total message legnth and combine other bytes if longer than 7
+				// 	// first unpack the message:
+				// 	duinoMessage := message[8] // we should maybe look at total message legnth and combine other bytes if longer than 7
 
-					// write to duino:
-					duino.Flush()
-					_, err := duino.Write([]byte(string(duinoMessage)))
+				// 	// write to duino:
+				// 	duino.Flush()
+				// 	_, err := duino.Write([]byte(string(duinoMessage)))
 
-					if err != nil {
-						log.Errorf("3. failed to write to serial port: %s", err)
-						//return err
-					}
-					duino.Flush()
-				}
+				// 	if err != nil {
+				// 		log.Errorf("3. failed to write to serial port: %s", err)
+				// 		//return err
+				// 	}
+				// 	duino.Flush()
+				// }
 
 			} else {
 
@@ -475,7 +476,14 @@ func messageLoop(messages <-chan []byte, accCh <-chan acc.ACCMessage, duino port
 						distI := int64(math.Round(disance))
 
 						// now see if bearing to this other pi matches pointing direction of the current pi:
-						bearingMistmatch := Abs(currentPD - bearingI)
+						bearingMistmatch := int64(1)
+						if currentPD > 360-bearingThreshold && bearingI < bearingThreshold {
+							bearingMistmatch = Abs(currentPD - (bearingI + 360))
+						} else if bearingI > 360-bearingThreshold && currentPD < bearingThreshold {
+							bearingMistmatch = Abs(bearingI - (currentPD + 360))
+						} else {
+							bearingMistmatch = Abs(currentPD - bearingI)
+						}
 
 						// msgP := fmt.Sprintf("currentPD, %d", currentPD)
 						// log.Infof(msgP)
@@ -508,8 +516,8 @@ func messageLoop(messages <-chan []byte, accCh <-chan acc.ACCMessage, duino port
 
 							messageType := messageTypeDuino // duino message
 							messageOut[7] = uint8(messageType)
-
-							messageOut[8] = uint8(1)
+							sendMessage := rune('1')
+							messageOut[8] = uint8(sendMessage)
 
 							_, err := bm.Conn.WriteToUDP(messageOut, bcast)
 
@@ -700,6 +708,11 @@ func calcGPSBearing(lat1 float64, long1 float64, lat2 float64, long2 float64) (f
 	dx := math.Cos(Pi/180.0*lat1) * (long2 - long1)
 	angle := math.Atan2(dy, dx)
 	angle = angle / Pi * 180.0
+
+	if angle < 0 {
+		angle = 360 + angle
+
+	}
 	// return int(math.Round(angle)), nil
 	return angle, nil
 }
