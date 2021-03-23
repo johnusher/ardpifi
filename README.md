@@ -56,6 +56,8 @@ EOF
 
 Check your I2c is set up correctly:
 
+sudo apt-get install i2c-tools
+
 sudo i2cdetect -l
 
 You will now see that i2c bus 3 also listed. Also run:
