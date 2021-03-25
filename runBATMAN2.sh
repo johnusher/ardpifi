@@ -21,6 +21,7 @@ sudo ip link set wlan0 down
 # sudo ifconfig wlan0 mtu 1532
 #sudo killall wpa_supplicant # ???
 wpa_cli terminate -i wlan0 # this works 
+sleep 1s
 sudo iwconfig wlan0 mode ad-hoc
 sudo iwconfig wlan0 essid ledmesh
 sudo iwconfig wlan0 ap any
