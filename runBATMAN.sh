@@ -19,7 +19,8 @@ sudo modprobe batman-adv
 # Disable and configure wlan0
 sudo ip link set wlan0 down
 # sudo ifconfig wlan0 mtu 1532
-sudo killall wpa_supplicant # ???
+#sudo killall wpa_supplicant # ???
+wpa_cli terminate -i wlan0 # this works 
 sudo iwconfig wlan0 mode ad-hoc
 sudo iwconfig wlan0 essid ledmesh
 sudo iwconfig wlan0 ap any
@@ -35,7 +36,7 @@ sleep 5s
 # This is the only change necessary to the script for
 # different devices. Make sure to indicate the number
 # of bits used for the mask.
-sudo ifconfig bat0 172.27.0.1/16
+sudo ifconfig bat0 172.27.0.1/16   # 172.27.0.x
 sudo iwconfig wlan0 ap CA:B4:54:B1:5A:75
 
 # test batctl

@@ -69,11 +69,8 @@ This should show OLED on 3c
 
 sudo i2cdetect -y 3
 
-This should show the BNo055 on 28
+This should show the BNo055 on 28.
 
-
-WLAN dongle: not tested yet!  This messes up BATMAN as the dongle defaults to WLAN0.
-To change this and make WLAN0 the built-in: see https://github.com/RaspAP/raspap-webgui/issues/335
 
 
 There are "no hardware" options for running the main Go file without these HW modules.
@@ -82,11 +79,84 @@ Run the go script, and keyboard numbers will send a command to the mesh network,
 
 LED sequences can be programmed on the Raspi, compiled using arduino-cli, and flashed from the Raspi.
 
+## WLAN dongle: 
+
+Add USB dongle TP-Link TL-WN725N.
+
+This messes up BATMAN as the dongle can go to WLAN0 or WLAN1.
+To change this and make WLAN0 the built-in: see 
+
+https://www.raspberrypi.org/forums/viewtopic.php?f=36&t=198946
+
+1. switch off systemd-predictable mechanism stuff (unless done already):
+
+```bash
+sudo ln -nfs /dev/null /etc/systemd/network/99-default.link
+  ```
+
+  2. setup udev rules that uniquely identify your interfaces based on their USB connector positions:
+
+```bash
+
+vi /etc/udev/rules.d/72-wlan-geo-dependent.rules
+
+#
+# +---------------+
+# | wlan1 | wlan1 |
+# +-------+-------+
+# | wlan1 | wlan1 |
+# +---------------+ (RPI USB ports with position independent device names for a maximum of 1 optional wifi dongle)
+# 
+# | wlan0 | (onboard wifi)
+#
+ACTION=="add", SUBSYSTEM=="net", SUBSYSTEMS=="sdio", KERNELS=="mmc1:0001:1", NAME="wlan0"
+ACTION=="add", SUBSYSTEM=="net", SUBSYSTEMS=="usb",  KERNELS=="1-1.2",       NAME="wlan1"
+ACTION=="add", SUBSYSTEM=="net", SUBSYSTEMS=="usb",  KERNELS=="1-1.4",       NAME="wlan1"
+ACTION=="add", SUBSYSTEM=="net", SUBSYSTEMS=="usb",  KERNELS=="1-1.3",       NAME="wlan1"
+ACTION=="add", SUBSYSTEM=="net", SUBSYSTEMS=="usb",  KERNELS=="1-1.5",       NAME="wlan1"
+
+ ```
+
+
+
+
+Install driver for tl-wn8725N
+
+from:
+https://www.raspberrypi.org/forums/viewtopic.php?p=462982#p462982
+```bash
+sudo wget http://downloads.fars-robotics.net/wifi-drivers/install-wifi -O /usr/bin/install-wifi
+sudo chmod +x /usr/bin/install-wifi
+sudo install-wifi
+ ```
+reboot
+
+make sure you have added static ip to wlan 1:
+
+```bash
+sudo tee --append /etc/dhcpcd.conf > /dev/null << 'EOF'
+
+# set static ip
+
+interface wlan1
+static ip_address=192.168.1.164/24
+static routers=192.168.1.1
+static domain_name_servers=192.168.1.1
+
+
+EOF
+ ```
+
+after iwconfig
+should see wlan0 and wlan connected to same ESSID with AP.
+
+
+
 
 
 ## Hardware shopping list
 
-Rasperry Pi 3 Model B+ testesd.
+Rasperry Pi 3 Model B+ tested.
 
 Arduino clone:
 https://www.christians-shop.de/Nano-V3-developer-board-for-Arduino-IDE-ATMEL-ATmega328P-AVR-Microcontroller-CH340-Chip-Christians-Technikshop
