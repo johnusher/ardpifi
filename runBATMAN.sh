@@ -50,7 +50,7 @@ sleep 5s
 sudo ifconfig bat0 172.27.0.1/16   # 172.27.0.x
 echo 11
 sudo iwconfig wlan0 ap CA:B4:54:B1:5A:75
-echo 12
+echo BATMAN loaded
 # test batctl
-sudo batctl o
-echo 13
+# sudo batctl o
+# echo 13
