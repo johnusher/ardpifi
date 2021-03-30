@@ -1,0 +1,4 @@
+#!/bin/sh
+sleep 20s
+cd /home/pi/apl
+./runBATMAN.sh 

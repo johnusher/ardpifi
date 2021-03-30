@@ -151,6 +151,34 @@ after iwconfig
 should see wlan0 and wlan connected to same ESSID with AP.
 
 
+## Auto-start: 
+
+Automatically load BATMAN ad the go script on boot.
+
+To do this, we make a service.
+
+There are many ways to do this, but this one is mine. systemctl is not my best friend. For about an hour, it was my life. I do not care to master it.
+
+1. cd ~/apl
+
+2. chmod 664 delayBoot1.service
+
+3. sudo cp   delayBoot1.service  /etc/systemd/system/
+
+4. sudo systemctl enable  delayBoot1
+
+5. sudo systemd-analyze verify delayBoot1.service
+
+To reload systemd with this new service unit file, run:
+systemctl daemon-reload
+
+
+To start the script on boot, enable the service with systemd:
+6. sudo systemctl enable delayBoot1.service
+
+
+systemctl status delayBoot1.service
+
 
 
 
