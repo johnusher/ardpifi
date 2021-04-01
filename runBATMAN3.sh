@@ -52,7 +52,7 @@ echo BATMAN loaded
 sleep 10s
 cd /home/pi/apl/
 # pi zero doesnt have duino etc, ony gps module.
-/home/pi/apl/JU_led_mesh -rasp-id=3 --web-addr :8082 -no-duino -no-oled -no-acc -log-level debug
+/home/pi/apl3/JU_led_mesh -rasp-id=66 --web-addr :8082 -no-duino -no-oled -no-acc -log-level debug
 echo go app loaded
 # test batctl
 # sudo batctl o
