@@ -117,7 +117,25 @@ ACTION=="add", SUBSYSTEM=="net", SUBSYSTEMS=="usb",  KERNELS=="1-1.5",       NAM
 
  ```
 
+NB
 
+When running on WLAN1, we must force IP4 to access github.com as it does not support IP6
+
+sudo dhclient -4 -v wlan1
+
+
+
+or
+
+```bash
+sudo tee --append /etc/sysctl.conf > /dev/null << 'EOF'
+net.ipv6.conf.all.disable_ipv6=1
+EOF
+ ```
+
+
+
+echo sudo net.ipv6.conf.all.disable_ipv6=1 >> /etc/sysctl.conf
 
 
 Install driver for tl-wn8725N
