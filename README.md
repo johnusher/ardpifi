@@ -155,7 +155,17 @@ should see wlan0 and wlan connected to same ESSID with AP.
 
 Automatically load BATMAN ad the go script on boot.
 
-To do this, we make a service.
+To do this, we make a service. This runs on bootup, after the network is up. It runs runBATMAN.sh (or run runBATMAN2, runBATMAN3):
+
+After 20 seconds, the BATMAN mesh network is generated, then the go app is run.
+
+Thus, you need to make sure the app is pre-compiled,
+ie
+```bash
+cd /home/pi/apl/
+go build JU_led_mesh.go
+```
+
 
 There are many ways to do this, but this one is mine. systemctl is not my best friend. For about an hour, it was my life. I do not care to master it.
 
@@ -174,10 +184,19 @@ systemctl daemon-reload
 
 
 To start the script on boot, enable the service with systemd:
+
 6. sudo systemctl enable delayBoot1.service
 
+useful:
+
+sudo systemctl stop delayBoot1.service
+
+sudo systemctl start delayBoot1.service
 
 systemctl status delayBoot1.service
+
+
+
 
 
 
