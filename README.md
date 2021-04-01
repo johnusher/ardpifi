@@ -187,15 +187,15 @@ go build JU_led_mesh.go
 
 There are many ways to do this, but this one is mine. systemctl is not my best friend. For about an hour, it was my life. I do not care to master it.
 
-1. cd ~/apl3
+1. cd ~/apl2
 
-2. chmod 664 delayBoot3.service
+2. chmod 664 delayBoot2.service
 
-3. sudo cp   delayBoot3.service  /etc/systemd/system/
+3. sudo cp   delayBoot2.service  /etc/systemd/system/
 
-4. sudo systemctl enable  delayBoot3
+4. sudo systemctl enable  delayBoot2
 
-5. sudo systemd-analyze verify delayBoot3.service
+5. sudo systemd-analyze verify delayBoot2.service
 
 To reload systemd with this new service unit file, run:
 systemctl daemon-reload
@@ -203,7 +203,7 @@ systemctl daemon-reload
 
 To start the script on boot, enable the service with systemd:
 
-6. sudo systemctl enable delayBoot3.service
+6. sudo systemctl enable delayBoot2.service
 
 useful:
 
