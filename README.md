@@ -173,11 +173,11 @@ There are many ways to do this, but this one is mine. systemctl is not my best f
 
 2. chmod 664 delayBoot1.service
 
-3. sudo cp   delayBoot1.service  /etc/systemd/system/
+3. sudo cp   delayBoot3.service  /etc/systemd/system/
 
-4. sudo systemctl enable  delayBoot1
+4. sudo systemctl enable  delayBoot3
 
-5. sudo systemd-analyze verify delayBoot1.service
+5. sudo systemd-analyze verify delayBoot3.service
 
 To reload systemd with this new service unit file, run:
 systemctl daemon-reload
@@ -185,7 +185,7 @@ systemctl daemon-reload
 
 To start the script on boot, enable the service with systemd:
 
-6. sudo systemctl enable delayBoot1.service
+6. sudo systemctl enable delayBoot3.service
 
 useful:
 
@@ -193,7 +193,7 @@ sudo systemctl stop delayBoot1.service
 
 sudo systemctl start delayBoot1.service
 
-systemctl status delayBoot1.service
+systemctl status delayBoot3.service
 
 
 
