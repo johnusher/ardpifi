@@ -169,9 +169,9 @@ go build JU_led_mesh.go
 
 There are many ways to do this, but this one is mine. systemctl is not my best friend. For about an hour, it was my life. I do not care to master it.
 
-1. cd ~/apl
+1. cd ~/apl3
 
-2. chmod 664 delayBoot1.service
+2. chmod 664 delayBoot3.service
 
 3. sudo cp   delayBoot3.service  /etc/systemd/system/
 

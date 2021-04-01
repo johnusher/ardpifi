@@ -50,7 +50,7 @@ echo 11
 sudo iwconfig wlan0 ap CA:B4:54:B1:5A:75
 echo BATMAN loaded
 sleep 10s
-cd /home/pi/apl/
+cd /home/pi/apl3/
 # pi zero doesnt have duino etc, ony gps module.
 /home/pi/apl3/JU_led_mesh -rasp-id=66 --web-addr :8082 -no-duino -no-oled -no-acc -log-level debug
 echo go app loaded
