@@ -5,7 +5,7 @@ Description=Run ARDPI
 After=network.target
  
 [Service]
-ExecStart=/bin/bash /home/pi/apl/runBATMAN3.sh
+ExecStart=/bin/bash /home/pi/apl3/runBATMAN3.sh
  
 [Install]
 WantedBy=multi-user.target
