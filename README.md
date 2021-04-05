@@ -209,9 +209,9 @@ useful:
 
 sudo systemctl stop delayBoot1.service
 
-sudo systemctl start delayBoot1.service
+sudo systemctl start delayBoot2.service
 
-systemctl status delayBoot3.service
+systemctl status delayBoot1.service
 
 
 
