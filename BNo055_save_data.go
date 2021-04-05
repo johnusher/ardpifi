@@ -38,6 +38,21 @@ func main() {
 		panic(err)
 	}
 
+	t := time.Now()
+	// newDir := fmt.Sprintf("%d-%02d-%02d_%02d-%02d-%02d",
+	newDir := fmt.Sprintf("M_%02d-%02d-%02d",
+		// t.Year(), t.Month(), t.Day(),
+
+		t.Hour(), t.Minute(), t.Second())
+	fmt.Println("Name:", newDir)
+	// ioutil.WriteFile(+name, []byte("Contents"), 0)
+
+	if _, err := os.Stat(newDir); os.IsNotExist(err) {
+		os.Mkdir(newDir, 0700)
+	}
+
+	os.Chdir(newDir)
+
 	fmt.Printf(
 		"*** Revision: software=%v, bootloader=%v, accelerometer=%v, gyroscope=%v, magnetometer=%v\n",
 		revision.Software,
@@ -73,7 +88,7 @@ func main() {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 
-	f0, err := os.Create("eulerSwift_data.txt")
+	f0, err := os.Create("euler_data.txt")
 	if err != nil {
 		panic(err)
 	}
@@ -87,6 +102,13 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	f3, err := os.Create("quaternion_data.txt")
+	if err != nil {
+		panic(err)
+	}
+
+	// name := GetFilenameDate()
 
 	defer f0.Close()
 	defer f1.Close()
@@ -150,6 +172,7 @@ func main() {
 
 			_, err = f1.WriteString(sx + " " + sy + " " + sz + "\n")
 
+			//------------------
 			gyro, err := sensor.Gyroscope()
 			if err != nil {
 				panic(err)
@@ -160,6 +183,27 @@ func main() {
 			sz = strconv.FormatFloat(float64(gyro.Z), 'f', -1, 32)
 
 			_, err = f2.WriteString(sx + " " + sy + " " + sz + "\n")
+
+			// d2 := []byte{fmt.Sprintf("%f", acc.X), 111, 109, 101, 10}
+
+			if err != nil {
+				panic(err)
+			}
+			// fmt.Printf("%.6f %.6f %.6f\n", acc.X, acc.Y, acc.Z)
+
+			//------------------
+			quat, err := sensor.Quaternion()
+			// https://github.com/adafruit/Adafruit_BNO055/blob/master/utility/quaternion.h
+			if err != nil {
+				panic(err)
+			}
+
+			sw := strconv.FormatFloat(float64(quat.W), 'f', -1, 32)
+			sx = strconv.FormatFloat(float64(quat.X), 'f', -1, 32)
+			sy = strconv.FormatFloat(float64(quat.Y), 'f', -1, 32)
+			sz = strconv.FormatFloat(float64(quat.Z), 'f', -1, 32)
+
+			_, err = f3.WriteString(sw + " " + sx + " " + sy + " " + sz + "\n")
 
 			// d2 := []byte{fmt.Sprintf("%f", acc.X), 111, 109, 101, 10}
 
@@ -187,6 +231,14 @@ func main() {
 	// *** Axis: x=0, y=1, z=2, sign_x=0, sign_y=0, sign_z=0
 	// *** Temperature: t=27
 	// *** Euler angles: x=2.312, y=2.000, z=91.688
+}
+
+func GetFilenameDate() string {
+	// Use layout string for time format.
+	const layout = "01-02-2006"
+	// Place now in the string.
+	t := time.Now()
+	return "file-" + t.Format(layout) + ".txt"
 }
 
 // ParseMagnetometer converts mag vector int angle. ignores z
