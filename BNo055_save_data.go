@@ -113,6 +113,7 @@ func main() {
 	defer f0.Close()
 	defer f1.Close()
 	defer f2.Close()
+	defer f3.Close()
 
 	for {
 		select {
