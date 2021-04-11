@@ -1,0 +1,14 @@
+# Config changes format version 1.0
+# created by u-center version 21.02 at 11:32:12 on Sunday, 11 Apr 2021
+[del]
+[set]
+  BBR CFG-I2C-ENABLED      0                    # write value 0                    to item id 0x10510003 in layer 1
+Flash CFG-I2C-ENABLED      0                    # write value 0                    to item id 0x10510003 in layer 2
+Flash CFG-UART2-ENABLED    0                    # write value 0                    to item id 0x10530005 in layer 2
+Flash CFG-USB-ENABLED      0                    # write value 0                    to item id 0x10650001 in layer 2
+Flash CFG-INFMSG-NMEA_UART1 0x0                  # write value 0  0x0               to item id 0x20920007 in layer 2
+Flash CFG-RATE-MEAS        0x7d0                # write value 2000  0x7d0          to item id 0x30210001 in layer 2
+Flash CFG-UART1-BAUDRATE   0x2580               # write value 9600  0x2580         to item id 0x40520001 in layer 2
+  RAM CFG-NMEA-OUT_ONLYGPS 0                    # write value 0                    to item id 0x10930025 in layer 0
+  BBR CFG-NMEA-OUT_ONLYGPS 0                    # write value 0                    to item id 0x10930025 in layer 1
+Flash CFG-NMEA-OUT_ONLYGPS 0                    # write value 0                    to item id 0x10930025 in layer 2
