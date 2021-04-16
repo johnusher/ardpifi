@@ -17,16 +17,45 @@ Keyboard inputs on each Raspi will send LED pattern info and sync across all Ras
 
 See shopping list section for details on components.
 
+### Arduino
 Connect Arduino Uno (also Nano clone tested) to Raspi 3 via USB. Programmable NeoPixelLED strips connected to Arduino and should be powered separately:
 
+### GPS
+GPS module connect with GPIO serial (upin 15, 16, 5 V power to module). It shows up at serial port /dev/ttyS0. In raspi-config settings, you may need to disable serial console output, and disable bluetooth. I have used an external antenna and a small ceramic antenna: both seem to work.
 
-NEO-6M GPS module connect with GPIO serial (uses serial port /dev/ttyS0. In raspi-config settings, you need to disable serial console output, and disable bluetooth.). I have used an external antenna and a small ceramic antenna: both seem to work.
+Have tested the UBLOX NEO-6M (GPS only= less accurate) NEO M-9N (GPS, GLONASS, Galileo = more accurate).
+
+NEO M-9N is 3400 baud UART, but we change to 9600 and poll every 2 seconds. To this this, use u-center 21.02 (windows only), or use NEO9Settings.txt configuration script with ubxconfig.sh from https://gist.github.com/hdoverobinson/42732da4c5b50d031f60c1fae39f0720)
+
+```bash
+./ubxconfig.sh /dev/ttyS0 NEO9Settings.txt
+```
+
+Useful GPS:
 
 
+Read raw NMEA format GPS data from serial port
+```bash
+cat -A /dev/ttyUSB0
+```
+
+Write raw NMEA format data to file
+```bash
+cat </dev/ttyUSB0 > gpsdata.txt
+```
+
+Convert NMEA file to Google-maps kml, discard low-HDOP data that is not "excellent quality", dude.
+```bash
+gpsbabel -i nmea -f gpsdata.txt -x discard,hdop=1,sat=9  -o kml -F outfile.kml
+```
+
+
+### Display screen
 OLED 128*64.
 
 Power with +5 V. OLED connects via I2C bus 1. SDA -> pin 3  SCL -> pin 5). 
 
+### Inertial Measurement Unit (IMU)
 Bosch BNO055:  triaxial accelerometer, gyroscope, geomagnetic sensor.
 
 Power with +3.3 V.
@@ -228,13 +257,16 @@ https://www.christians-shop.de/Nano-V3-developer-board-for-Arduino-IDE-ATMEL-ATm
 
 https://www.amazon.de/-/en/gp/product/B078SBBST6/ref=ppx_yo_dt_b_asin_title_o02_s00?ie=UTF8&psc=1
 
-NEO-6M GPS:
+GPS: uBlox NEO-6M :
 https://www.amazon.de/dp/B088LR3488/ref=pe_3044161_185740101_TE_item
+
+GPS: uBlox NEO-M9N :
+https://tinyurl.com/j2476wb  (Banggood.com)
 
 OLED display:
 https://www.amazon.de/-/en/gp/product/B01L9GC470/ref=ppx_od_dt_b_asin_title_s00?ie=UTF8&psc=1
 
-Bosch BNO055:
+IMU Bosch BNO055:
 https://www.amazon.de/-/en/gp/product/B072NLTPTJ/ref=ppx_yo_dt_b_asin_title_o01_s00?ie=UTF8&psc=1
 
 BROgrammable LED strip WS2812:
@@ -244,12 +276,7 @@ WLAN dongle TP-Link TL-WN725N:
 https://www.amazon.de/gp/product/B008IFXQFU/ref=ppx_yo_dt_b_asin_title_o03_s00?ie=UTF8&psc=1
 
 
-## Upcoming attractions:
--send GPS on the mesh so devices can work out relative baring (using magnetometer compass).
--accelerometer/ gyro control using I2C bus.
 
-
-# thanks @siggy!
 
 ### OS
 
@@ -523,3 +550,8 @@ This displays a real-time clock on the OLED.
 convAccData.m
 
 MATLAB script to process accelerometer data.
+
+
+# thanks 
+
+@siggy!
