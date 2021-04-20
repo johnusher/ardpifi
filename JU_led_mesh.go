@@ -568,6 +568,10 @@ func broadcastLoop(keys <-chan rune, gpsCh <-chan gps.GPSMessage, duino port.Por
 
 			// received GPS from local GPS module
 
+			// OLED display:
+			msgP := fmt.Sprintf("HDOP = %f", gpsMessage.HDOP)
+			oled.ShowText(img, 6, msgP)
+
 			if !more {
 				log.Infof("gps channel closed\n")
 				log.Infof("exiting")
@@ -600,11 +604,17 @@ func broadcastLoop(keys <-chan rune, gpsCh <-chan gps.GPSMessage, duino port.Por
 			binary.LittleEndian.PutUint64(messageOut[8:16], math.Float64bits(gpsMessage.Lat))
 			binary.LittleEndian.PutUint64(messageOut[16:24], math.Float64bits(gpsMessage.Long))
 
+			// todo: send HDOP!!
+
 			_, err := bm.Conn.WriteToUDP(messageOut, bcast)
 			if err != nil {
 				log.Error(err)
 				return err
 			}
+
+			// // OLED display:
+			// msgP := fmt.Sprintf("HDOP = %f", gpsMessage.HDOP)
+			// oled.ShowText(img, 6, msgP)
 
 		case key, more := <-keys:
 			// received local key press

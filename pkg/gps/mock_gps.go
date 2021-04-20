@@ -37,14 +37,16 @@ func (m *mockGPS) Run() error {
 		case <-ticker.C:
 			lat := 52.534634 + rand.Float64()*0.0001
 			long := 13.347364 + rand.Float64()*0.0001
-			fixQuality := uint16(1)
+			// fixQuality := uint16(1)
+			hdop := 0.9 + rand.Float64()*0.1
 
-			m.log.Infof("Sending %f %f %d", lat, long, fixQuality)
+			m.log.Infof("Sending %f %f %f", lat, long, hdop)
 
 			m.gps <- GPSMessage{
-				Lat:        lat,
-				Long:       long,
-				FixQuality: fixQuality,
+				Lat:  lat,
+				Long: long,
+				// FixQuality: fixQuality,
+				HDOP: hdop,
 			}
 		}
 	}

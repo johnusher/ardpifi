@@ -21,9 +21,10 @@ type GPS interface {
 }
 
 type GPSMessage struct {
-	Lat        float64
-	Long       float64
-	FixQuality uint16 // Horizontal Dilution of Precision (HDOP). Relative accuracy of horizontal position. 1 = ideal, >20 = poor
+	Lat  float64
+	Long float64
+	// FixQuality uint16 // Horizontal Dilution of Precision (HDOP). Relative accuracy of horizontal position. 1 = ideal, >20 = poor
+	HDOP float64 // Horizontal Dilution of Precision (HDOP). Relative accuracy of horizontal position. 0.0 to 9.9
 }
 
 type gps struct {
@@ -75,33 +76,39 @@ func (g *gps) Run() error {
 
 		gps, err := ParseNMEALine(scanner.Text())
 		if err == nil {
-			if gps.fixQuality == "1" || gps.fixQuality == "2" {
-				latitude, _ := gps.GetLatitude()
-				longitude, _ := gps.GetLongitude()
+			// if gps.fixQuality == "1" || gps.fixQuality == "2" {
+			latitude, _ := gps.GetLatitude()
+			longitude, _ := gps.GetLongitude()
+			hdop := gps.GetHorizontalDilution()
 
-				// NB latitude and longitude are strings so need to cpnvet to float:
+			// NB latitude and longitude are strings so need to cpnvet to float:
 
-				latitudeF, _ := strconv.ParseFloat(latitude, 64)
-				longitudeF, _ := strconv.ParseFloat(longitude, 64)
-				fixQuality, _ := strconv.ParseInt(gps.fixQuality, 10, 16)
+			latitudeF, _ := strconv.ParseFloat(latitude, 64)
+			longitudeF, _ := strconv.ParseFloat(longitude, 64)
+			// fixQuality, _ := strconv.ParseInt(gps.fixQuality, 10, 16)
+			hdopF, _ := strconv.ParseFloat(hdop, 64)
 
-				g.gps <- GPSMessage{
-					Lat:        latitudeF,
-					Long:       longitudeF,
-					FixQuality: uint16(fixQuality),
-				}
-
-				// log.Infof("LAtitude =  %s. Longitude = %s", latitude, longitude)
-				// log.Infof("fixQuality =  %s. ", fixQuality)
-
-				// fmt.Println(latitude + "," + longitude)
-				// result, _ := geocoder.reverse(Position{Latitude: latitude, Longitude: longitude})
-
-			} else {
-				// fmt.Println("no gps fix available")
-				log.Infof("low fixQuality %s \n", gps.fixQuality)
+			g.gps <- GPSMessage{
+				Lat:  latitudeF,
+				Long: longitudeF,
+				// FixQuality: uint16(fixQuality),
+				HDOP: hdopF,
 			}
-			time.Sleep(2 * time.Second)
+
+			// log.Infof("LAtitude =  %s. Longitude = %s", latitude, longitude)
+			// log.Infof("fixQuality =  %s. ", fixQuality)
+
+			// fmt.Println(latitude + "," + longitude)
+			// result, _ := geocoder.reverse(Position{Latitude: latitude, Longitude: longitude})
+
+			// } else {
+			// 	// fmt.Println("no gps fix available")
+			// 	log.Infof("low fixQuality %s \n", gps.fixQuality)
+			// }
+			// time.Sleep(1 * time.Second)
+
+			time.Sleep(50 * time.Millisecond)
+
 		} else {
 			// log.Infof("ParseNMEALine error, %s", err)
 		}
@@ -156,7 +163,8 @@ func ParseNMEALine(line string) (NMEA, error) {
 			// fixQuality:         tokens[6],
 			// satellites:         tokens[7],
 		}, nil
-	} else if tokens[0] == "$GPGGA" {
+		// } else if tokens[0] == "$GPGGA" {
+	} else {
 		// https://www.hemispheregnss.com/technical-resource-manual/Import_Folder/GNGSA_Message.htm
 		return NMEA{
 			fixTimestamp:       tokens[1],
@@ -191,4 +199,9 @@ func (nmea NMEA) GetLatitude() (string, error) {
 
 func (nmea NMEA) GetLongitude() (string, error) {
 	return ParseDegrees(nmea.longitude, nmea.longitudeDirection)
+}
+
+func (nmea NMEA) GetHorizontalDilution() string {
+	// Horizontal Dilution of Precision (HDOP) 1.0 to 9.9
+	return nmea.horizontalDilution
 }
