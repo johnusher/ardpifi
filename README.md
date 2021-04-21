@@ -25,7 +25,7 @@ GPS module connect with GPIO serial (upin 15, 16, 5 V power to module). It shows
 
 Have tested the UBLOX NEO-6M (GPS only= less accurate) NEO M-9N (GPS, GLONASS, Galileo = more accurate).
 
-NEO M-9N is 3400 baud UART, but we change to 9600 and poll every 2 seconds. To this this, use u-center 21.02 (windows only), or use NEO9Settings.txt configuration script with ubxconfig.sh from https://gist.github.com/hdoverobinson/42732da4c5b50d031f60c1fae39f0720)
+NEO M-9N is default 38000 baud UART, but we change to 9600 and poll every 2 seconds. To this this, use u-center 21.02 (windows only), or use NEO9Settings.txt configuration script with ubxconfig.sh from https://gist.github.com/hdoverobinson/42732da4c5b50d031f60c1fae39f0720)  (untested!)
 
 ```bash
 ./ubxconfig.sh /dev/ttyS0 NEO9Settings.txt
