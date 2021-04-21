@@ -107,7 +107,7 @@ func (g *gps) Run() error {
 			// }
 			// time.Sleep(1 * time.Second)
 
-			time.Sleep(50 * time.Millisecond)
+			time.Sleep(123 * time.Millisecond)
 
 		} else {
 			// log.Infof("ParseNMEALine error, %s", err)
@@ -136,9 +136,15 @@ func ParseNMEALine(line string) (NMEA, error) {
 	if len(tokens) < 8 {
 		return NMEA{}, fmt.Errorf("unsupported nmea string, expected 8 tokens got %d: %s", len(tokens), line)
 	}
-	if tokens[0] != "$GPGGA" || tokens[0] != "$GNGSA" || tokens[0] != "$GNGLL" {
-		return NMEA{}, fmt.Errorf("unsupported nmea string: %s", line)
-	}
+	// if tokens[0] != "$GPGGA" || tokens[0] != "$GNGSA" || tokens[0] != "$GNGLL" {
+	// 	return NMEA{}, fmt.Errorf("unsupported nmea string: %s", line)
+	// }
+
+	// todo: supportGPGGA
+
+	// if tokens[0] != "$GNGSA" || tokens[0] != "$GNGLL" {
+	// 	return NMEA{}, fmt.Errorf("unsupported nmea string: %s", line)
+	// }
 
 	if tokens[0] == "$GNGLL" {
 		return NMEA{
@@ -167,13 +173,13 @@ func ParseNMEALine(line string) (NMEA, error) {
 	} else {
 		// https://www.hemispheregnss.com/technical-resource-manual/Import_Folder/GNGSA_Message.htm
 		return NMEA{
-			fixTimestamp:       tokens[1],
-			latitude:           tokens[2],
-			latitudeDirection:  tokens[3],
-			longitude:          tokens[4],
-			longitudeDirection: tokens[5],
-			fixQuality:         tokens[6],
-			satellites:         tokens[7],
+			// fixTimestamp:       tokens[1],
+			// latitude:           tokens[2],
+			// latitudeDirection:  tokens[3],
+			// longitude:          tokens[4],
+			// longitudeDirection: tokens[5],
+			// fixQuality:         tokens[6],
+			// satellites:         tokens[7],
 		}, nil
 	}
 

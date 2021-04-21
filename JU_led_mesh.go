@@ -568,10 +568,6 @@ func broadcastLoop(keys <-chan rune, gpsCh <-chan gps.GPSMessage, duino port.Por
 
 			// received GPS from local GPS module
 
-			// OLED display:
-			msgP := fmt.Sprintf("HDOP = %f", gpsMessage.HDOP)
-			oled.ShowText(img, 6, msgP)
-
 			if !more {
 				log.Infof("gps channel closed\n")
 				log.Infof("exiting")
@@ -587,34 +583,40 @@ func broadcastLoop(keys <-chan rune, gpsCh <-chan gps.GPSMessage, duino port.Por
 			// 8 bytes: Lat
 			// 8 bytes: Long
 
-			GPSmsgSize := 24                       // 24 bytes for  a gps message
-			messageOut := make([]byte, GPSmsgSize) // sent to batman
+			if gpsMessage.Lat != 0.0 {
 
-			copy(messageOut[0:2], magicByte)
-			messageOut[2] = uint8(GPSmsgSize)
-			copy(messageOut[3:5], raspID)
+				GPSmsgSize := 24                       // 24 bytes for  a gps message
+				messageOut := make([]byte, GPSmsgSize) // sent to batman
 
-			whoFor := raspiIDEveryone // message for everyone
-			copy(messageOut[5:7], whoFor)
+				copy(messageOut[0:2], magicByte)
+				messageOut[2] = uint8(GPSmsgSize)
+				copy(messageOut[3:5], raspID)
 
-			messageType := messageTypeGPS // GPS
-			messageOut[7] = uint8(messageType)
+				whoFor := raspiIDEveryone // message for everyone
+				copy(messageOut[5:7], whoFor)
 
-			// now split the float64 lat and long values into bytes and shove them in the message
-			binary.LittleEndian.PutUint64(messageOut[8:16], math.Float64bits(gpsMessage.Lat))
-			binary.LittleEndian.PutUint64(messageOut[16:24], math.Float64bits(gpsMessage.Long))
+				messageType := messageTypeGPS // GPS
+				messageOut[7] = uint8(messageType)
 
-			// todo: send HDOP!!
+				// now split the float64 lat and long values into bytes and shove them in the message
+				binary.LittleEndian.PutUint64(messageOut[8:16], math.Float64bits(gpsMessage.Lat))
+				binary.LittleEndian.PutUint64(messageOut[16:24], math.Float64bits(gpsMessage.Long))
 
-			_, err := bm.Conn.WriteToUDP(messageOut, bcast)
-			if err != nil {
-				log.Error(err)
-				return err
+				// todo: send HDOP!!
+
+				_, err := bm.Conn.WriteToUDP(messageOut, bcast)
+				if err != nil {
+					log.Error(err)
+					return err
+				}
+
 			}
 
-			// // OLED display:
-			// msgP := fmt.Sprintf("HDOP = %f", gpsMessage.HDOP)
-			// oled.ShowText(img, 6, msgP)
+			// OLED display:
+			if gpsMessage.HDOP != 0.0 {
+				msgP := fmt.Sprintf("HDOP = %.2f", gpsMessage.HDOP)
+				oled.ShowText(img, 6, msgP)
+			}
 
 		case key, more := <-keys:
 			// received local key press
