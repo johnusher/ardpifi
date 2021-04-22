@@ -140,48 +140,63 @@ func ParseNMEALine(line string) (NMEA, error) {
 	// 	return NMEA{}, fmt.Errorf("unsupported nmea string: %s", line)
 	// }
 
-	// todo: supportGPGGA
+	// NB untested for GPGGA
+	if tokens[0] == "$GNGGA" || tokens[0] == "$GPGGA" {
+		return NMEA{
+			fixTimestamp:       tokens[1],
+			latitude:           tokens[2],
+			latitudeDirection:  tokens[3],
+			longitude:          tokens[4],
+			longitudeDirection: tokens[5],
+			fixQuality:         tokens[6],
+			satellites:         tokens[7],
+			horizontalDilution: tokens[8], // Horizontal Dilution of Precision (HDOP) 1.0 to 9.9
+		}, nil
+	} else {
+		return NMEA{}, fmt.Errorf("unsupported nmea string: %s", line)
+
+	}
 
 	// if tokens[0] != "$GNGSA" || tokens[0] != "$GNGLL" {
 	// 	return NMEA{}, fmt.Errorf("unsupported nmea string: %s", line)
 	// }
 
-	if tokens[0] == "$GNGLL" {
-		return NMEA{
-			// fixTimestamp:       tokens[1],
-			latitude:           tokens[1],
-			latitudeDirection:  tokens[2],
-			longitude:          tokens[3],
-			longitudeDirection: tokens[4],
-			// fixQuality:         "1",
-			// fixQuality:         tokens[6],
-			// satellites:         tokens[7],
-		}, nil
-	} else if tokens[0] == "$GNGSA" {
-		// https://www.hemispheregnss.com/technical-resource-manual/Import_Folder/GNGSA_Message.htm
-		return NMEA{
-			// fixTimestamp:       tokens[1],
-			// latitude:           tokens[1],
-			// latitudeDirection:  tokens[2],
-			// longitude:          tokens[3],
-			// longitudeDirection: tokens[4],
-			horizontalDilution: tokens[16], // Horizontal Dilution of Precision (HDOP) 1.0 to 9.9
-			// fixQuality:         tokens[6],
-			// satellites:         tokens[7],
-		}, nil
-		// } else if tokens[0] == "$GPGGA" {
-	} else {
-		// https://www.hemispheregnss.com/technical-resource-manual/Import_Folder/GNGSA_Message.htm
-		return NMEA{
-			// fixTimestamp:       tokens[1],
-			// latitude:           tokens[2],
-			// latitudeDirection:  tokens[3],
-			// longitude:          tokens[4],
-			// longitudeDirection: tokens[5],
-			// fixQuality:         tokens[6],
-			// satellites:         tokens[7],
-		}, nil
-	}
+	// if tokens[0] == "$GNGLL" {
+	// 	return NMEA{
+	// 		// fixTimestamp:       tokens[1],
+	// 		latitude:           tokens[1],
+	// 		latitudeDirection:  tokens[2],
+	// 		longitude:          tokens[3],
+	// 		longitudeDirection: tokens[4],
+	// 		// fixQuality:         "1",
+	// 		// fixQuality:         tokens[6],
+	// 		// satellites:         tokens[7],
+	// 	}, nil
+	// } else if tokens[0] == "$GNGSA" {
+	// 	// https://www.hemispheregnss.com/technical-resource-manual/Import_Folder/GNGSA_Message.htm
+	// 	return NMEA{
+	// 		// fixTimestamp:       tokens[1],
+	// 		// latitude:           tokens[1],
+	// 		// latitudeDirection:  tokens[2],
+	// 		// longitude:          tokens[3],
+	// 		// longitudeDirection: tokens[4],
+	// 		horizontalDilution: tokens[16], // Horizontal Dilution of Precision (HDOP) 1.0 to 9.9
+	// 		// fixQuality:         tokens[6],
+	// 		// satellites:         tokens[7],
+	// 	}, nil
+	// 	// } else if tokens[0] == "$GPGGA" {
+	// } else {
+	// 	// https://www.hemispheregnss.com/technical-resource-manual/Import_Folder/GNGSA_Message.htm
+	// 	return NMEA{
+	// 		// fixTimestamp:       tokens[1],
+	// 		// latitude:           tokens[2],
+	// 		// latitudeDirection:  tokens[3],
+	// 		// longitude:          tokens[4],
+	// 		// longitudeDirection: tokens[5],
+	// 		// fixQuality:         tokens[6],
+	// 		// satellites:         tokens[7],
+	// 	}, nil
+	// }
 
 }
 

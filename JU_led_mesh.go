@@ -71,6 +71,7 @@ const (
 type ChatRequest struct {
 	Latf     float64
 	Longf    float64
+	HDOPf    float64
 	ID       string
 	Key      rune
 	PointDir int64
@@ -83,7 +84,7 @@ type chatRequestWithTimestamp struct {
 
 // String satisfies the Stringer interface
 func (c ChatRequest) String() string {
-	return fmt.Sprintf("id: %s, coords: (%f, %f)", c.ID, c.Latf, c.Longf)
+	return fmt.Sprintf("id: %s, coords: (%f, %f), HDOP: %.2f", c.ID, c.Latf, c.Longf, c.HDOPf)
 }
 
 // String satisfies the Stringer interface
@@ -430,6 +431,14 @@ func messageLoop(messages <-chan []byte, accCh <-chan acc.ACCMessage, duino port
 				rxLongFloat := math.Float64frombits(bits)
 
 				crwt.Longf = rxLongFloat
+
+				rxHDOPBytes := message[24:32]
+				bits = binary.LittleEndian.Uint64(rxHDOPBytes)
+				rxHDOPFloat := math.Float64frombits(bits)
+
+				crwt.HDOPf = rxHDOPFloat
+
+				// todo: HDOP
 			}
 
 			allPIs[senderID] = crwt
@@ -574,7 +583,7 @@ func broadcastLoop(keys <-chan rune, gpsCh <-chan gps.GPSMessage, duino port.Por
 				return nil
 			}
 
-			// GPS message (24 bytes)
+			// GPS message (32 bytes)
 			// 2 bytes: <2 magic bytes>
 			// 1 byte:  <total message length, bytes>
 			// 2 bytes: <sender ID = 2 bytes, (IP?)>
@@ -582,10 +591,13 @@ func broadcastLoop(keys <-chan rune, gpsCh <-chan gps.GPSMessage, duino port.Por
 			// 1 byte:  <message type (0=gps, 1=duino command, 2=gesture type)>
 			// 8 bytes: Lat
 			// 8 bytes: Long
+			// 8 bytes: HDOP
 
 			if gpsMessage.Lat != 0.0 {
 
-				GPSmsgSize := 24                       // 24 bytes for  a gps message
+				// GPSmsgSize := 24                       // 24 bytes for  a gps message
+
+				GPSmsgSize := 32                       // 32 bytes for  a gps message
 				messageOut := make([]byte, GPSmsgSize) // sent to batman
 
 				copy(messageOut[0:2], magicByte)
@@ -601,6 +613,7 @@ func broadcastLoop(keys <-chan rune, gpsCh <-chan gps.GPSMessage, duino port.Por
 				// now split the float64 lat and long values into bytes and shove them in the message
 				binary.LittleEndian.PutUint64(messageOut[8:16], math.Float64bits(gpsMessage.Lat))
 				binary.LittleEndian.PutUint64(messageOut[16:24], math.Float64bits(gpsMessage.Long))
+				binary.LittleEndian.PutUint64(messageOut[24:32], math.Float64bits(gpsMessage.HDOP))
 
 				// todo: send HDOP!!
 

@@ -1,6 +1,8 @@
 package oled
 
+// https://pkg.go.dev/github.com/goiot/devices@v0.0.0-20160708214026-09d1226fc8ea/monochromeoled
 // 128 x 64 pixel oled screen
+// Package monochromeoled contains an Adafruit Monochrome OLED (SSD1306) display driver.
 
 import (
 	"image"
