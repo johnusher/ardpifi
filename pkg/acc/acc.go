@@ -21,7 +21,7 @@ type ACC interface {
 }
 
 type ACCMessage struct {
-	Temp    int8
+	// Temp    int8
 	Bearing float64
 	Roll    float64
 	Tilt    float64
@@ -109,13 +109,13 @@ func (a *acc) Run() error {
 			// 	log.Errorf("acc error: %v", err)
 			// }
 
-			temp, err := a.Sensor.Temperature()
-			if err != nil {
-				panic(err)
-			}
+			// temp, err := a.Sensor.Temperature()
+			// if err != nil {
+			// 	panic(err)
+			// }
 
 			a.acc <- ACCMessage{
-				Temp:    temp,
+				// Temp:    temp,
 				Bearing: bearing,
 				Roll:    roll,
 				Tilt:    tilt,
@@ -123,7 +123,7 @@ func (a *acc) Run() error {
 
 		}
 
-		time.Sleep(50 * time.Millisecond)
+		time.Sleep(150 * time.Millisecond)
 	}
 
 }
