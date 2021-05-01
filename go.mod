@@ -9,6 +9,7 @@ require (
 	github.com/fogleman/gg v1.3.0 // indirect
 	github.com/goiot/devices v0.0.0-20160708214026-09d1226fc8ea
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
+	github.com/gordonklaus/portaudio v0.0.0-20200911161147-bb74aa485641 // indirect
 	github.com/gorilla/websocket v1.4.2
 	github.com/huin/goserial v0.0.0-20121012073615-7b90efdb22b1
 	github.com/jacobsa/go-serial v0.0.0-20180131005756-15cf729a72d4
@@ -22,6 +23,7 @@ require (
 	github.com/sirupsen/logrus v1.7.0
 	github.com/stretchr/testify v1.6.1 // indirect
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
+	github.com/youpy/go-wav v0.1.0 // indirect
 	golang.org/x/exp v0.0.0-20210212053707-62dc52270d37
 	golang.org/x/image v0.0.0-20190802002840-cff245a6509b
 	golang.org/x/sys v0.0.0-20210105210732-16f7687f5001 // indirect
