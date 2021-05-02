@@ -23,6 +23,7 @@ require (
 	github.com/sirupsen/logrus v1.7.0
 	github.com/stretchr/testify v1.6.1 // indirect
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
+	github.com/warthog618/gpiod v0.6.0 // indirect
 	github.com/youpy/go-wav v0.1.0 // indirect
 	golang.org/x/exp v0.0.0-20210212053707-62dc52270d37
 	golang.org/x/image v0.0.0-20190802002840-cff245a6509b
