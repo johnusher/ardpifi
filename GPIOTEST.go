@@ -1,4 +1,7 @@
-// GPIOTEST.gop
+// GPIOTEST.go
+// read switch input from raspberry pi 3+ GPIO and light LED
+// uses command-line GPIOD.
+// debouncing handled using time.AfterFunc
 
 package main
 
@@ -23,39 +26,80 @@ type buttonPress struct {
 	lastMessageTypeReceived string
 	lastButtonEventType     string
 	lastMessageReceived     time.Time
+	buttonFlag              int16
 }
 
 var buttonTimes buttonPress // have to make this a global!!
+var led gpiod.Line
+var button gpiod.Line
+var newtimer time.Timer
+
+func delayedButtonHandle() {
+	buttonStatus, _ := button.Value() // Read state from line (active / inactive)
+
+	if buttonStatus == 0 {
+		led.SetValue(1) // Set line active}
+	} else {
+		led.SetValue(0) // Set line active}
+	}
+	buttonTimes.buttonFlag = 0
+
+}
 
 func buttonEventHandler(evt gpiod.LineEvent) {
-	oldTime := buttonTimes.lastMessageReceived
-	t := time.Now()
 
-	timeDiff := t.Sub(oldTime)
+	if buttonTimes.buttonFlag == 0 {
+		// first event: restart timer
+		// t := time.Now()
+		// buttonTimes.lastMessageReceived = t
+		buttonTimes.buttonFlag = 1
+		newtimerp := time.AfterFunc(3*time.Millisecond, delayedButtonHandle)
 
-	if timeDiff < bounceTime {
-		// log.Info("TOO QQUICK! timeDiff = ", timeDiff)
+		newtimer = *newtimerp
+
+		defer newtimer.Stop()
+
+		// newtimer := time.NewTimer(100 * time.Millisecond) // start timer for 100 ms, when expired, check GPIO level
+	} else {
+		// timer already running
+		log.Info("TOO QQUICK!")
 		return
-	}
-	log.Info("timeDiff = ", timeDiff)
 
-	buttonTimes.lastMessageReceived = t
-
-	edge := "rising"
-	if evt.Type == gpiod.LineEventFallingEdge {
-		edge = "falling"
 	}
 
-	fmt.Printf("%s \n", edge)
-	// fmt.Printf("event:%3d %-7s %s (%s)\n",
-	// 	evt.Offset,
-	// 	edge,
-	// 	t.Format(time.RFC3339Nano),
-	// 	evt.Timestamp)
+	// oldTime := buttonTimes.lastMessageReceived
+	// t := time.Now()
+
+	// timeDiff := t.Sub(oldTime)
+
+	// // buttonTimes.lastMessageReceived = t
+
+	// if timeDiff < bounceTime {
+	// 	// log.Info("TOO QQUICK! timeDiff = ", timeDiff)
+	// 	return
+	// } else {
+	// 	delayedButtonHandle()
+	// }
+
+	// if buttonTimes.buttonFlag == 1 {
+	// 	log.Info("TbuttonFlag = 1")
+	// 	return
+	// }
+
+	// log.Info("timeDiff = ", timeDiff)
+
+	// edge := "rising"
+	// if evt.Type == gpiod.LineEventFallingEdge {
+	// 	edge = "falling"
+	// }
+
+	// fmt.Printf("%s \n", edge)
+
 }
 
 func main() {
 
+	buttonTimes.buttonFlag = 0
 	buttonTimes.lastButtonEventType = "falling"
 	buttonTimes.lastMessageReceived = time.Now()
 
@@ -83,6 +127,16 @@ func main() {
 		log.Printf("Command finished with error: %v", err)
 	}
 
+	arg2 = "22"
+	arg3 = "out"
+
+	cmd = exec.Command(app, arg0, arg1, arg2, arg3)
+	log.Printf("gpio set-up part 1.1")
+	err = cmd.Run()
+	if err != nil {
+		log.Printf("Command finished with error: %v", err)
+	}
+
 	// Set up GPIO 27 with pullup resistor
 	app = "gpio"
 
@@ -98,10 +152,6 @@ func main() {
 		log.Printf("Command finished with error: %v", err)
 	}
 
-	// Set up button with interrupt watch using gpiod
-	// offset := rpi.J8p13
-	offset := 27
-
 	c, err := gpiod.NewChip("gpiochip0")
 	if err != nil {
 		panic(err)
@@ -109,20 +159,14 @@ func main() {
 
 	defer c.Close()
 
-	// t, err := c.RequestLine(redButton,
-	// 	gpiod.WithRisingEdge)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// defer t.Close()
-
-	// period := 10 * time.Millisecond
-	// l, _ = c.RequestLine(4, gpiod.WithDebounce(period))// during request The WithDebounce option requires Linux v5.10 or later.
-	// l.Reconfigure(gpiod.WithDebounce(period))         // once requested
-
-	l, err := c.RequestLine(offset,
+	// Set up button with interrupt watch using gpiod
+	// offset := rpi.J8p13
+	offset := 27
+	buttonp, err := c.RequestLine(offset,
 		gpiod.WithBothEdges,
 		gpiod.WithEventHandler(buttonEventHandler))
+
+	button = *buttonp
 
 	// NB remove pullup from the gpiod function call: requires kernel 5.5 for pullup/pulldown support.
 	if err != nil {
@@ -132,7 +176,26 @@ func main() {
 		}
 		os.Exit(1)
 	}
-	defer l.Close()
+	defer button.Close()
+
+	// Set up button with interrupt watch using gpiod
+	// offset := rpi.J8p13
+	offset = 22
+	ledp, err := c.RequestLine(offset, gpiod.AsOutput(0)) // during request
+
+	led = *ledp
+
+	// NB remove pullup from the gpiod function call: requires kernel 5.5 for pullup/pulldown support.
+	if err != nil {
+		fmt.Printf("RequestLine2 returned error: %s\n", err)
+		os.Exit(1)
+	}
+	defer led.Close()
+
+	// time.Sleep(1 * time.Second)
+	// led.SetValue(1) // Set line active
+	// time.Sleep(1 * time.Second)
+	// led.SetValue(0) // Set line inactive
 
 	// l.Reconfigure(gpiod.WithDebounce(period)) // once requested
 
