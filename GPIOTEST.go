@@ -2,6 +2,9 @@
 // read switch input from raspberry pi 3+ GPIO and light LED
 // uses command-line GPIOD.
 // debouncing handled using time.AfterFunc
+// go get github.com/warthog618/gpiod
+
+// to playback audio must run as sudo eg  go build GPIOTEST.go && sudo ./GPIOTEST
 
 package main
 
@@ -13,6 +16,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/johnusher/ardpifi/pkg/wavs"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/warthog618/gpiod"
@@ -33,14 +37,17 @@ var buttonTimes buttonPress // have to make this a global!!
 var led gpiod.Line
 var button gpiod.Line
 var newtimer time.Timer
+var wavss wavs.Wavs
 
 func delayedButtonHandle() {
 	buttonStatus, _ := button.Value() // Read state from line (active / inactive)
 
 	if buttonStatus == 0 {
 		led.SetValue(1) // Set line active}
+		wavss.Play("ceottk001_human.wav")
 	} else {
 		led.SetValue(0) // Set line active}
+		wavss.StopAll()
 	}
 	buttonTimes.buttonFlag = 0
 
@@ -64,40 +71,14 @@ func buttonEventHandler(evt gpiod.LineEvent) {
 		// timer already running
 		log.Info("TOO QQUICK!")
 		return
-
 	}
-
-	// oldTime := buttonTimes.lastMessageReceived
-	// t := time.Now()
-
-	// timeDiff := t.Sub(oldTime)
-
-	// // buttonTimes.lastMessageReceived = t
-
-	// if timeDiff < bounceTime {
-	// 	// log.Info("TOO QQUICK! timeDiff = ", timeDiff)
-	// 	return
-	// } else {
-	// 	delayedButtonHandle()
-	// }
-
-	// if buttonTimes.buttonFlag == 1 {
-	// 	log.Info("TbuttonFlag = 1")
-	// 	return
-	// }
-
-	// log.Info("timeDiff = ", timeDiff)
-
-	// edge := "rising"
-	// if evt.Type == gpiod.LineEventFallingEdge {
-	// 	edge = "falling"
-	// }
-
-	// fmt.Printf("%s \n", edge)
 
 }
 
 func main() {
+
+	wavsp := wavs.InitWavs()
+	wavss = *wavsp
 
 	buttonTimes.buttonFlag = 0
 	buttonTimes.lastButtonEventType = "falling"
@@ -168,7 +149,6 @@ func main() {
 
 	button = *buttonp
 
-	// NB remove pullup from the gpiod function call: requires kernel 5.5 for pullup/pulldown support.
 	if err != nil {
 		fmt.Printf("RequestLine returned error: %s\n", err)
 		if err == syscall.Errno(22) {
@@ -192,15 +172,6 @@ func main() {
 	}
 	defer led.Close()
 
-	// time.Sleep(1 * time.Second)
-	// led.SetValue(1) // Set line active
-	// time.Sleep(1 * time.Second)
-	// led.SetValue(0) // Set line inactive
-
-	// l.Reconfigure(gpiod.WithDebounce(period)) // once requested
-
-	// In a real application the main thread would do something useful.
-	// But we'll just run for a minute then exit.
 	fmt.Printf("Watching Pin %d...\n", offset)
 	time.Sleep(time.Minute)
 	fmt.Println("exiting...")

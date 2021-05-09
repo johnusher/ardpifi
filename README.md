@@ -50,6 +50,39 @@ gpsbabel -i nmea -f gpsdata.txt -x discard,hdop=1,sat=9  -o kml -F outfile.kml
 ```
 
 
+### Audio: I2S
+
+There is no built-in audio out with the Pi-Zero, so we use an I2S audio DAC: UDA1334.
+
+from https://learn.adafruit.com/adafruit-i2s-stereo-decoder-uda1334a/raspberry-pi-wiring
+
+Amp Vin to Raspbery Pi 3V or 5V
+
+Amp GND to Raspbery Pi GND
+
+Amp DIN to Raspbery Pi #21  = pin 21
+
+Amp BCLK to Raspbery Pi GPIO#18 = pin 12
+
+Amp LRCLK to Raspbery Pi #19 = pin 35
+
+
+We must run audio playback as sudo! eg  go build wavestest.go && sudo ./wavestest 
+
+Optional:
+
+Edit /usr/share/alsa/alsa.conf to change pcm.front cards.pcm.front -> pcm.front cards.pcm.default
+
+sudo apt-get --no-install-recommends install jackd2
+
+### Button and LED
+
+An arcade push button attaches to GPIO27= physical pin 13, and an LED with 330 Ohm series resistor to GPIO22 = physcial pin 13.
+
+GPIOTEST.go shows this in action.
+
+go get github.com/warthog618/gpiod
+
 ### Display screen
 OLED 128*64.
 
@@ -178,6 +211,7 @@ sudo install-wifi
  ```
 reboot
 
+
 make sure you have added static ip to wlan 1:
 
 ```bash
@@ -189,7 +223,6 @@ interface wlan1
 static ip_address=192.168.1.164/24
 static routers=192.168.1.1
 static domain_name_servers=192.168.1.1
-
 
 EOF
  ```
@@ -213,7 +246,6 @@ cd /home/pi/apl/
 go build JU_led_mesh.go
 ```
 
-
 There are many ways to do this, but this one is mine. systemctl is not my best friend. For about an hour, it was my life. I do not care to master it.
 
 1. cd ~/apl2
@@ -236,11 +268,11 @@ To start the script on boot, enable the service with systemd:
 
 useful:
 
-sudo systemctl stop delayBoot1.service
+sudo systemctl stop delayBoot2.service
 
 sudo systemctl start delayBoot2.service
 
-systemctl status delayBoot1.service
+systemctl status delayBoot2.service
 
 
 
@@ -541,6 +573,14 @@ Open a browser window to localhost:8080
 run BNo055_save_data.go
 ```
 This saves accelerometer and gyroscope data to a txt file.
+
+```bash
+
+go build GPIOTEST.go && sudo ./GPIOTEST
+
+```
+This reads the button, debounces, and plays sound when we have button down.
+
 
 ```bash
 run OLEDtest.go
