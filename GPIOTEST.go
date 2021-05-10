@@ -173,7 +173,7 @@ func main() {
 	defer led.Close()
 
 	fmt.Printf("Watching Pin %d...\n", offset)
-	time.Sleep(time.Minute)
+	time.Sleep(time.Hour)
 	fmt.Println("exiting...")
 
 }
