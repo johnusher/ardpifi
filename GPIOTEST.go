@@ -10,6 +10,8 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
+
 	// "log"
 	"os"
 	"os/exec"
@@ -29,7 +31,7 @@ const (
 type buttonPress struct {
 	lastMessageTypeReceived string
 	lastButtonEventType     string
-	lastMessageReceived     time.Time
+	buttonDownTime          time.Time
 	buttonFlag              int16
 }
 
@@ -37,17 +39,48 @@ var buttonTimes buttonPress // have to make this a global!!
 var led gpiod.Line
 var button gpiod.Line
 var newtimer time.Timer
+var newtimer2 time.Timer
 var wavss wavs.Wavs
 
 func delayedButtonHandle() {
 	buttonStatus, _ := button.Value() // Read state from line (active / inactive)
 
-	if buttonStatus == 0 {
-		led.SetValue(1) // Set line active}
-		wavss.Play("ceottk001_human.wav")
+	if buttonStatus == 0 { // low= button pressed down
+		led.SetValue(1) // light LED
+
+		// first down: restart timer
+		t := time.Now()
+		buttonTimes.buttonDownTime = t
+
+		defer newtimer.Stop() // stop countdown timer
+
+		// play short sound, for 200 ms
+		catMeowN := rand.Int31n(10) + 1
+		catcat := fmt.Sprintf("meow_%d.wav", catMeowN)
+		// fmt.Println(catcat)
+		// wavss.Play(catcat)
+
+		newtimerp2 := time.AfterFunc(150*time.Millisecond, func() { wavss.Play(catcat) }) // play wav after 150 ms
+
+		newtimer2 = *newtimerp2
+		defer newtimer2.Stop()
+
+		// wavss.Play("meow_1.wav")
 	} else {
-		led.SetValue(0) // Set line active}
+		// button has been lifted
+		led.SetValue(0) // turn off LED
+		now := time.Now()
+		elapsedTime := now.Sub(buttonTimes.buttonDownTime)
+
+		newtimer2.Stop()
 		wavss.StopAll()
+
+		if elapsedTime < 400*time.Millisecond {
+			// wavss.StopAll()
+			wavss.Play("meow_3.wav")
+			fmt.Println(elapsedTime)
+		}
+
 	}
 	buttonTimes.buttonFlag = 0
 
@@ -56,12 +89,10 @@ func delayedButtonHandle() {
 func buttonEventHandler(evt gpiod.LineEvent) {
 
 	if buttonTimes.buttonFlag == 0 {
-		// first event: restart timer
-		// t := time.Now()
-		// buttonTimes.lastMessageReceived = t
-		buttonTimes.buttonFlag = 1
-		newtimerp := time.AfterFunc(3*time.Millisecond, delayedButtonHandle)
 
+		buttonTimes.buttonFlag = 1 // flag =1 , ie button active
+
+		newtimerp := time.AfterFunc(3*time.Millisecond, delayedButtonHandle) // debounce: after 3 ms, check status again
 		newtimer = *newtimerp
 
 		defer newtimer.Stop()
@@ -82,7 +113,7 @@ func main() {
 
 	buttonTimes.buttonFlag = 0
 	buttonTimes.lastButtonEventType = "falling"
-	buttonTimes.lastMessageReceived = time.Now()
+	buttonTimes.buttonDownTime = time.Now()
 
 	// hack from https://www.raspberrypi.org/forums/viewtopic.php?t=270376:
 
@@ -147,8 +178,6 @@ func main() {
 		gpiod.WithBothEdges,
 		gpiod.WithEventHandler(buttonEventHandler))
 
-	button = *buttonp
-
 	if err != nil {
 		fmt.Printf("RequestLine returned error: %s\n", err)
 		if err == syscall.Errno(22) {
@@ -156,6 +185,9 @@ func main() {
 		}
 		os.Exit(1)
 	}
+
+	button = *buttonp
+
 	defer button.Close()
 
 	// Set up button with interrupt watch using gpiod

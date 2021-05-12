@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	WAVS = "./wav_audio"
+	WAVS = "./wav_audio/meows_Out"
 	BUF  = 128
 )
 
@@ -51,7 +51,7 @@ func InitWavs() *Wavs {
 		}
 	}
 
-	wavs.stream, err = portaudio.OpenDefaultStream(0, 1, 44100, BUF, wavs.cb)
+	wavs.stream, err = portaudio.OpenDefaultStream(0, 1, 48000, BUF, wavs.cb)
 	if err != nil {
 		panic(err)
 	}
