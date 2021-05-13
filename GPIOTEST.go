@@ -43,7 +43,7 @@ var button gpiod.Line
 var wavss wavs.Wavs
 var cancelShort = make(chan struct{})
 
-func delayedButtonHandle(buttonTimes buttonPress) {
+func delayedButtonHandle(buttonTimes *buttonPress) {
 	buttonStatus, _ := button.Value() // Read state from line (active / inactive)
 
 	if buttonStatus == 0 { // low= button pressed down
@@ -98,7 +98,7 @@ func delayedButtonHandle(buttonTimes buttonPress) {
 
 }
 
-func mkButtonEventHandler(buttonTimes buttonPress) func(gpiod.LineEvent) {
+func mkButtonEventHandler(buttonTimes *buttonPress) func(gpiod.LineEvent) {
 	return func(evt gpiod.LineEvent) {
 		if buttonTimes.buttonFlag == 0 {
 
@@ -127,7 +127,7 @@ func main() {
 	wavsp := wavs.InitWavs()
 	wavss = *wavsp
 
-	buttonTimes := buttonPress{
+	buttonTimes := &buttonPress{
 		buttonFlag:          0,
 		lastButtonEventType: "falling",
 		buttonDownTime:      time.Now(),
