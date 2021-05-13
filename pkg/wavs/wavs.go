@@ -51,7 +51,7 @@ func InitWavs() *Wavs {
 		}
 	}
 
-	wavs.stream, err = portaudio.OpenDefaultStream(0, 1, 48000, BUF, wavs.cb)
+	wavs.stream, err = portaudio.OpenDefaultStream(0, 1, 24000, BUF, wavs.cb)
 	if err != nil {
 		panic(err)
 	}
