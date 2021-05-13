@@ -35,16 +35,15 @@ type buttonPress struct {
 	buttonFlag              int16
 }
 
-var buttonTimes buttonPress // have to make this a global!!
 var led gpiod.Line
 var button gpiod.Line
-var newtimer time.Timer
 
+// var newtimer time.Timer
 // var newtimer2 time.Timer
 var wavss wavs.Wavs
 var cancelShort = make(chan struct{})
 
-func delayedButtonHandle() {
+func delayedButtonHandle(buttonTimes buttonPress) {
 	buttonStatus, _ := button.Value() // Read state from line (active / inactive)
 
 	if buttonStatus == 0 { // low= button pressed down
@@ -54,7 +53,7 @@ func delayedButtonHandle() {
 		t := time.Now()
 		buttonTimes.buttonDownTime = t
 
-		defer newtimer.Stop() // stop countdown timer
+		// defer newtimer.Stop() // stop countdown timer
 
 		// play short sound, for 200 ms
 		catMeowN := rand.Int31n(10) + 1
@@ -99,24 +98,28 @@ func delayedButtonHandle() {
 
 }
 
-func buttonEventHandler(evt gpiod.LineEvent) {
+func mkButtonEventHandler(buttonTimes buttonPress) func(gpiod.LineEvent) {
+	return func(evt gpiod.LineEvent) {
+		if buttonTimes.buttonFlag == 0 {
 
-	if buttonTimes.buttonFlag == 0 {
+			buttonTimes.buttonFlag = 1 // flag =1 , ie button active
 
-		buttonTimes.buttonFlag = 1 // flag =1 , ie button active
+			go func() {
+				time.Sleep(3 * time.Millisecond)
+				delayedButtonHandle(buttonTimes)
+			}()
+			// newtimerp := time.AfterFunc(3*time.Millisecond, delayedButtonHandle) // debounce: after 3 ms, check status again
+			// newtimer = *newtimerp
 
-		newtimerp := time.AfterFunc(3*time.Millisecond, delayedButtonHandle) // debounce: after 3 ms, check status again
-		newtimer = *newtimerp
+			// defer newtimer.Stop()
 
-		defer newtimer.Stop()
-
-		// newtimer := time.NewTimer(100 * time.Millisecond) // start timer for 100 ms, when expired, check GPIO level
-	} else {
-		// timer already running
-		log.Info("TOO QQUICK!")
-		return
+			// newtimer := time.NewTimer(100 * time.Millisecond) // start timer for 100 ms, when expired, check GPIO level
+		} else {
+			// timer already running
+			log.Info("TOO QQUICK!")
+			return
+		}
 	}
-
 }
 
 func main() {
@@ -124,9 +127,12 @@ func main() {
 	wavsp := wavs.InitWavs()
 	wavss = *wavsp
 
-	buttonTimes.buttonFlag = 0
-	buttonTimes.lastButtonEventType = "falling"
-	buttonTimes.buttonDownTime = time.Now()
+	buttonTimes := buttonPress{
+		buttonFlag:          0,
+		lastButtonEventType: "falling",
+		buttonDownTime:      time.Now(),
+	}
+	buttonEventHandler := mkButtonEventHandler(buttonTimes)
 
 	// hack from https://www.raspberrypi.org/forums/viewtopic.php?t=270376:
 
