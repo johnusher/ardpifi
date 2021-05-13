@@ -42,7 +42,7 @@ var newtimer time.Timer
 
 // var newtimer2 time.Timer
 var wavss wavs.Wavs
-var cancelShort chan struct{}
+var cancelShort = make(chan struct{})
 
 func delayedButtonHandle() {
 	buttonStatus, _ := button.Value() // Read state from line (active / inactive)
