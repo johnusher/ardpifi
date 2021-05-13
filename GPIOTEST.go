@@ -24,34 +24,37 @@ import (
 	"github.com/warthog618/gpiod"
 )
 
-const (
-	bounceTime = 150 * time.Millisecond
-)
+// const (
+// 	bounceTime = 150 * time.Millisecond
+// )
 
 type buttonPress struct {
-	lastMessageTypeReceived string
-	lastButtonEventType     string
-	buttonDownTime          time.Time
-	buttonFlag              int16
+	buttonDownTime  time.Time
+	buttonFlag      int16
+	button          gpiod.Line
+	led             gpiod.Line
+	buttonWavs      wavs.Wavs
+	cancelButtonWav chan struct{}
 }
 
-var led gpiod.Line
-var button gpiod.Line
+// var led gpiod.Line
+
+// var button gpiod.Line
 
 // var newtimer time.Timer
 // var newtimer2 time.Timer
-var wavss wavs.Wavs
-var cancelShort = make(chan struct{})
+// var wavss wavs.Wavs
+// var cancelButtonWav = make(chan struct{})
 
-func delayedButtonHandle(buttonTimes *buttonPress) {
-	buttonStatus, _ := button.Value() // Read state from line (active / inactive)
+func delayedButtonHandle(pushButton *buttonPress) {
+	buttonStatus, _ := pushButton.button.Value() // Read state from line (active / inactive)
 
 	if buttonStatus == 0 { // low= button pressed down
-		led.SetValue(1) // light LED
+		pushButton.led.SetValue(1) // light LED
 
 		// first down: restart timer
 		t := time.Now()
-		buttonTimes.buttonDownTime = t
+		pushButton.buttonDownTime = t
 
 		// defer newtimer.Stop() // stop countdown timer
 
@@ -66,47 +69,47 @@ func delayedButtonHandle(buttonTimes *buttonPress) {
 		// newtimer2 = *newtimerp2
 		// defer newtimer2.Stop()
 
-		cancelShort = make(chan struct{})
+		pushButton.cancelButtonWav = make(chan struct{})
 		go func() {
-			// either play after 150ms, or bail if close(cancelShort) is called
+			// either play after 150ms, or bail if close(cancelButtonWav) is called
 			select {
 			case <-time.After(150 * time.Millisecond):
-				wavss.Play(catcat)
-			case <-cancelShort:
+				pushButton.buttonWavs.Play(catcat)
+			case <-pushButton.cancelButtonWav:
 			}
 		}()
 
 		// wavss.Play("meow_1.wav")
 	} else {
 		// button has been lifted
-		led.SetValue(0) // turn off LED
+		pushButton.led.SetValue(0) // turn off LED
 		now := time.Now()
-		elapsedTime := now.Sub(buttonTimes.buttonDownTime)
+		elapsedTime := now.Sub(pushButton.buttonDownTime)
 
-		close(cancelShort)
+		close(pushButton.cancelButtonWav)
 		// newtimer2.Stop()
-		wavss.StopAll()
+		pushButton.buttonWavs.StopAll()
 
 		if elapsedTime < 400*time.Millisecond {
 			// wavss.StopAll()
-			wavss.Play("meow_3.wav")
+			pushButton.buttonWavs.Play("meow_3.wav")
 			fmt.Println(elapsedTime)
 		}
 
 	}
-	buttonTimes.buttonFlag = 0
+	pushButton.buttonFlag = 0
 
 }
 
-func mkButtonEventHandler(buttonTimes *buttonPress) func(gpiod.LineEvent) {
+func mkButtonEventHandler(pushButton *buttonPress) func(gpiod.LineEvent) {
 	return func(evt gpiod.LineEvent) {
-		if buttonTimes.buttonFlag == 0 {
+		if pushButton.buttonFlag == 0 {
 
-			buttonTimes.buttonFlag = 1 // flag =1 , ie button active
+			pushButton.buttonFlag = 1 // flag =1 , ie button active
 
 			go func() {
 				time.Sleep(3 * time.Millisecond)
-				delayedButtonHandle(buttonTimes)
+				delayedButtonHandle(pushButton)
 			}()
 			// newtimerp := time.AfterFunc(3*time.Millisecond, delayedButtonHandle) // debounce: after 3 ms, check status again
 			// newtimer = *newtimerp
@@ -125,14 +128,13 @@ func mkButtonEventHandler(buttonTimes *buttonPress) func(gpiod.LineEvent) {
 func main() {
 
 	wavsp := wavs.InitWavs()
-	wavss = *wavsp
 
-	buttonTimes := &buttonPress{
-		buttonFlag:          0,
-		lastButtonEventType: "falling",
-		buttonDownTime:      time.Now(),
+	pushButton := &buttonPress{
+		buttonFlag:     0,
+		buttonDownTime: time.Now(),
 	}
-	buttonEventHandler := mkButtonEventHandler(buttonTimes)
+	pushButton.buttonWavs = *wavsp
+	buttonEventHandler := mkButtonEventHandler(pushButton)
 
 	// hack from https://www.raspberrypi.org/forums/viewtopic.php?t=270376:
 
@@ -205,23 +207,23 @@ func main() {
 		os.Exit(1)
 	}
 
-	button = *buttonp
+	pushButton.button = *buttonp
 
-	defer button.Close()
+	defer pushButton.button.Close()
 
 	// Set up button with interrupt watch using gpiod
 	// offset := rpi.J8p13
 	offset = 22
 	ledp, err := c.RequestLine(offset, gpiod.AsOutput(0)) // during request
 
-	led = *ledp
+	pushButton.led = *ledp
 
 	// NB remove pullup from the gpiod function call: requires kernel 5.5 for pullup/pulldown support.
 	if err != nil {
 		fmt.Printf("RequestLine2 returned error: %s\n", err)
 		os.Exit(1)
 	}
-	defer led.Close()
+	defer pushButton.led.Close()
 
 	fmt.Printf("Watching Pin %d...\n", offset)
 	time.Sleep(time.Hour)
