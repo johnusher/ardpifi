@@ -39,8 +39,10 @@ var buttonTimes buttonPress // have to make this a global!!
 var led gpiod.Line
 var button gpiod.Line
 var newtimer time.Timer
-var newtimer2 time.Timer
+
+// var newtimer2 time.Timer
 var wavss wavs.Wavs
+var cancelShort chan struct{}
 
 func delayedButtonHandle() {
 	buttonStatus, _ := button.Value() // Read state from line (active / inactive)
@@ -60,10 +62,20 @@ func delayedButtonHandle() {
 		// fmt.Println(catcat)
 		// wavss.Play(catcat)
 
-		newtimerp2 := time.AfterFunc(150*time.Millisecond, func() { wavss.Play(catcat) }) // play wav after 150 ms
+		// newtimerp2 := time.AfterFunc(150*time.Millisecond, func() { wavss.Play(catcat) }) // play wav after 150 ms
 
-		newtimer2 = *newtimerp2
-		defer newtimer2.Stop()
+		// newtimer2 = *newtimerp2
+		// defer newtimer2.Stop()
+
+		cancelShort = make(chan struct{})
+		go func() {
+			// either play after 150ms, or bail if close(cancelShort) is called
+			select {
+			case <-time.After(150 * time.Millisecond):
+				wavss.Play(catcat)
+			case <-cancelShort:
+			}
+		}()
 
 		// wavss.Play("meow_1.wav")
 	} else {
@@ -72,7 +84,8 @@ func delayedButtonHandle() {
 		now := time.Now()
 		elapsedTime := now.Sub(buttonTimes.buttonDownTime)
 
-		newtimer2.Stop()
+		close(cancelShort)
+		// newtimer2.Stop()
 		wavss.StopAll()
 
 		if elapsedTime < 400*time.Millisecond {
