@@ -1,17 +1,21 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"image"
-	"image/png"
+	"image/color"
 	"math"
 	"os"
-	//needed to use `png` encoder
+	"time"
+
+	log "github.com/sirupsen/logrus"
+	"golang.org/x/image/bmp"
 )
 
 const (
-	quat_in     = "./letters/M/M_20-45-12/quaternion_data.txt"
+	// quat_in     = "./letters/M/M_20-45-12/quaternion_data.txt"
+	quat_in = "./letters/O/O_20-32-50/quaternion_data.txt"
+
 	circBufferL = 600 // length of buffer where we store quat data. 600 samples @5 ms update = 3 seconds
 	lp          = 64  // pixels used to represent drawn letter, on each axis, ie lpxlp
 )
@@ -36,7 +40,6 @@ func main() {
 
 	f, err := os.Open(quat_in)
 	if err != nil {
-		fmt.Printf("RequestLine2 returned error: %s\n", err)
 		fmt.Println(err)
 	}
 
@@ -80,6 +83,8 @@ func main() {
 	}
 
 	// eof reached
+
+	startTime := time.Now()
 
 	// step 3. when we have stopped recording data: average of projected
 
@@ -137,14 +142,7 @@ func main() {
 	// %     centre_direction[0]*y_direction[2]; % very close to zero
 	x_direction[2] = centre_direction[0]*y_direction[1] - centre_direction[1]*y_direction[0]
 
-	// log.Printf("x_direction[0] %v", x_direction[0])
-	// log.Printf("x_direction[1] %v", x_direction[1])
-	// log.Printf("x_direction[2] %v", x_direction[2])
-
 	// %% step 7: x and y corrodinates:
-
-	// x = zeros(dataL,1);
-	// y = zeros(dataL,1);
 
 	for i := 0; i < n; i++ {
 		x[i] = x_direction[0]*projected_circ_buffer[i][0] + x_direction[2]*projected_circ_buffer[i][2]                               //  % x_direction(2) is so small we can ignore it
@@ -163,39 +161,42 @@ func main() {
 		}
 	}
 
-	// x_int = round(x*m_x/2);
-	// y_int = round(y*m_y/2);
-
 	x_int := 0
 	y_int := 0
 	for i := 0; i < n; i++ {
-		x_int = int(x[i] + lp/2)
-		y_int = int(y[i] + lp/2)
+		x_int = int(x[i]*lp/2 + lp/2)
+		y_int = int(y[i]*lp/2 + lp/2)
 		letterImage[y_int][x_int] = 1
 	}
 
-	f, err = os.Create("outimage.png")
-	if err != nil {
-		// Handle error
-	}
-	defer f.Close()
+	// Create png image
+	img := image.NewRGBA(image.Rect(0, 0, lp, lp))
 
-	// imgByte := code.PNG()
-
-	// convert []byte to image for saving to file
-	img, _, _ := image.Decode(bytes.NewReader(letterImage))
-
-	// Encode to `PNG` with `DefaultCompression` level
-	// then save to file
-	err = png.Encode(f, img)
-	if err != nil {
-		// Handle error
+	for i := 0; i < n; i++ {
+		x_int = int(x[i]*lp/2 + lp/2 + 1)
+		y_int = int(y[i]*lp/2 + lp/2 + 1)
+		img.Set(y_int, x_int, color.RGBA{255, 0, 0, 255})
 	}
 
-	// for n=1:dataL
-	//     x_int_d = x_int(n)+m_x/2 + 1;
-	//     y_int_d = y_int(n)+m_y/2 + 1;
-	//     m(x_int_d,y_int_d) = 1;
-	// end
+	now := time.Now()
+	elapsedTime := now.Sub(startTime)
+
+	// about 200 uS
+	log.Printf("elapsedTime1=%v", elapsedTime)
+
+	// Save to out.bmp
+	fo, err := os.OpenFile("out2.bmp", os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		log.Printf("err %s\n", err)
+	}
+
+	defer fo.Close()
+	bmp.Encode(fo, img)
+
+	now = time.Now()
+	elapsedTime = now.Sub(startTime)
+
+	// takes bout 1.5 ms to save bmp, 10 ms to save png
+	log.Printf("elapsedTime2=%v", elapsedTime)
 
 }
