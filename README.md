@@ -90,13 +90,19 @@ Edit /usr/share/alsa/alsa.conf to change pcm.front cards.pcm.front -> pcm.front 
 
 sudo apt-get --no-install-recommends install jackd2
 
-### Button and LED
+### GPIO: Button and LED
 
 An arcade push button attaches to GPIO27= physical pin 13, and an LED with 330 Ohm series resistor to GPIO22 = physcial pin 13.
 
 GPIOTEST.go shows this in action.
 
 go get github.com/warthog618/gpiod
+
+GPIO support not intalled for Raspi Lite so run this:
+```bash
+sudo apt-get install wiringpi
+gpio readall
+```
 
 ### Display screen
 OLED 128*64.
