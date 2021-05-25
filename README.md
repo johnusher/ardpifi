@@ -52,6 +52,21 @@ gpsbabel -i nmea -f gpsdata.txt -x discard,hdop=1,sat=9  -o kml -F outfile.kml
 
 ### Audio: I2S
 
+install port audio and make I2s default:
+```bash
+sudo apt-get install libasound-dev portaudio19-dev libportaudio2 libportaudiocpp0 mpg123 
+curl -sS https://raw.githubusercontent.com/adafruit/Raspberry-Pi-Installer-Scripts/master/i2samp.sh | bash
+```
+reboot.
+
+Test audio works:
+
+```bash
+sudo speaker-test -c2 
+sudo mpg123 -b 1024 http://ice1.somafm.com/u80s-128-mp3
+```
+to generate white noise out of the speaker, alternating left and right.
+
 There is no built-in audio out with the Pi-Zero, so we use an I2S audio DAC: UDA1334.
 
 from https://learn.adafruit.com/adafruit-i2s-stereo-decoder-uda1334a/raspberry-pi-wiring
