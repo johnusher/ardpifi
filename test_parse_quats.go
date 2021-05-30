@@ -17,7 +17,7 @@ const (
 	quat_in = "./letters/O/O_20-32-50/quaternion_data.txt"
 
 	circBufferL = 600 // length of buffer where we store quat data. 600 samples @5 ms update = 3 seconds
-	lp          = 64  // pixels used to represent drawn letter, on each axis, ie lpxlp
+	lp          = 28  // pixels used to represent drawn letter, on each axis, ie lpxlp
 )
 
 func main() {
@@ -130,27 +130,60 @@ func main() {
 	norm_y_direction := math.Sqrt(eye_minus_cdscc[0]*eye_minus_cdscc[0] + eye_minus_cdscc[1]*eye_minus_cdscc[1] + eye_minus_cdscc[2]*eye_minus_cdscc[2])
 
 	y_direction[0] = eye_minus_cdscc[0] / norm_y_direction
-	// %     y_direction[1] = eye_minus_cdscc[1] ./ norm_y_direction;
-	y_direction[1] = 1.0 // tends to unity
+	 y_direction[1] = eye_minus_cdscc[1] / norm_y_direction;
+	// y_direction[1] = 1.0 // tends to unity
 	y_direction[2] = eye_minus_cdscc[2] / norm_y_direction
 
 	// %%     step 6: x_direction via cross product
 	// %     x_direction_cp = cross(centre_direction, y_direction);
 
 	x_direction[0] = centre_direction[1]*y_direction[2] - centre_direction[2]*y_direction[1]
-	// %     x_direction[1] = centre_direction[2]*y_direction[0] -
-	// %     centre_direction[0]*y_direction[2]; % very close to zero
+	// %     x_direction[1] = centre_direction[2]*y_direction[0] - centre_direction[0]*y_direction[2]; % very close to zero
+	// x_direction(2) = centre_direction(3)*y_direction(1) - centre_direction(1)*y_direction(3); % very close to zero
+	x_direction[1] = centre_direction[2]*y_direction[0] - centre_direction[0]*y_direction[2]
 	x_direction[2] = centre_direction[0]*y_direction[1] - centre_direction[1]*y_direction[0]
 
 	// %% step 7: x and y corrodinates:
+	// x(n) = x_direction(1)* projected(n, 1) + x_direction(2)* projected(n, 2)  + x_direction(3)* projected(n, 3) ;
+	// y(n) = y_direction(1)* projected(n, 1) + y_direction(2)* projected(n, 2)  + y_direction(3)* projected(n, 3) ;
 
+	minX :=1.0
+	maxX :=-1.0
+	minY :=minX
+	maxY :=maxX
 	for i := 0; i < n; i++ {
-		x[i] = x_direction[0]*projected_circ_buffer[i][0] + x_direction[2]*projected_circ_buffer[i][2]                               //  % x_direction(2) is so small we can ignore it
+		// x[i] = x_direction[0]*projected_circ_buffer[i][0] + x_direction[2]*projected_circ_buffer[i][2]                               //  % x_direction(2) is so small we can ignore it
+		x[i] = x_direction[0]*projected_circ_buffer[i][0] + x_direction[1]*projected_circ_buffer[i][1] + x_direction[2]*projected_circ_buffer[i][2]      
 		y[i] = y_direction[0]*projected_circ_buffer[i][0] + projected_circ_buffer[i][1] + y_direction[2]*projected_circ_buffer[i][2] // ; % y_direction(2) -> 1.0
+		minX = math.Min(minX,x[i] )
+		maxX = math.Max(maxX,x[i] )
+		minY = math.Min(minY,y[i] )
+		maxY = math.Max(maxY,y[i] )
 	}
 
-	// log.Printf("x[i] %v", x[100])
-	// log.Printf("y[i] %v", y[100])
+        
+	// // % scale
+
+	absMixX := math.Abs(minX)
+	if(absMixX > maxX){
+		maxX = absMixX
+	}	
+
+
+	absMinY:= math.Abs(minY)
+	if(absMinY > maxY){
+		maxY = absMinY
+	}
+
+
+	maxdim := math.Max(maxX,maxY)     
+	scaler := 0.9/maxdim
+	// scaler := 1.0/maxdim
+	for i := 0; i < n; i++ {
+		x[i] = x[i] *scaler
+		y[i] = y[i] *scaler
+
+	}
 
 	// make black and white image:
 
@@ -166,6 +199,9 @@ func main() {
 	for i := 0; i < n; i++ {
 		x_int = int(x[i]*lp/2 + lp/2)
 		y_int = int(y[i]*lp/2 + lp/2)
+
+		// x_int = math.Max(x_int,lp/2)
+		// y_int = math.Max(y_int,lp/2)
 		letterImage[y_int][x_int] = 1
 	}
 
@@ -185,7 +221,7 @@ func main() {
 	log.Printf("elapsedTime1=%v", elapsedTime)
 
 	// Save to out.bmp
-	fo, err := os.OpenFile("out2.bmp", os.O_WRONLY|os.O_CREATE, 0600)
+	fo, err := os.OpenFile("out4.bmp", os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
 		log.Printf("err %s\n", err)
 	}

@@ -16,6 +16,8 @@ require (
 	github.com/jdevelop/golang-rpi-extras v0.0.0-20181010003844-c75e8edb0d6f
 	github.com/kpeu3i/bno055 v1.0.3
 	github.com/kr/text v0.2.0 // indirect
+	github.com/mattn/go-pointer v0.0.1 // indirect
+	github.com/mattn/go-tflite v1.0.1 // indirect
 	github.com/nsf/termbox-go v0.0.0-20201124104050-ed494de23a00
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7 // indirect
 	github.com/qinxin0720/go-rpigpio v0.0.0-20180904143339-2333e352173d // indirect
@@ -26,7 +28,7 @@ require (
 	github.com/warthog618/gpiod v0.6.0 // indirect
 	github.com/youpy/go-wav v0.1.0
 	golang.org/x/exp v0.0.0-20210212053707-62dc52270d37
-	golang.org/x/image v0.0.0-20190802002840-cff245a6509b
+	golang.org/x/image v0.0.0-20191009234506-e7c1f5e7dbb8
 	golang.org/x/sys v0.0.0-20210105210732-16f7687f5001 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210105161348-2e78108cf5f8 // indirect

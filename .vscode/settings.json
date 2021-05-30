@@ -1,0 +1,7 @@
+{
+    "git.ignoreLimitWarning": true,
+    "files.associations": {
+        "stdio.h": "c",
+        "c_api.h": "c"
+    }
+}
