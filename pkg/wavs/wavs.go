@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	WAVS = "./wav_audio/meows_Out"
+	WAVS = "./wav_audio/woofs"
 	BUF  = 128
 )
 
