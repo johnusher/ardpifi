@@ -214,14 +214,14 @@ func main() {
 		img.Set(y_int, x_int, color.RGBA{255, 0, 0, 255})
 	}
 
-	now := time.Now()
-	elapsedTime := now.Sub(startTime)
+	now1 := time.Now()
+	elapsedTime := now1.Sub(startTime)
 
 	// about 200 uS
 	log.Printf("elapsedTime1=%v", elapsedTime)
 
 	// Save to out.bmp
-	fo, err := os.OpenFile("out4.bmp", os.O_WRONLY|os.O_CREATE, 0600)
+	fo, err := os.OpenFile("out5.bmp", os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
 		log.Printf("err %s\n", err)
 	}
@@ -229,8 +229,8 @@ func main() {
 	defer fo.Close()
 	bmp.Encode(fo, img)
 
-	now = time.Now()
-	elapsedTime = now.Sub(startTime)
+	now2 := time.Now()
+	elapsedTime = now2.Sub(now1)
 
 	// takes bout 1.5 ms to save bmp, 10 ms to save png
 	log.Printf("elapsedTime2=%v", elapsedTime)

@@ -10,8 +10,8 @@
 #   sudo make install
 # )
 
-echo waiting 20 secs
-sleep 20s
+echo waiting 2 secs
+sleep 2s
 # Activate batman-adv
 sudo modprobe batman-adv
 echo 1
