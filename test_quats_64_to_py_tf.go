@@ -1,17 +1,20 @@
 package main
 
 import (
+	"bufio"
+	"encoding/base64"
 	"fmt"
 	"image"
 	"image/color"
+	"io"
+	"io/ioutil"
 	"math"
 	"os"
+	"os/exec"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/image/bmp"
-
-	"encoding/base64"
 )
 
 const (
@@ -132,7 +135,7 @@ func main() {
 	norm_y_direction := math.Sqrt(eye_minus_cdscc[0]*eye_minus_cdscc[0] + eye_minus_cdscc[1]*eye_minus_cdscc[1] + eye_minus_cdscc[2]*eye_minus_cdscc[2])
 
 	y_direction[0] = eye_minus_cdscc[0] / norm_y_direction
-	 y_direction[1] = eye_minus_cdscc[1] / norm_y_direction;
+	y_direction[1] = eye_minus_cdscc[1] / norm_y_direction
 	// y_direction[1] = 1.0 // tends to unity
 	y_direction[2] = eye_minus_cdscc[2] / norm_y_direction
 
@@ -149,41 +152,38 @@ func main() {
 	// x(n) = x_direction(1)* projected(n, 1) + x_direction(2)* projected(n, 2)  + x_direction(3)* projected(n, 3) ;
 	// y(n) = y_direction(1)* projected(n, 1) + y_direction(2)* projected(n, 2)  + y_direction(3)* projected(n, 3) ;
 
-	minX :=1.0
-	maxX :=-1.0
-	minY :=minX
-	maxY :=maxX
+	minX := 1.0
+	maxX := -1.0
+	minY := minX
+	maxY := maxX
 	for i := 0; i < n; i++ {
 		// x[i] = x_direction[0]*projected_circ_buffer[i][0] + x_direction[2]*projected_circ_buffer[i][2]                               //  % x_direction(2) is so small we can ignore it
-		x[i] = x_direction[0]*projected_circ_buffer[i][0] + x_direction[1]*projected_circ_buffer[i][1] + x_direction[2]*projected_circ_buffer[i][2]      
+		x[i] = x_direction[0]*projected_circ_buffer[i][0] + x_direction[1]*projected_circ_buffer[i][1] + x_direction[2]*projected_circ_buffer[i][2]
 		y[i] = y_direction[0]*projected_circ_buffer[i][0] + projected_circ_buffer[i][1] + y_direction[2]*projected_circ_buffer[i][2] // ; % y_direction(2) -> 1.0
-		minX = math.Min(minX,x[i] )
-		maxX = math.Max(maxX,x[i] )
-		minY = math.Min(minY,y[i] )
-		maxY = math.Max(maxY,y[i] )
+		minX = math.Min(minX, x[i])
+		maxX = math.Max(maxX, x[i])
+		minY = math.Min(minY, y[i])
+		maxY = math.Max(maxY, y[i])
 	}
 
-        
 	// // % scale
 
 	absMixX := math.Abs(minX)
-	if(absMixX > maxX){
+	if absMixX > maxX {
 		maxX = absMixX
-	}	
+	}
 
-
-	absMinY:= math.Abs(minY)
-	if(absMinY > maxY){
+	absMinY := math.Abs(minY)
+	if absMinY > maxY {
 		maxY = absMinY
 	}
 
-
-	maxdim := math.Max(maxX,maxY)     
-	scaler := 0.9/maxdim
+	maxdim := math.Max(maxX, maxY)
+	scaler := 0.9 / maxdim
 	// scaler := 1.0/maxdim
 	for i := 0; i < n; i++ {
-		x[i] = x[i] *scaler
-		y[i] = y[i] *scaler
+		x[i] = x[i] * scaler
+		y[i] = y[i] * scaler
 
 	}
 
@@ -207,24 +207,102 @@ func main() {
 		letterImage[y_int][x_int] = 1
 	}
 
+	log.Printf("starting python")
 
+	// cmd := exec.Command("python", "min_column_sum.py")
+	cmd := exec.Command("python", "IOtest.py")
+
+	// cmd := exec.Command("bash", "menu.sh")
+	// inr, inw := io.Pipe()
+	// outr, outw := io.Pipe()
+	// cmd.Stdin = inr
+	// cmd.Stdout = outw
+
+	// if err := cmd.Start(); err != nil {
+	// 	panic(err)
+	// }
+	// go cmd.Wait()
+	// reader := bufio.NewReader(outr)
+	// log.Printf(request(reader, inw, "Tom"))
+	// log.Printf(request(reader, inw, "Rose"))
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		panic(err)
+	}
+
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		panic(err)
+	}
+
+	err = cmd.Start()
+	if err != nil {
+		panic(err)
+	}
+
+	msg := "cheese"
+	encoded := base64.StdEncoding.EncodeToString([]byte(msg))
+
+	go func() {
+		defer stdin.Close() // If I don't close the stdin pipe, the python code will never take what I write in it
+		// io.WriteString(stdin, "blub")
+		io.WriteString(stdin, encoded)
+
+	}()
+
+	s, err := ReadOutput(stdout)
+	if err != nil {
+		log.Printf("Process is finished ..")
+	}
+	// log.Printf(s) // print output from python
+
+	decoded, err := base64.StdEncoding.DecodeString(s)
+	if err != nil {
+		fmt.Println("decode error:", err)
+		return
+	}
+
+	// decoded2, err := base64.StdEncoding.DecodeString(encoded)
+	// if err != nil {
+	// 	fmt.Println("decode2 error:", err)
+	// 	return
+	// }
+
+	// log.Printf("decoded2 message: %s", decoded2)
+
+	log.Printf("decoded message: %s", decoded)
+
+	// stderr, err := cmd.StderrPipe()
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// err = cmd.Start()
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	// go copyOutput(stdout)
+	// go copyOutput(stderr)
+	// cmd.Wait()
 
 	// now convert xy matrix to single flat vector
 	// vector is of length lp*lp
 
 	// base64EncVect := make([]byte, 0)
 
-	var base64EncVect [1]byte
+	// var base64EncVect [1]byte
 
-	newbase64Enc := base64.StdEncoding.EncodeToString([1]byte(base64EncVect))
+	// newbase64Enc := base64.StdEncoding.EncodeToString([1]byte(base64EncVect))
 
-	for row := 0; row<lp; row++{
-		for col := 0; col<lp; col++{
-			newbase64Enc =  base64.StdEncoding.EncodeToString([]byte(letterImage[row][col]))
-			base64EncVect = append(base64EncVect, 1)
-		}
+	// for row := 0; row<lp; row++{
+	// 	for col := 0; col<lp; col++{
+	// 		newbase64Enc =  base64.StdEncoding.EncodeToString([]byte(letterImage[row][col]))
+	// 		base64EncVect = append(base64EncVect, 1)
+	// 	}
 
-	}
+	// }
+
 	// encoded := base64.StdEncoding.EncodeToString([]byte(msg))
 	// fmt.Println(encoded)
 	// decoded, err := base64.StdEncoding.DecodeString(encoded)
@@ -233,9 +311,6 @@ func main() {
 	// 	return
 	// }
 	// fmt.Println(string(decoded))
-
-
-
 
 	// Create png image
 	img := image.NewRGBA(image.Rect(0, 0, lp, lp))
@@ -267,4 +342,27 @@ func main() {
 	// takes bout 1.5 ms to save bmp, 10 ms to save png
 	log.Printf("elapsedTime2=%v", elapsedTime)
 
+}
+
+func request(r *bufio.Reader, w io.Writer, str string) string {
+	w.Write([]byte(str))
+	w.Write([]byte("\n"))
+	str, err := r.ReadString('\n')
+	if err != nil {
+		panic(err)
+	}
+	return str[:len(str)-1]
+}
+
+func copyOutput(r io.Reader) {
+	scanner := bufio.NewScanner(r)
+	for scanner.Scan() {
+		fmt.Println(scanner.Text())
+	}
+}
+
+func ReadOutput(rc io.ReadCloser) (string, error) {
+	x, err := ioutil.ReadAll(rc)
+	s := string(x)
+	return s, err
 }
