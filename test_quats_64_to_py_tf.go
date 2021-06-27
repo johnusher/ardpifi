@@ -270,6 +270,20 @@ func main() {
 	}
 	log.Printf("raw message: %v", s2)
 
+	f2, err := os.Create("base64Image2.txt")
+	if err != nil {
+		log.Printf("base64Image2.txt err")
+	}
+	defer f2.Close()
+
+	n2, err := f2.WriteString(encoded)
+	// n2, err := f2.Write(joinedArray)
+
+	if err != nil {
+		log.Printf("encoded writeerr")
+	}
+	fmt.Printf("wrote %d bytes\n", n2)
+
 	// to continuously read output from python:
 	// https://stackoverflow.com/questions/55312593/golang-os-exec-flushing-stdin-without-closing-it
 
