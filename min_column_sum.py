@@ -9,10 +9,27 @@ import sys
 
 import numpy as np
 
+from PIL import Image
+import matplotlib.pyplot as plt
+
+
 for line in sys.stdin:
     if not line.strip() or line.strip().startswith('#'):
         continue
     data = base64.b64decode(line.strip())
+    
     array = np.frombuffer(data, dtype=np.uint8).reshape((28, 28))
     sums = array.sum(axis=0, dtype=np.int64)
-    print(np.min(sums))
+    
+    print(np.min(sums))    
+
+
+    Image.fromarray(array).convert("RGB").save("fromPy3.png", subsampling=0, quality=100) # doesn't show image
+    
+    print("fin1")    
+
+    plt.imshow(array) #Needs to be in row,col order
+    plt.axis('off')
+    plt.savefig("fromPy4.png")   # works! but takes ages, and is wrong size, and is rotated with row, col in wrong order
+    print("fin2")    
+   

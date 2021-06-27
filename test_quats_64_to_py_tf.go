@@ -42,6 +42,7 @@ func main() {
 	var letterImage [lp][lp]byte
 
 	var n int
+	// var numsInt byte
 
 	f, err := os.Open(quat_in)
 	if err != nil {
@@ -207,24 +208,19 @@ func main() {
 		letterImage[y_int][x_int] = 1
 	}
 
+	now1 := time.Now()
+	elapsedTime := now1.Sub(startTime)
+	// log.Printf("elapsedTimeM=%v", elapsedTime)
+
 	log.Printf("starting python")
+	startTime = time.Now()
 
-	// cmd := exec.Command("python", "min_column_sum.py")
-	cmd := exec.Command("python", "IOtest.py")
+	cmd := exec.Command("python", "min_column_sum.py")
+	// cmd := exec.Command("python", "-u", "IOtest.py")
+	// cmd := exec.Command("python", "IOtest.py")
 
-	// cmd := exec.Command("bash", "menu.sh")
-	// inr, inw := io.Pipe()
-	// outr, outw := io.Pipe()
-	// cmd.Stdin = inr
-	// cmd.Stdout = outw
-
-	// if err := cmd.Start(); err != nil {
-	// 	panic(err)
-	// }
-	// go cmd.Wait()
-	// reader := bufio.NewReader(outr)
-	// log.Printf(request(reader, inw, "Tom"))
-	// log.Printf(request(reader, inw, "Rose"))
+	// use -u flag if we want unbuffered:
+	// https://stackoverflow.com/questions/55312593/golang-os-exec-flushing-stdin-without-closing-it
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -241,77 +237,54 @@ func main() {
 		panic(err)
 	}
 
-	msg := "cheese"
-	encoded := base64.StdEncoding.EncodeToString([]byte(msg))
+	var joinedArray []byte
+
+	// resize matrix into long array:
+	for ix := 0; ix < lp; ix++ {
+
+		nums := letterImage[ix][:]
+		// nums := letterImage[:][ix]
+
+		joinedArray = append(joinedArray, nums...)
+		// joinedArray := bytes.Join(nums, nil)  // dunno how to do this
+	}
+
+	log.Printf(" joinedArray: %v", joinedArray)
+
+	encoded := base64.StdEncoding.EncodeToString(joinedArray)
+
+	// encoded := string(joinedArray)
+
+	log.Printf(" encoded: %v", encoded)
+
+	// now send to the python:
 
 	go func() {
-		defer stdin.Close() // If I don't close the stdin pipe, the python code will never take what I write in it
-		// io.WriteString(stdin, "blub")
+		defer stdin.Close()
 		io.WriteString(stdin, encoded)
-
 	}()
 
-	s, err := ReadOutput(stdout)
+	s2, err := ReadOutput(stdout)
 	if err != nil {
 		log.Printf("Process is finished ..")
 	}
-	// log.Printf(s) // print output from python
+	log.Printf("raw message: %v", s2)
 
-	decoded, err := base64.StdEncoding.DecodeString(s)
-	if err != nil {
-		fmt.Println("decode error:", err)
-		return
-	}
+	// to continuously read output from python:
+	// https://stackoverflow.com/questions/55312593/golang-os-exec-flushing-stdin-without-closing-it
 
-	// decoded2, err := base64.StdEncoding.DecodeString(encoded)
-	// if err != nil {
-	// 	fmt.Println("decode2 error:", err)
-	// 	return
+	// output := make(chan string)
+	// defer close(output)
+	// go ReadOutput2(output, stdout)
+
+	// log.Printf("raw message: %v", output)
+
+	// for o := range output {
+	// 	// Log(o)
+	// 	log.Printf("raw message: %v", o)
 	// }
 
-	// log.Printf("decoded2 message: %s", decoded2)
-
-	log.Printf("decoded message: %s", decoded)
-
-	// stderr, err := cmd.StderrPipe()
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// err = cmd.Start()
-	// if err != nil {
-	// 	panic(err)
-	// }
-
-	// go copyOutput(stdout)
-	// go copyOutput(stderr)
-	// cmd.Wait()
-
-	// now convert xy matrix to single flat vector
-	// vector is of length lp*lp
-
-	// base64EncVect := make([]byte, 0)
-
-	// var base64EncVect [1]byte
-
-	// newbase64Enc := base64.StdEncoding.EncodeToString([1]byte(base64EncVect))
-
-	// for row := 0; row<lp; row++{
-	// 	for col := 0; col<lp; col++{
-	// 		newbase64Enc =  base64.StdEncoding.EncodeToString([]byte(letterImage[row][col]))
-	// 		base64EncVect = append(base64EncVect, 1)
-	// 	}
-
-	// }
-
-	// encoded := base64.StdEncoding.EncodeToString([]byte(msg))
-	// fmt.Println(encoded)
-	// decoded, err := base64.StdEncoding.DecodeString(encoded)
-	// if err != nil {
-	// 	fmt.Println("decode error:", err)
-	// 	return
-	// }
-	// fmt.Println(string(decoded))
-
+	// -------------------------------
 	// Create png image
 	img := image.NewRGBA(image.Rect(0, 0, lp, lp))
 
@@ -321,8 +294,8 @@ func main() {
 		img.Set(y_int, x_int, color.RGBA{255, 0, 0, 255})
 	}
 
-	now1 := time.Now()
-	elapsedTime := now1.Sub(startTime)
+	now1 = time.Now()
+	elapsedTime = now1.Sub(startTime)
 
 	// about 200 uS
 	log.Printf("elapsedTime1=%v", elapsedTime)
@@ -344,15 +317,15 @@ func main() {
 
 }
 
-func request(r *bufio.Reader, w io.Writer, str string) string {
-	w.Write([]byte(str))
-	w.Write([]byte("\n"))
-	str, err := r.ReadString('\n')
-	if err != nil {
-		panic(err)
-	}
-	return str[:len(str)-1]
-}
+// func request(r *bufio.Reader, w io.Writer, str string) string {
+// 	w.Write([]byte(str))
+// 	w.Write([]byte("\n"))
+// 	str, err := r.ReadString('\n')
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	return str[:len(str)-1]
+// }
 
 func copyOutput(r io.Reader) {
 	scanner := bufio.NewScanner(r)
@@ -365,4 +338,25 @@ func ReadOutput(rc io.ReadCloser) (string, error) {
 	x, err := ioutil.ReadAll(rc)
 	s := string(x)
 	return s, err
+}
+
+func ReadOutput2(output chan string, rc io.ReadCloser) {
+	r := bufio.NewReader(rc)
+	for {
+		x, _ := r.ReadString('\n')
+		output <- string(x)
+	}
+}
+
+func sliceToInt(s []byte) byte {
+	res := int(0)
+	op := int(1)
+	for i := len(s) - 1; i >= 0; i-- {
+		res += int(s[i]) * op
+		op *= 2
+
+		// log.Printf(" res: %v", res)
+
+	}
+	return byte(res)
 }
