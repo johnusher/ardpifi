@@ -1,32 +1,44 @@
 #! /usr/bin/python3
-""" echo "mu" | python IOtest.py  
+"""
+python -m py_compile IOtest.py
 """
 
-import sys
 import base64
+import sys
 
+import numpy as np
+
+from PIL import Image
+
+
+
+# for line in sys.stdin:
+#     # sys.stdout.write(line.strip())
+#     data = base64.b64decode(line.strip())
+#     sys.stdout.write(data)
+
+#     # base64_bytes = base64.b64encode(data)
+#     # sys.stdout.write(data)
+#     # base64_message = base64_bytes.encode('ascii')
+
+#     # sys.stdout.write("Hello, %s. \n" %base64_message)
+#     # print(base64_message)
+#     # print("ff")
+
+    
+    
 for line in sys.stdin:
-    # sys.stdout.write(line)
+    
+    if not line.strip() or line.strip().startswith('#'):
+        continue
+    
+    # sys.stdout.write(line.strip())
+
     data = base64.b64decode(line.strip())
-    # data = base64.b64decode(line)
-
-    # sys.stdout.write("Hello, %s. \n" % line)
-    # sys.stdout.write("Hello, %s. \n" % data)
-
-    base64_bytes = base64.b64encode(data)
-
-    dataOut = base64.b64encode(base64_bytes)
-
-    # sys.stdout.write("Hello, %s. \n" % dataOut)
     
-    base64_message = base64_bytes.decode('ascii')
-
-    # print(base64_message)
-
-    sys.stdout.write(base64_message)
-    
-
-
-# name = sys.stdin.readline("")
-#         print("Hello, %s. \n" % name)
-#         sys.stdout.flush() # there's a stdout buffer
+    # print(data)
+    # sys.stdout.w
+    array = np.frombuffer(data, dtype=np.uint8).reshape((28, 28))
+    sums = array.sum(axis=0, dtype=np.int64)
+    # print(np.min(sums))
+    print(np.max(sums))
