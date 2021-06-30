@@ -19,6 +19,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strconv"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/image/bmp"
@@ -303,12 +305,25 @@ func main() {
 			if err != nil {
 				log.Printf("Process is finished ..")
 			}
+			// log.Printf("raw message: %v", s2)
+
+			// s := strings.Split(s2, ", \t \n")
+			s := strings.FieldsFunc(s2, Split)
+
+			// log.Printf("splot message1: %v", s[0])
+			// log.Printf("splot message2: %v", s[1])
+
+			prob, _ := strconv.ParseFloat(s[0], 64)
+			// letter := strings.Trim(s[1], "'")
+			letter := strings.Replace(s[1], "'", "", -1)
+
+			log.Printf("prob: %v", prob)
+
+			log.Printf("letter: %v", letter)
 
 			// now1 = time.Now()
 			// elapsedTime = now1.Sub(startTime)
 			// log.Printf("elapsedTime TF=%v", elapsedTime)
-
-			log.Printf("raw message: %v", s2)
 
 			// f2, err := os.Create("base64Image2.txt")
 			// if err != nil {
@@ -417,4 +432,8 @@ func sliceToInt(s []byte) byte {
 
 	}
 	return byte(res)
+}
+
+func Split(r rune) bool {
+	return r == ':' || r == ',' || r == '(' || r == ')'
 }
