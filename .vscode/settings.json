@@ -3,5 +3,6 @@
     "files.associations": {
         "stdio.h": "c",
         "c_api.h": "c"
-    }
+    },
+    "python.pythonPath": "C:\\Program Files\\Python38\\python.exe"
 }
