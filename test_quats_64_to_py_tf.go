@@ -21,6 +21,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/image/bmp"
@@ -244,15 +245,11 @@ func main() {
 				letterImage[y_int][x_int] = 1
 			}
 
-			// now1 := time.Now()
-			// elapsedTime := now1.Sub(startTime)
-			// log.Printf("elapsedTimeM=%v", elapsedTime)
-
 			// log.Printf("starting python")
 			// startTime = time.Now()
 
 			// cmd := exec.Command("python", "min_column_sum.py")
-			cmd := exec.Command("python", "classifier/classify.py")
+			cmd := exec.Command("python3", "classifier/classify.py")
 			// cmd := exec.Command("python", "-u", "IOtest.py")
 			// cmd := exec.Command("python", "IOtest.py")
 
@@ -296,6 +293,8 @@ func main() {
 
 			// now send to the python:
 
+			now1 := time.Now()
+
 			go func() {
 				defer stdin.Close()
 				io.WriteString(stdin, encoded)
@@ -305,6 +304,11 @@ func main() {
 			if err != nil {
 				log.Printf("Process is finished ..")
 			}
+
+			now1 = time.Now()
+			elapsedTime := now1.Sub(now1)
+			log.Printf("elapsedTime TF=%v", elapsedTime)
+
 			// log.Printf("raw message: %v", s2)
 
 			// s := strings.Split(s2, ", \t \n")
@@ -318,12 +322,7 @@ func main() {
 			letter := strings.Replace(s[1], "'", "", -1)
 
 			log.Printf("prob: %v", prob)
-
 			log.Printf("letter: %v", letter)
-
-			// now1 = time.Now()
-			// elapsedTime = now1.Sub(startTime)
-			// log.Printf("elapsedTime TF=%v", elapsedTime)
 
 			// f2, err := os.Create("base64Image2.txt")
 			// if err != nil {
