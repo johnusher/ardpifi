@@ -12,12 +12,11 @@ import os
 import sys
 
 import numpy as np
-#import tflite_runtime.interpreter as tflite
-import tensorflow as  tf
+import tflite_runtime.interpreter as tflite
+
 
 def main():
-    # interpreter = tflite.Interpreter(model_path())
-    interpreter = tf.lite.Interpreter(model_path()) # for example if you just need the python tf lite runtime 
+    interpreter = tflite.Interpreter(model_path())
     classifier = Classifier(interpreter)
 
     for line in sys.stdin:
