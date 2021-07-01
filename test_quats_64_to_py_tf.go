@@ -305,7 +305,7 @@ func main() {
 				log.Printf("Process is finished ..")
 			}
 
-			now1 = time.Now()
+			// now1 = time.Now()
 			elapsedTime := now1.Sub(now1)
 			log.Printf("elapsedTime TF=%v", elapsedTime)
 
