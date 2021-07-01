@@ -252,7 +252,7 @@ func main() {
 			// startTime = time.Now()
 
 			// cmd := exec.Command("python", "min_column_sum.py")
-			cmd := exec.Command("python", "classifier/classify.py")
+			cmd := exec.Command("python3", "classifier/classify.py")
 			// cmd := exec.Command("python", "-u", "IOtest.py")
 			// cmd := exec.Command("python", "IOtest.py")
 
