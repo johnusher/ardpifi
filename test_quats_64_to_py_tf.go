@@ -70,6 +70,27 @@ func main() {
 		fmt.Println(err)
 	}
 
+	// // cmd := exec.Command("python", "classifier/classify.py")
+	// cmd := exec.Command("python", "-u", "classifier/classify.py")
+
+	// // use -u flag if we want unbuffered:
+	// // https://stackoverflow.com/questions/55312593/golang-os-exec-flushing-stdin-without-closing-it
+
+	// stdout, err := cmd.StdoutPipe()
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	// stdin, err := cmd.StdinPipe()
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	// err = cmd.Start()
+	// if err != nil {
+	// 	panic(err)
+	// }
+
 	for _, file := range fileList {
 
 		matched, _ := regexp.MatchString(pattern, file)
@@ -239,22 +260,14 @@ func main() {
 			for i := 0; i < n; i++ {
 				x_int = int(x[i]*lp/2 + lp/2)
 				y_int = int(y[i]*lp/2 + lp/2)
-
-				// x_int = math.Max(x_int,lp/2)
-				// y_int = math.Max(y_int,lp/2)
 				letterImage[y_int][x_int] = 1
 			}
 
-			// log.Printf("starting python")
-			// startTime = time.Now()
+			cmd := exec.Command("python3", "classifier/classify.py") // linux
+			// cmd := exec.Command("python", "classifier/classify.py") // windoze
 
-			// cmd := exec.Command("python", "min_column_sum.py")
-			cmd := exec.Command("python3", "classifier/classify.py")
-			// cmd := exec.Command("python", "-u", "IOtest.py")
-			// cmd := exec.Command("python", "IOtest.py")
-
-			// use -u flag if we want unbuffered:
-			// https://stackoverflow.com/questions/55312593/golang-os-exec-flushing-stdin-without-closing-it
+			// // use -u flag if we want unbuffered:
+			// // https://stackoverflow.com/questions/55312593/golang-os-exec-flushing-stdin-without-closing-it
 
 			stdout, err := cmd.StdoutPipe()
 			if err != nil {
@@ -275,21 +288,12 @@ func main() {
 
 			// resize matrix into long array:
 			for ix := 0; ix < lp; ix++ {
-
 				nums := letterImage[ix][:]
-				// nums := letterImage[:][ix]
-
 				joinedArray = append(joinedArray, nums...)
 				// joinedArray := bytes.Join(nums, nil)  // dunno how to do this
 			}
 
-			// log.Printf(" joinedArray: %v", joinedArray)
-
 			encoded := base64.StdEncoding.EncodeToString(joinedArray)
-
-			// encoded := string(joinedArray)
-
-			// log.Printf(" encoded: %v", encoded)
 
 			// now send to the python:
 
@@ -298,6 +302,8 @@ func main() {
 			go func() {
 				defer stdin.Close()
 				io.WriteString(stdin, encoded)
+				io.WriteString(stdin, "\n")
+				// stdin.Close()
 			}()
 
 			s2, err := ReadOutput(stdout)
@@ -305,17 +311,13 @@ func main() {
 				log.Printf("Process is finished ..")
 			}
 
-			// now1 = time.Now()
-			elapsedTime := now1.Sub(now1)
+			now2 := time.Now()
+			elapsedTime := now2.Sub(now1)
 			log.Printf("elapsedTime TF=%v", elapsedTime)
 
 			// log.Printf("raw message: %v", s2)
 
-			// s := strings.Split(s2, ", \t \n")
 			s := strings.FieldsFunc(s2, Split)
-
-			// log.Printf("splot message1: %v", s[0])
-			// log.Printf("splot message2: %v", s[1])
 
 			prob, _ := strconv.ParseFloat(s[0], 64)
 			// letter := strings.Trim(s[1], "'")
@@ -323,20 +325,6 @@ func main() {
 
 			log.Printf("prob: %v", prob)
 			log.Printf("letter: %v", letter)
-
-			// f2, err := os.Create("base64Image2.txt")
-			// if err != nil {
-			// 	log.Printf("base64Image2.txt err")
-			// }
-			// defer f2.Close()
-
-			// // save encded to txt fie:
-			// n2, err := f2.WriteString(encoded)
-
-			// if err != nil {
-			// 	log.Printf("encoded writeerr")
-			// }
-			// fmt.Printf("wrote %d bytes\n", n2)
 
 			// to continuously read output from python:
 			// https://stackoverflow.com/questions/55312593/golang-os-exec-flushing-stdin-without-closing-it

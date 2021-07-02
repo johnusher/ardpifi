@@ -12,12 +12,12 @@ import os
 import sys
 
 import numpy as np
-#import tflite_runtime.interpreter as tflite
-import tensorflow as  tf
+import tflite_runtime.interpreter as tflite
+# import tensorflow as  tf
 
 def main():
-    # interpreter = tflite.Interpreter(model_path())
-    interpreter = tf.lite.Interpreter(model_path()) # for example if you just need the python tf lite runtime 
+    interpreter = tflite.Interpreter(model_path())
+    # interpreter = tf.lite.Interpreter(model_path()) # for example if you just need the python tf lite runtime 
     classifier = Classifier(interpreter)
 
     for line in sys.stdin:
@@ -28,6 +28,8 @@ def main():
         array = np.frombuffer(data, dtype=np.uint8).reshape((28, 28)).transpose()
         output = classifier.classify(array)
         print(output)
+        # sys.stdout.flush()
+        
 
 
 def model_path():
