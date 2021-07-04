@@ -70,26 +70,25 @@ func main() {
 		fmt.Println(err)
 	}
 
-	// // cmd := exec.Command("python", "classifier/classify.py")
-	// cmd := exec.Command("python", "-u", "classifier/classify.py")
+	cmd := exec.Command("python3", "-u", "classifier/classify.py") // linux
+	// cmd := exec.Command("python", "-u", "classifier/classify.py") // windoze
 
-	// // use -u flag if we want unbuffered:
-	// // https://stackoverflow.com/questions/55312593/golang-os-exec-flushing-stdin-without-closing-it
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		panic(err)
+	}
 
-	// stdout, err := cmd.StdoutPipe()
-	// if err != nil {
-	// 	panic(err)
-	// }
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		panic(err)
+	}
 
-	// stdin, err := cmd.StdinPipe()
-	// if err != nil {
-	// 	panic(err)
-	// }
+	stdoutReader := bufio.NewReader(stdout)
 
-	// err = cmd.Start()
-	// if err != nil {
-	// 	panic(err)
-	// }
+	err = cmd.Start()
+	if err != nil {
+		panic(err)
+	}
 
 	for _, file := range fileList {
 
@@ -263,27 +262,6 @@ func main() {
 				letterImage[y_int][x_int] = 1
 			}
 
-			cmd := exec.Command("python3", "classifier/classify.py") // linux
-			// cmd := exec.Command("python", "classifier/classify.py") // windoze
-
-			// // use -u flag if we want unbuffered:
-			// // https://stackoverflow.com/questions/55312593/golang-os-exec-flushing-stdin-without-closing-it
-
-			stdout, err := cmd.StdoutPipe()
-			if err != nil {
-				panic(err)
-			}
-
-			stdin, err := cmd.StdinPipe()
-			if err != nil {
-				panic(err)
-			}
-
-			err = cmd.Start()
-			if err != nil {
-				panic(err)
-			}
-
 			var joinedArray []byte
 
 			// resize matrix into long array:
@@ -299,14 +277,16 @@ func main() {
 
 			now1 := time.Now()
 
-			go func() {
-				defer stdin.Close()
-				io.WriteString(stdin, encoded)
-				io.WriteString(stdin, "\n")
-				// stdin.Close()
-			}()
+			_, err = stdin.Write([]byte(encoded))
+			if err != nil {
+				log.Errorf("stdin.Write() failed: %s", err)
+			}
+			_, err = stdin.Write([]byte("\n"))
+			if err != nil {
+				log.Errorf("stdin.Write() failed: %s", err)
+			}
 
-			s2, err := ReadOutput(stdout)
+			s2, err := stdoutReader.ReadString('\n')
 			if err != nil {
 				log.Printf("Process is finished ..")
 			}

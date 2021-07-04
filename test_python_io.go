@@ -21,8 +21,8 @@ func main() {
 	rand.Seed(time.Now().UnixNano())
 
 	// cmd := exec.Command("python3", "test_go_py_io.py") // linux
-	cmd := exec.Command("python3", "-u", "test_go_py_io.py") // linux
-	// cmd := exec.Command("python", "test_go_py_io.py") // windy -> can we do "python3 -u test_go_py_io.py" on windy?
+	// cmd := exec.Command("python3", "-u", "test_go_py_io.py") // linux
+	cmd := exec.Command("python", "-u", "test_go_py_io.py") // windy -> can we do "python3 -u test_go_py_io.py" on windy?
 	// cmd := exec.Command("./test_bash_io.sh")
 
 	// // use -u flag if we want unbuffered:
