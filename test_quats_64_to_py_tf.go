@@ -19,6 +19,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -70,9 +71,12 @@ func main() {
 		fmt.Println(err)
 	}
 
-	// cmd := exec.Command("python3", "-u", "classifier/classify.py") // linux
-	cmd := exec.Command("python", "-u", "classifier/classify.py") // windoze
+	cmd := exec.Command("python3", "-u", "classifier/classify.py") // linux
+	if runtime.GOOS == "windows" {
+		cmd = exec.Command("python", "-u", "classifier/classify.py") // windoze
+	}
 
+	//
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		panic(err)
