@@ -70,8 +70,8 @@ func main() {
 		fmt.Println(err)
 	}
 
-	cmd := exec.Command("python3", "-u", "classifier/classify.py") // linux
-	// cmd := exec.Command("python", "-u", "classifier/classify.py") // windoze
+	// cmd := exec.Command("python3", "-u", "classifier/classify.py") // linux
+	cmd := exec.Command("python", "-u", "classifier/classify.py") // windoze
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -237,8 +237,8 @@ func main() {
 			}
 
 			maxdim := math.Max(maxX, maxY)
-			scaler := 0.9 / maxdim
-			// scaler := 1.0/maxdim
+			scaler := 0.8 / maxdim // scale image so we don't extend to the edge: this REALLY help %prob!
+
 			for i := 0; i < n; i++ {
 				x[i] = x[i] * scaler
 				y[i] = y[i] * scaler
@@ -337,7 +337,10 @@ func main() {
 			// log.Printf("elapsedTime1=%v", elapsedTime)
 
 			// Save to out.bmp
-			fo, err := os.OpenFile("out5.bmp", os.O_WRONLY|os.O_CREATE, 0600)
+
+			sn := strings.Replace(file, "quaternion_data.txt", "quat_image.bmp", 1)
+
+			fo, err := os.OpenFile(sn, os.O_WRONLY|os.O_CREATE, 0600)
 			if err != nil {
 				log.Printf("err %s\n", err)
 			}
