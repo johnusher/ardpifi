@@ -7,9 +7,9 @@ package main
 // what we want to do is to keep the pythn app running and just send and receive new data!!
 
 import (
+	"bufio"
 	"encoding/base64"
-	"io"
-	"io/ioutil"
+	"fmt"
 	"math/rand"
 	"os/exec"
 	"time"
@@ -18,13 +18,12 @@ import (
 )
 
 func main() {
-
-	var r int
-	var in interface{}
 	rand.Seed(time.Now().UnixNano())
 
 	// cmd := exec.Command("python3", "test_go_py_io.py") // linux
-	cmd := exec.Command("python", "test_go_py_io.py") // windy
+	cmd := exec.Command("python3", "-u", "test_go_py_io.py") // linux
+	// cmd := exec.Command("python", "test_go_py_io.py") // windy -> can we do "python3 -u test_go_py_io.py" on windy?
+	// cmd := exec.Command("./test_bash_io.sh")
 
 	// // use -u flag if we want unbuffered:
 	// // https://stackoverflow.com/questions/55312593/golang-os-exec-flushing-stdin-without-closing-it
@@ -39,6 +38,8 @@ func main() {
 		panic(err)
 	}
 
+	stdoutReader := bufio.NewReader(stdout)
+
 	err = cmd.Start()
 	if err != nil {
 		panic(err)
@@ -46,44 +47,36 @@ func main() {
 
 	// we want to start the loop here!!
 
-	r = rand.Intn(8)
-	log.Printf("r: %v", r)
+	for {
+		r := rand.Intn(8)
+		log.Printf("r: %v", r)
 
-	r2 := uint8(r)
+		buf := []byte(fmt.Sprintf("%d", r))
 
-	in = []uint8{r2}
+		log.Printf("in message: %v", buf)
 
-	var buf = make([]byte, 1)
-	buf = in.([]byte)
+		encoded := base64.StdEncoding.EncodeToString(buf)
 
-	log.Printf("in message: %v", buf)
+		log.Printf("encoded message: %v", encoded)
 
-	encoded := base64.StdEncoding.EncodeToString(buf)
+		// now send to the python:
 
-	log.Printf("encoded message: %v", encoded)
+		_, err := stdin.Write([]byte(encoded))
+		if err != nil {
+			log.Errorf("stdin.Write() failed: %s", err)
+		}
+		_, err = stdin.Write([]byte("\n"))
+		if err != nil {
+			log.Errorf("stdin.Write() failed: %s", err)
+		}
 
-	// now send to the python:
+		s2, err := stdoutReader.ReadString('\n')
+		if err != nil {
+			log.Printf("Process is finished ..")
+		}
 
-	go func() {
-		defer stdin.Close()
-		io.WriteString(stdin, encoded)
-		// io.WriteString(stdin, "\n")
-		// stdin.Close()
-	}()
-
-	s2, err := ReadOutput(stdout)
-	if err != nil {
-		log.Printf("Process is finished ..")
+		log.Printf("raw message: %v", string(s2))
 	}
 
-	log.Printf("raw message: %v", s2)
-
 	// end loop here!
-
-}
-
-func ReadOutput(rc io.ReadCloser) (string, error) {
-	x, err := ioutil.ReadAll(rc)
-	s := string(x)
-	return s, err
 }
