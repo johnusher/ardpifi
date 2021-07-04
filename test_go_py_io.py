@@ -12,9 +12,6 @@ import sys
 for line in sys.stdin:
     if not line.strip() or line.strip().startswith('#'):
         continue
-    data = base64.b64decode(line.strip())    
-    
-    print(data)    
+    data = base64.b64decode(line.strip())
 
-
-    
+    print(data.decode("utf-8"))
