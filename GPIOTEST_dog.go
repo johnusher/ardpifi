@@ -69,7 +69,7 @@ func delayedButtonHandle(pushButton *buttonPress) {
 		// newtimer2 = *newtimerp2
 		// defer newtimer2.Stop()
 
-		pushButton.cancelButtonWav = make(chan struct{})
+		// pushButton.cancelButtonWav = make(chan struct{})
 		go func() {
 			// either play after 150ms, or bail if close(cancelButtonWav) is called
 			select {
@@ -86,7 +86,7 @@ func delayedButtonHandle(pushButton *buttonPress) {
 		now := time.Now()
 		elapsedTime := now.Sub(pushButton.buttonDownTime)
 
-		close(pushButton.cancelButtonWav)
+		pushButton.cancelButtonWav <- struct{}{}
 		// newtimer2.Stop()
 		pushButton.buttonWavs.StopAll()
 
@@ -133,8 +133,9 @@ func main() {
 	wavsp := wavs.InitWavs()
 
 	pushButton := &buttonPress{
-		buttonFlag:     0,
-		buttonDownTime: time.Now(),
+		buttonFlag:      0,
+		buttonDownTime:  time.Now(),
+		cancelButtonWav: make(chan struct{}, 100), // buffered channel
 	}
 	pushButton.buttonWavs = *wavsp
 	buttonEventHandler := mkButtonEventHandler(pushButton)
