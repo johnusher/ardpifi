@@ -1,10 +1,9 @@
 // GPIOTEST.go
 // read switch input from raspberry pi 3+ GPIO and light LED
 // uses command-line GPIOD.
-// debouncing handled using time.AfterFunc
-// go get github.com/warthog618/gpiod
+// debouncing handled 
 
-// to playback audio must run as sudo eg  go build GPIOTEST.go && sudo ./GPIOTEST
+// to playback audio must run as sudo:  go build GPIOTEST_dog.go && sudo ./GPIOTEST_dog
 
 package main
 
@@ -58,9 +57,10 @@ func delayedButtonHandle(pushButton *buttonPress) {
 
 		// defer newtimer.Stop() // stop countdown timer
 
-		// play short sound, for 200 ms
+		// play long howl 
 		catMeowN := rand.Int31n(2) + 1
 		catcat := fmt.Sprintf("howl%d.wav", catMeowN)
+		
 		// fmt.Println(catcat)
 		// wavss.Play(catcat)
 
@@ -74,6 +74,7 @@ func delayedButtonHandle(pushButton *buttonPress) {
 			// either play after 150ms, or bail if close(cancelButtonWav) is called
 			select {
 			case <-time.After(150 * time.Millisecond):
+				log.Info("howl!", catcat)
 				pushButton.buttonWavs.Play(catcat)
 			case <-pushButton.cancelButtonWav:
 			}
@@ -91,11 +92,10 @@ func delayedButtonHandle(pushButton *buttonPress) {
 		pushButton.buttonWavs.StopAll()
 
 		if elapsedTime < 400*time.Millisecond {
-			// wavss.StopAll()
+			// play short bark:
 			catMeowN2 := rand.Int31n(9) + 1
 			catcat2 := fmt.Sprintf("bark%d.wav", catMeowN2)
 			pushButton.buttonWavs.Play(catcat2)
-			//pushButton.buttonWavs.Play("meow_3.wav")
 			fmt.Println(elapsedTime)
 		}
 
@@ -122,7 +122,7 @@ func mkButtonEventHandler(pushButton *buttonPress) func(gpiod.LineEvent) {
 			// newtimer := time.NewTimer(100 * time.Millisecond) // start timer for 100 ms, when expired, check GPIO level
 		} else {
 			// timer already running
-			log.Info("TOO QQUICK!")
+			log.Info("bounce")
 			return
 		}
 	}
@@ -189,6 +189,7 @@ func main() {
 		log.Printf("Command finished with error: %v", err)
 	}
 
+	log.Printf("gpio set-up part 3...")
 	c, err := gpiod.NewChip("gpiochip0")
 	if err != nil {
 		panic(err)
