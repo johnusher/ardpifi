@@ -42,4 +42,22 @@ func main() {
 	// go forth
 	go gp.Run()
 
+	more := false
+
+	for {
+
+		select {
+
+		case gpioMessage, more = <-gpioCh:
+
+			// receive a button change from gpio
+
+			buttonStatus := gpsChan.buttonFlag  
+			if buttonStatus == 0{
+				
+			} 
+		}
+
+	}
+
 }
