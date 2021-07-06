@@ -40,7 +40,8 @@ type GPIOMessage struct {
 }
 
 
-type buttonPress struct {
+type gpio struct {
+	gpio 	chan<- GPIOMessage
 	buttonDownTime  time.Time
 	buttonFlag      int16
 	button          gpiod.Line
@@ -50,7 +51,7 @@ type buttonPress struct {
 	sync.Mutex      // protects cancelButtonWav
 }
 
-// rename buttonPress struct to gpio ??
+// rename gpio struct to gpio ??
 
 
 // func Init(gpioChan chan<- GPIOMessage, mock bool) (GPIO, error) {
@@ -63,11 +64,11 @@ func Init(gpioChan chan<- GPIOMessage) (GPIO, error) {
 }
 
 
-func initGPIO(gpioChan chan<- GPIOMessage) (buttonPress, error) {
+func initGPIO(gpioChan chan<- GPIOMessage) (GPIO, error) {
 	
 	wavsp := wavs.InitWavs()
 	// pushButton is the struct we want to send out
-	pushButton := &buttonPress{
+	pushButton := &gpio{
 		buttonFlag:      0,
 		buttonDownTime:  time.Now(),
 		cancelButtonWav: make([]chan struct{}, 0),
@@ -171,9 +172,8 @@ func initGPIO(gpioChan chan<- GPIOMessage) (buttonPress, error) {
 	// defer pushButton.led.Close()  // should this go here or in close func??
 
 
-	return &buttonPress{
-		buttonFlag,
-		buttonDownTime,
+	return &gpio{
+		gpioChan,
 	}, nil
 
 }
@@ -200,7 +200,7 @@ func (g *gpio) Run() error {
 
 
 
-func delayedButtonHandle(pushButton *buttonPress) {
+func delayedButtonHandle(pushButton *gpio) {
 	buttonStatus, _ := pushButton.button.Value() // Read state from line (active / inactive)
 
 	if buttonStatus == 0 { // low= button pressed down
@@ -251,7 +251,7 @@ func delayedButtonHandle(pushButton *buttonPress) {
 
 }
 
-func mkButtonEventHandler(pushButton *buttonPress) func(gpiod.LineEvent) {
+func mkButtonEventHandler(pushButton *gpio) func(gpiod.LineEvent) {
 	return func(evt gpiod.LineEvent) {
 		if pushButton.buttonFlag == 0 {
 
@@ -275,7 +275,7 @@ func mkButtonEventHandler(pushButton *buttonPress) func(gpiod.LineEvent) {
 // enqueue creates a new channel for each button pressed down (buttonStatus == 0)
 // The new channel is added to the cancelButtonWav slice, and returned to the
 // caller. Channel is closed via `flush`.
-func (b *buttonPress) enqueue() chan struct{} {
+func (b *gpio) enqueue() chan struct{} {
 	b.Lock()
 	c := make(chan struct{})
 	b.cancelButtonWav = append(b.cancelButtonWav, c)
@@ -285,7 +285,7 @@ func (b *buttonPress) enqueue() chan struct{} {
 
 // flush closes all channels created via `enqueue`, and then clears the slice of
 // channels, `cancelButtonWav`.
-func (b *buttonPress) flush() {
+func (b *gpio) flush() {
 	b.Lock()
 	for _, c := range b.cancelButtonWav {
 		close(c)
