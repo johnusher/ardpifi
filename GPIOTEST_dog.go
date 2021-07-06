@@ -1,7 +1,7 @@
 // GPIOTEST.go
 // read switch input from raspberry pi 3+ GPIO and light LED
 // uses command-line GPIOD.
-// debouncing handled 
+// debouncing handled
 
 // to playback audio must run as sudo:  go build GPIOTEST_dog.go && sudo ./GPIOTEST_dog
 
@@ -10,6 +10,7 @@ package main
 import (
 	"fmt"
 	"math/rand"
+	"sync"
 
 	// "log"
 	"os"
@@ -33,7 +34,30 @@ type buttonPress struct {
 	button          gpiod.Line
 	led             gpiod.Line
 	buttonWavs      wavs.Wavs
-	cancelButtonWav chan struct{}
+	cancelButtonWav []chan struct{}
+	sync.Mutex      // protects cancelButtonWav
+}
+
+// enqueue creates a new channel for each button pressed down (buttonStatus == 0)
+// The new channel is added to the cancelButtonWav slice, and returned to the
+// caller. Channel is closed via `flush`.
+func (b *buttonPress) enqueue() chan struct{} {
+	b.Lock()
+	c := make(chan struct{})
+	b.cancelButtonWav = append(b.cancelButtonWav, c)
+	b.Unlock()
+	return c
+}
+
+// flush closes all channels created via `enqueue`, and then clears the slice of
+// channels, `cancelButtonWav`.
+func (b *buttonPress) flush() {
+	b.Lock()
+	for _, c := range b.cancelButtonWav {
+		close(c)
+	}
+	b.cancelButtonWav = make([]chan struct{}, 0)
+	b.Unlock()
 }
 
 // var led gpiod.Line
@@ -57,10 +81,10 @@ func delayedButtonHandle(pushButton *buttonPress) {
 
 		// defer newtimer.Stop() // stop countdown timer
 
-		// play long howl 
+		// play long howl
 		catMeowN := rand.Int31n(2) + 1
 		catcat := fmt.Sprintf("howl%d.wav", catMeowN)
-		
+
 		// fmt.Println(catcat)
 		// wavss.Play(catcat)
 
@@ -70,13 +94,14 @@ func delayedButtonHandle(pushButton *buttonPress) {
 		// defer newtimer2.Stop()
 
 		// pushButton.cancelButtonWav = make(chan struct{})
+		cancelButtonWav := pushButton.enqueue()
 		go func() {
 			// either play after 150ms, or bail if close(cancelButtonWav) is called
 			select {
 			case <-time.After(150 * time.Millisecond):
 				log.Info("howl!", catcat)
 				pushButton.buttonWavs.Play(catcat)
-			case <-pushButton.cancelButtonWav:
+			case <-cancelButtonWav:
 			}
 		}()
 
@@ -87,7 +112,7 @@ func delayedButtonHandle(pushButton *buttonPress) {
 		now := time.Now()
 		elapsedTime := now.Sub(pushButton.buttonDownTime)
 
-		pushButton.cancelButtonWav <- struct{}{}
+		pushButton.flush()
 		// newtimer2.Stop()
 		pushButton.buttonWavs.StopAll()
 
@@ -135,7 +160,7 @@ func main() {
 	pushButton := &buttonPress{
 		buttonFlag:      0,
 		buttonDownTime:  time.Now(),
-		cancelButtonWav: make(chan struct{}, 100), // buffered channel
+		cancelButtonWav: make([]chan struct{}, 0),
 	}
 	pushButton.buttonWavs = *wavsp
 	buttonEventHandler := mkButtonEventHandler(pushButton)
