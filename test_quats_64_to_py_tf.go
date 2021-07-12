@@ -29,11 +29,6 @@ import (
 )
 
 const (
-	// quat_in = "./letters/M/M_20-45-12/quaternion_data.txt"
-	// quat_in = "./letters/O/O_20-32-50/quaternion_data.txt"
-	// quat_in = "./letters/O/O_20-44-02/quaternion_data.txt"
-	// quat_in = "./letters/O/O_20-32-50/quaternion_data.txt"
-
 	circBufferL = 600 // length of buffer where we store quat data. 600 samples @5 ms update = 3 seconds
 	lp          = 28  // pixels used to represent drawn letter, on each axis, ie lpxlp
 )
@@ -76,7 +71,6 @@ func main() {
 		cmd = exec.Command("python", "-u", "classifier/classify.py") // windoze
 	}
 
-	//
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		panic(err)
@@ -114,11 +108,9 @@ func main() {
 			for {
 
 				var flt1, flt2, flt3, flt4 float64
-				// var str string
 
 				fn, err := fmt.Fscan(f, &flt1, &flt2, &flt3, &flt4)
 				if fn == 0 || err != nil {
-					// fmt.Printf("err %s\n", err)
 					break
 				}
 
