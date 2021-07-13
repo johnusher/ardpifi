@@ -51,6 +51,13 @@ type gpio struct {
 	sync.Mutex      // protects cancelButtonWav
 }
 
+// type gpio struct {
+// 	gpio 	chan<- GPIOMessage
+// 	buttonDownTime  time.Time
+// 	buttonFlag      int16	
+// 	cancelButtonWav []chan struct{}
+// }
+
 // rename gpio struct to gpio ??
 
 
@@ -172,9 +179,33 @@ func initGPIO(gpioChan chan<- GPIOMessage) (GPIO, error) {
 	// defer pushButton.led.Close()  // should this go here or in close func??
 
 
-	return &gpio{
-		gpioChan,
-	}, nil
+	return &gpio{gpioChan,
+		time.Now(),  // buttonDownTime
+		0,  // buttonFlag
+		pushButton.button,// button   gpiod.Line
+		pushButton.led , // 	led  gpiod.Line
+		pushButton.buttonWavs , // 	buttonWavs   wavs.Wavs
+		make([]chan struct{}, 0), // cancelButtonWav []chan struct{}
+		sync.Mutex{}, // sync.Mutex      // protects cancelButtonWav
+		}, nil
+
+		// pushButton := &gpio{
+		// 	buttonFlag:      0,
+		// 	buttonDownTime:  time.Now(),
+		// 	cancelButtonWav: make([]chan struct{}, 0),
+		// }
+
+		// type gpio struct {
+		// 	gpio 	chan<- GPIOMessage
+		// 	buttonDownTime  time.Time
+		// 	buttonFlag      int16
+		// 	button          gpiod.Line
+		// 	led             gpiod.Line
+		// 	buttonWavs      wavs.Wavs
+		// 	cancelButtonWav []chan struct{}
+		// 	sync.Mutex      // protects cancelButtonWav
+		// }
+
 
 }
 

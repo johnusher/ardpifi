@@ -6,6 +6,8 @@
 
 
 // NB binary must be run as sudo
+// go build test_record_spell.go & sudo ./test_record_spell
+
 // read switch input from raspberry pi 3+ GPIO and light LED
 // when button is down for a "long" time (>500 ms): record IMU data.
 // on button-up, we convert the quaternion data from IMU (ie accelerometer and gyroscope) into a 28x28 image
@@ -42,22 +44,43 @@ func main() {
 	// go forth
 	go gp.Run()
 
-	more := false
+	errs := make(chan error)
 
+	go func() {
+		errs <- GPIOLoop(gpioChan)
+	}()
+
+	// block until ctrl-c or one of the loops returns an error
+	select {
+	case <-errs:
+	}
+
+}
+
+func GPIOLoop(gpioCh <-chan gpio.GPIOMessage) error {
+	log.Info("Starting GPIO loop")
+
+	gpioMessage := gpio.GPIOMessage{}
+
+	// more := false
 	for {
 
 		select {
 
-		case gpioMessage, more = <-gpioCh:
+		case gpioMessage, _ = <-gpioCh:
 
+			log.Info("gpio message %v",gpioMessage)
 			// receive a button change from gpio
 
-			buttonStatus := gpsChan.buttonFlag  
-			if buttonStatus == 0{
+			// buttonStatus := gpioMessage.buttonFlag  
+			// if buttonStatus == 0{
 				
-			} 
+			// } 
 		}
 
 	}
 
 }
+
+
+
