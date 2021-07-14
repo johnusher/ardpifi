@@ -1,6 +1,6 @@
 package acc
 
-// accelerometer, magnet etc sensor using the BNo055
+// IMU package: accelerometer, magnet etc sensor using the BNo055
 
 import (
 	"fmt"
@@ -25,6 +25,7 @@ type ACCMessage struct {
 	Bearing float64
 	Roll    float64
 	Tilt    float64
+	QuatW   float64
 }
 
 type acc struct {
@@ -95,6 +96,25 @@ func (a *acc) Run() error {
 			roll := float64(vector.Y)
 			tilt := float64(vector.Z)
 
+			quat, err := a.Sensor.Quaternion()
+			// https://github.com/adafruit/Adafruit_BNO055/blob/master/utility/quaternion.h
+			if err != nil {
+				panic(err)
+			}
+
+			// sw := strconv.FormatFloat(float64(quat.W), 'f', -1, 32)
+			// sx = strconv.FormatFloat(float64(quat.X), 'f', -1, 32)
+			// sy = strconv.FormatFloat(float64(quat.Y), 'f', -1, 32)
+			// sz = strconv.FormatFloat(float64(quat.Z), 'f', -1, 32)
+
+			// sw := strconv.FormatFloat(float64(quat.W), 'f', -1, 32)
+			// sx = strconv.FormatFloat(float64(quat.X), 'f', -1, 32)
+			// sy = strconv.FormatFloat(float64(quat.Y), 'f', -1, 32)
+			// sz = strconv.FormatFloat(float64(quat.Z), 'f', -1, 32)
+
+			// _, err = f3.WriteString(sw + " " + sx + " " + sy + " " + sz + "\n")
+
+			quat_w := float64(quat.W)
 			// acc, err := a.Sensor.LinearAccelerometer()
 			// if err != nil {
 			// 	log.Errorf("acc error: %v", err)
@@ -119,6 +139,7 @@ func (a *acc) Run() error {
 				Bearing: bearing,
 				Roll:    roll,
 				Tilt:    tilt,
+				QuatW:   quat_w,
 			}
 
 		}

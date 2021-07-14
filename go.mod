@@ -16,8 +16,8 @@ require (
 	github.com/jdevelop/golang-rpi-extras v0.0.0-20181010003844-c75e8edb0d6f
 	github.com/kpeu3i/bno055 v1.0.3
 	github.com/kr/text v0.2.0 // indirect
-	github.com/mattn/go-pointer v0.0.1 // indirect
-	github.com/mattn/go-tflite v1.0.1 // indirect
+	github.com/mattn/go-pointer v0.0.1
+	github.com/mattn/go-tflite v1.0.1
 	github.com/nsf/termbox-go v0.0.0-20201124104050-ed494de23a00
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7 // indirect
 	github.com/qinxin0720/go-rpigpio v0.0.0-20180904143339-2333e352173d // indirect

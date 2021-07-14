@@ -1,12 +1,11 @@
 // test_record_spell.go
 
 // requires a raspi 3 or zero
-// connectd with a push button and IMU (Bosch BNo055)
+// connectd with a push button on GPIO and IMU (Bosch BNo055)
 // determine what letter the user draws in the air
 
-
 // NB binary must be run as sudo
-// go build test_record_spell.go & sudo ./test_record_spell
+// go build test_record_spell.go && sudo ./test_record_spell
 
 // read switch input from raspberry pi 3+ GPIO and light LED
 // when button is down for a "long" time (>500 ms): record IMU data.
@@ -17,18 +16,24 @@
 package main
 
 import (
+	"flag"
 
+	"github.com/johnusher/ardpifi/pkg/acc"
 	"github.com/johnusher/ardpifi/pkg/gpio"
 	log "github.com/sirupsen/logrus"
-
-
 )
-
-
-
 
 func main() {
 
+	noACC := flag.Bool("no-acc", false, "run without Bosch accelerometer")
+
+	// init accelerometer module (Bosch)
+	accChan := make(chan acc.ACCMessage)
+	a, err := acc.Init(accChan, *noACC)
+	if err != nil {
+		log.Errorf("failed to initialize acc: %s", err)
+		return
+	}
 
 	// init gpio module:
 	gpioChan := make(chan gpio.GPIOMessage)
@@ -42,12 +47,13 @@ func main() {
 
 	// main loop here:
 	// go forth
-	go gp.Run()
+
+	go a.Run()
 
 	errs := make(chan error)
 
 	go func() {
-		errs <- GPIOLoop(gpioChan)
+		errs <- GPIOLoop(gpioChan, accChan)
 	}()
 
 	// block until ctrl-c or one of the loops returns an error
@@ -57,30 +63,48 @@ func main() {
 
 }
 
-func GPIOLoop(gpioCh <-chan gpio.GPIOMessage) error {
+func GPIOLoop(gpioCh <-chan gpio.GPIOMessage, accCh <-chan acc.ACCMessage) error {
 	log.Info("Starting GPIO loop")
 
 	gpioMessage := gpio.GPIOMessage{}
 
-	// more := false
+	more := false
 	for {
 
 		select {
 
-		case gpioMessage, _ = <-gpioCh:
+		case gpioMessage, more = <-gpioCh:
 
-			log.Info("gpio message %v",gpioMessage)
+			if !more {
+				log.Infof("gpio channel closed\n")
+				log.Infof("exiting")
+				return nil
+			}
+
+			// log.Infof("gpio message %v", gpioMessage)
 			// receive a button change from gpio
 
-			// buttonStatus := gpioMessage.buttonFlag  
-			// if buttonStatus == 0{
-				
-			// } 
+			buttonStatus := gpioMessage.ButtonFlag
+			// buttonStatus := gpio.GPIOMessage.buttonFlag
+			if buttonStatus == 0 {
+				// button down
+				log.Infof("button down %v", buttonStatus)
+
+				// start recording quaternions from IMU
+			}
+
+			if buttonStatus == 1 {
+				// button up
+				log.Infof("button up %v", buttonStatus)
+
+				// stop recording quaternions from IMU,
+				// convert quaternions to 28x28 image
+				// pipe to TF, Python
+
+			}
+
 		}
 
 	}
 
 }
-
-
-

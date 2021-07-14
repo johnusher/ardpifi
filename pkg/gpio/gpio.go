@@ -33,8 +33,8 @@ type GPIO interface {
 }
 
 type GPIOMessage struct {
-	buttonFlag     int16
-	buttonDownTime time.Time
+	ButtonFlag     int16
+	ButtonDownTime time.Time
 }
 
 type gpio struct {
@@ -125,16 +125,16 @@ func initGPIO(gpioChan chan<- GPIOMessage) (GPIO, error) {
 	arg3 = "up"
 
 	cmd = exec.Command(app, arg0, arg1, arg2, arg3)
-	log.Printf("gpio set-up part 2...")
+	// log.Printf("gpio set-up part 2...")
 	err = cmd.Run()
 	if err != nil {
 		log.Printf("Command finished with error: %v", err)
 	}
 
-	log.Printf("gpio set-up part 3...")
+	// log.Printf("gpio set-up part 3...")
 	c, err := gpiod.NewChip("gpiochip0")
 	if err != nil {
-		panic(err)
+		// panic(err)
 		return nil, err
 	}
 
@@ -242,7 +242,7 @@ func delayedButtonHandle(pushButton *gpio) {
 			// either play after 150ms, or bail if close(cancelButtonWav) is called
 			select {
 			case <-time.After(150 * time.Millisecond):
-				log.Info("howl!", catcat)
+				// log.Info("howl!", catcat)
 				pushButton.buttonWavs.Play(catcat)
 
 			case <-cancelButtonWav:
