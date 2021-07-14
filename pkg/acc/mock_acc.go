@@ -43,6 +43,11 @@ func (m *mockACC) Run() error {
 			roll := rand.Float64()
 			tilt := rand.Float64()
 
+			quat_w := rand.Float64()
+			quat_x := rand.Float64()
+			quat_y := rand.Float64()
+			quat_z := rand.Float64()
+
 			m.log.Infof("Sending %f %f %f", bearing, roll, tilt)
 
 			m.acc <- ACCMessage{
@@ -50,6 +55,10 @@ func (m *mockACC) Run() error {
 				Bearing: bearing,
 				Roll:    roll,
 				Tilt:    tilt,
+				QuatW:   quat_w,
+				QuatX:   quat_x,
+				QuatY:   quat_y,
+				QuatZ:   quat_z,
 			}
 		}
 	}

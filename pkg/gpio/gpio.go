@@ -98,7 +98,7 @@ func initGPIO(gpioChan chan<- GPIOMessage) (GPIO, error) {
 	arg3 := "in"
 
 	cmd := exec.Command(app, arg0, arg1, arg2, arg3)
-	log.Printf("gpio set-up part 1")
+	// log.Printf("gpio set-up part 1")
 	err := cmd.Run()
 	if err != nil {
 		log.Printf("Command finished with error: %v", err)
@@ -109,7 +109,7 @@ func initGPIO(gpioChan chan<- GPIOMessage) (GPIO, error) {
 	arg3 = "out"
 
 	cmd = exec.Command(app, arg0, arg1, arg2, arg3)
-	log.Printf("gpio set-up part 1.1")
+	// log.Printf("gpio set-up part 1.1")
 	err = cmd.Run()
 	if err != nil {
 		log.Printf("Command finished with error: %v", err)

@@ -16,16 +16,34 @@
 package main
 
 import (
+	"encoding/base64"
 	"flag"
+	"image"
+	"image/color"
+
+	"math"
+	"os"
+	"time"
 
 	"github.com/johnusher/ardpifi/pkg/acc"
 	"github.com/johnusher/ardpifi/pkg/gpio"
+	"github.com/johnusher/ardpifi/pkg/oled"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/exp/io/i2c"
+	"golang.org/x/image/bmp"
+
+	_ "image/png"
+)
+
+const (
+	circBufferL = 600 // length of buffer where we store quat data. 600 samples @5 ms update = 3 seconds
+	lp          = 28  // pixels used to represent drawn letter, on each axis, ie lpxlp
 )
 
 func main() {
 
 	noACC := flag.Bool("no-acc", false, "run without Bosch accelerometer")
+	noOLED := flag.Bool("no-oled", false, "run without oled display")
 
 	// init accelerometer module (Bosch)
 	accChan := make(chan acc.ACCMessage)
@@ -45,6 +63,39 @@ func main() {
 	}
 	defer gp.Close()
 
+	// OLED:
+
+	oled, err := oled.Open(&i2c.Devfs{Dev: "/dev/i2c-1"}, *noOLED)
+	if err != nil {
+		panic(err)
+	}
+	defer oled.Close()
+
+	// load png and display on OLED
+	rc, err := os.Open("./maxi.png")
+
+	if err != nil {
+		panic(err)
+	}
+	defer rc.Close()
+
+	m, _, err := image.Decode(rc)
+	if err != nil {
+		panic(err)
+	}
+
+	// clear the display before putting on anything
+	if err := oled.Clear(); err != nil {
+		panic(err)
+	}
+
+	if err := oled.SetImage(0, 0, m); err != nil {
+		panic(err)
+	}
+	if err := oled.Draw(); err != nil {
+		panic(err)
+	}
+
 	// main loop here:
 	// go forth
 
@@ -52,8 +103,15 @@ func main() {
 
 	errs := make(chan error)
 
+	// clear the OLED
+	if err := oled.Clear(); err != nil {
+		panic(err)
+	}
+
+	img := image.NewRGBA(image.Rect(0, 0, 128, 64))
+
 	go func() {
-		errs <- GPIOLoop(gpioChan, accChan)
+		errs <- GPIOLoop(gpioChan, accChan, img, oled)
 	}()
 
 	// block until ctrl-c or one of the loops returns an error
@@ -63,15 +121,47 @@ func main() {
 
 }
 
-func GPIOLoop(gpioCh <-chan gpio.GPIOMessage, accCh <-chan acc.ACCMessage) error {
-	log.Info("Starting GPIO loop")
+func GPIOLoop(gpioCh <-chan gpio.GPIOMessage, accCh <-chan acc.ACCMessage, img *image.RGBA, oled oled.OLED) error {
+	// log.Info("Starting GPIO loop")
 
 	gpioMessage := gpio.GPIOMessage{}
+	accMessage := acc.ACCMessage{}
+
+	buttonDown := false
+	n := 0
+	var quat_in_circ_buffer [circBufferL][5]float64 // raw quaternion inputs from file or IMU
 
 	more := false
 	for {
 
 		select {
+
+		case accMessage, more = <-accCh:
+
+			// received message from BNo055 module.
+			// eg bearing, ie NSEW direction we are pointing
+			if !more {
+				log.Infof("acc channel closed\n")
+				log.Infof("exiting")
+				return nil
+			}
+
+			if buttonDown {
+				// quatsW := accMessage.QuatW
+				// quatsX := accMessage.QuatX
+				// quatsY := accMessage.QuatY
+				// quatsZ := accMessage.QuatZ
+				// log.Infof("quatsW %v %v %v %v", quatsW, quatsX, quatsY, quatsZ)
+
+				// log.Infof("recording quats")
+				// log.Infof("n %v", n)
+				n = n + 1
+
+				quat_in_circ_buffer[n][0] = accMessage.QuatW
+				quat_in_circ_buffer[n][1] = accMessage.QuatX
+				quat_in_circ_buffer[n][2] = accMessage.QuatY
+				quat_in_circ_buffer[n][3] = accMessage.QuatZ
+			}
 
 		case gpioMessage, more = <-gpioCh:
 
@@ -89,17 +179,63 @@ func GPIOLoop(gpioCh <-chan gpio.GPIOMessage, accCh <-chan acc.ACCMessage) error
 			if buttonStatus == 0 {
 				// button down
 				log.Infof("button down %v", buttonStatus)
-
+				buttonDown = true
+				n = 0
 				// start recording quaternions from IMU
 			}
 
 			if buttonStatus == 1 {
 				// button up
 				log.Infof("button up %v", buttonStatus)
+				buttonDown = false
 
 				// stop recording quaternions from IMU,
 				// convert quaternions to 28x28 image
 				// pipe to TF, Python
+
+				// log.Printf("quat_in_circ_buffer: %v", quat_in_circ_buffer)
+				// log.Printf("n: %v", n)
+
+				if n > 20 {
+					encoded := quats2Image(quat_in_circ_buffer, n)
+
+					log.Printf("encoded: %v", encoded)
+				} else {
+					log.Printf("shorty")
+				}
+
+				// now send to the python:
+
+				// now1 := time.Now()
+
+				// _, err = stdin.Write([]byte(encoded))
+				// if err != nil {
+				// 	log.Errorf("stdin.Write() failed: %s", err)
+				// }
+				// _, err = stdin.Write([]byte("\n"))
+				// if err != nil {
+				// 	log.Errorf("stdin.Write() failed: %s", err)
+				// }
+
+				// s2, err := stdoutReader.ReadString('\n')
+				// if err != nil {
+				// 	log.Printf("Process is finished ..")
+				// }
+
+				// now2 := time.Now()
+				// elapsedTime := now2.Sub(now1)
+				// log.Printf("elapsedTime TF=%v", elapsedTime)
+
+				// // log.Printf("raw message: %v", s2)
+
+				// s := strings.FieldsFunc(s2, Split)
+
+				// prob, _ := strconv.ParseFloat(s[0], 64)
+				// // letter := strings.Trim(s[1], "'")
+				// letter := strings.Replace(s[1], "'", "", -1)
+
+				// log.Printf("prob: %v", prob)
+				// log.Printf("letter: %v", letter)
 
 			}
 
@@ -108,3 +244,197 @@ func GPIOLoop(gpioCh <-chan gpio.GPIOMessage, accCh <-chan acc.ACCMessage) error
 	}
 
 }
+
+func quats2Image(quat_in_circ_buffer [circBufferL][5]float64, length int) string {
+	// var imageOut float64
+	// imageOut = quatsIn * 2.0
+	// n := 0 // index to write into circ buffer
+
+	// var s, x, y, z float64
+	var projected_circ_buffer [circBufferL][3]float64 // quat projected to xyz
+	var letterImage [lp][lp]byte
+	var centre [3]float64 // 3x1 averages of projected_circ_buffer coluns
+	var n int
+	var centre_direction [3]float64 // 3x1
+	var centre_direction_sq_centre_col [3]float64
+	var eye_minus_cdscc [3]float64
+	var y_direction [3]float64
+	var x_direction [3]float64
+	var x [circBufferL]float64
+	var y [circBufferL]float64
+
+	// for n = 0; n < circBufferL; n++ {
+	for n = 0; n < length; n++ {
+
+		s := quat_in_circ_buffer[n][0]
+		x := quat_in_circ_buffer[n][1]
+		y := quat_in_circ_buffer[n][2]
+		z := quat_in_circ_buffer[n][3]
+
+		projected_circ_buffer[n][0] = 1.0 - 2.0*(y*y+z*z)
+		projected_circ_buffer[n][1] = 2.0 * (x*y + s*z)
+		projected_circ_buffer[n][2] = 2.0 * (x*z - s*y)
+
+	}
+	// step 3. when we have stopped recording data: average of projected
+
+	sumx := 0.0
+	sumz := 0.0
+	sumy := 0.0
+
+	for i := 0; i < n; i++ {
+		sumx += (projected_circ_buffer[i][0])
+		sumy += (projected_circ_buffer[i][1])
+		sumz += (projected_circ_buffer[i][2])
+	}
+
+	centre[0] = (sumx) / (float64(n))
+	centre[1] = (sumy) / (float64(n))
+	centre[2] = (sumz) / (float64(n))
+
+	// %% step 4: norm-centre
+
+	// %     centre_direction = centre' ./ norm(centre);
+
+	norm_centre := math.Sqrt(centre[0]*centre[0] + centre[1]*centre[1] + centre[2]*centre[2])
+
+	centre_direction[0] = centre[0] / norm_centre
+	centre_direction[1] = centre[1] / norm_centre
+	centre_direction[2] = centre[2] / norm_centre
+
+	// % step 5: y direction:
+	// %     y_direction = (eye[2] - centre_direction*centre_direction')* [0 1 0]';
+
+	centre_direction_sq_centre_col[0] = centre_direction[0] * centre_direction[1]
+	centre_direction_sq_centre_col[1] = centre_direction[1] * centre_direction[1]
+	centre_direction_sq_centre_col[2] = centre_direction[1] * centre_direction[2]
+
+	eye_minus_cdscc[0] = -1.0 * centre_direction_sq_centre_col[0]
+	eye_minus_cdscc[1] = 1.0 - centre_direction_sq_centre_col[1]
+	eye_minus_cdscc[2] = -1.0 * centre_direction_sq_centre_col[2]
+
+	// %     y_direction = y_direction ./ norm(y_direction);
+
+	norm_y_direction := math.Sqrt(eye_minus_cdscc[0]*eye_minus_cdscc[0] + eye_minus_cdscc[1]*eye_minus_cdscc[1] + eye_minus_cdscc[2]*eye_minus_cdscc[2])
+
+	y_direction[0] = eye_minus_cdscc[0] / norm_y_direction
+	y_direction[1] = eye_minus_cdscc[1] / norm_y_direction
+	// y_direction[1] = 1.0 // tends to unity
+	y_direction[2] = eye_minus_cdscc[2] / norm_y_direction
+
+	// %%     step 6: x_direction via cross product
+	// %     x_direction_cp = cross(centre_direction, y_direction);
+
+	x_direction[0] = centre_direction[1]*y_direction[2] - centre_direction[2]*y_direction[1]
+	// %     x_direction[1] = centre_direction[2]*y_direction[0] - centre_direction[0]*y_direction[2]; % very close to zero
+	// x_direction(2) = centre_direction(3)*y_direction(1) - centre_direction(1)*y_direction(3); % very close to zero
+	x_direction[1] = centre_direction[2]*y_direction[0] - centre_direction[0]*y_direction[2]
+	x_direction[2] = centre_direction[0]*y_direction[1] - centre_direction[1]*y_direction[0]
+
+	// %% step 7: x and y corrodinates:
+	// x(n) = x_direction(1)* projected(n, 1) + x_direction(2)* projected(n, 2)  + x_direction(3)* projected(n, 3) ;
+	// y(n) = y_direction(1)* projected(n, 1) + y_direction(2)* projected(n, 2)  + y_direction(3)* projected(n, 3) ;
+
+	minX := 1.0
+	maxX := -1.0
+	minY := minX
+	maxY := maxX
+	for i := 0; i < n; i++ {
+		// x[i] = x_direction[0]*projected_circ_buffer[i][0] + x_direction[2]*projected_circ_buffer[i][2]                               //  % x_direction(2) is so small we can ignore it
+		x[i] = x_direction[0]*projected_circ_buffer[i][0] + x_direction[1]*projected_circ_buffer[i][1] + x_direction[2]*projected_circ_buffer[i][2]
+		y[i] = y_direction[0]*projected_circ_buffer[i][0] + projected_circ_buffer[i][1] + y_direction[2]*projected_circ_buffer[i][2] // ; % y_direction(2) -> 1.0
+		minX = math.Min(minX, x[i])
+		maxX = math.Max(maxX, x[i])
+		minY = math.Min(minY, y[i])
+		maxY = math.Max(maxY, y[i])
+	}
+
+	// // % scale
+
+	absMixX := math.Abs(minX)
+	if absMixX > maxX {
+		maxX = absMixX
+	}
+
+	absMinY := math.Abs(minY)
+	if absMinY > maxY {
+		maxY = absMinY
+	}
+
+	maxdim := math.Max(maxX, maxY)
+	scaler := 0.8 / maxdim // scale image so we don't extend to the edge: this REALLY help %prob!
+
+	for i := 0; i < n; i++ {
+		x[i] = x[i] * scaler
+		y[i] = y[i] * scaler
+
+	}
+
+	// make black and white image:
+
+	// first blank the image:
+	for ix := 0; ix < lp; ix++ {
+		for iy := 0; iy < lp; iy++ {
+			letterImage[ix][iy] = 0
+		}
+	}
+
+	x_int := 0
+	y_int := 0
+	for i := 0; i < n; i++ {
+		x_int = int(x[i]*lp/2 + lp/2)
+		y_int = int(y[i]*lp/2 + lp/2)
+		letterImage[y_int][x_int] = 1
+	}
+
+	var joinedArray []byte
+
+	// resize matrix into long array:
+	for ix := 0; ix < lp; ix++ {
+		nums := letterImage[ix][:]
+		joinedArray = append(joinedArray, nums...)
+		// joinedArray := bytes.Join(nums, nil)  // dunno how to do this
+	}
+
+	encoded := base64.StdEncoding.EncodeToString(joinedArray)
+
+	// -------------------------------
+	// Create png image
+	img := image.NewRGBA(image.Rect(0, 0, lp, lp))
+
+	for i := 0; i < n; i++ {
+		x_int = int(x[i]*lp/2 + lp/2 + 1)
+		y_int = int(y[i]*lp/2 + lp/2 + 1)
+		img.Set(y_int, x_int, color.RGBA{255, 0, 0, 255})
+	}
+
+	// Save to out.bmp
+	// NB saved as root
+
+	// sn := strings.Replace(file, "quaternion_data.txt", "quat_image.bmp", 1)
+
+	// sn := "imageOut.bmp"
+	sn := GetFilenameDate()
+
+	fo, err := os.OpenFile(sn, os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		log.Printf("err %s\n", err)
+	}
+
+	defer fo.Close()
+	bmp.Encode(fo, img)
+
+	return encoded
+}
+
+func GetFilenameDate() string {
+	// Use layout string for time format.
+	// const layout = "01-02-2006"
+	const layout = "15:04:05"
+
+	// Place now in the string.
+	t := time.Now()
+	return "file-" + t.Format(layout) + ".bmp"
+}
+
+// sudo chmod 777 *.bmp

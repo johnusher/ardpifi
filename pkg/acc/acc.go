@@ -26,6 +26,9 @@ type ACCMessage struct {
 	Roll    float64
 	Tilt    float64
 	QuatW   float64
+	QuatX   float64
+	QuatY   float64
+	QuatZ   float64
 }
 
 type acc struct {
@@ -115,6 +118,9 @@ func (a *acc) Run() error {
 			// _, err = f3.WriteString(sw + " " + sx + " " + sy + " " + sz + "\n")
 
 			quat_w := float64(quat.W)
+			quat_x := float64(quat.X)
+			quat_y := float64(quat.Y)
+			quat_z := float64(quat.Z)
 			// acc, err := a.Sensor.LinearAccelerometer()
 			// if err != nil {
 			// 	log.Errorf("acc error: %v", err)
@@ -140,11 +146,14 @@ func (a *acc) Run() error {
 				Roll:    roll,
 				Tilt:    tilt,
 				QuatW:   quat_w,
+				QuatX:   quat_x,
+				QuatY:   quat_y,
+				QuatZ:   quat_z,
 			}
 
 		}
 
-		time.Sleep(150 * time.Millisecond)
+		time.Sleep(5 * time.Millisecond) // check this for TF model!
 	}
 
 }
