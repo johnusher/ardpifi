@@ -25,14 +25,24 @@ type ACCMessage struct {
 	Bearing float64
 	Roll    float64
 	Tilt    float64
-	QuatW   float64
-	QuatX   float64
-	QuatY   float64
-	QuatZ   float64
+
+	QuatW float64
+	QuatX float64
+	QuatY float64
+	QuatZ float64
 }
 
+// type ACCMessage2 struct {
+// 	// Temp    int8
+// 	QuatW float64
+// 	QuatX float64
+// 	QuatY float64
+// 	QuatZ float64
+// }
+
 type acc struct {
-	acc    chan<- ACCMessage
+	acc chan<- ACCMessage
+	// acc2   chan<- ACCMessage2
 	Sensor *bno055.Sensor
 }
 
@@ -70,6 +80,7 @@ func initACC(accChan chan<- ACCMessage) (ACC, error) {
 
 	return &acc{
 		accChan,
+		// accChan2,
 		sensor,
 	}, nil
 
@@ -102,7 +113,7 @@ func (a *acc) Run() error {
 			quat, err := a.Sensor.Quaternion()
 			// https://github.com/adafruit/Adafruit_BNO055/blob/master/utility/quaternion.h
 			if err != nil {
-				panic(err)
+				log.Errorf("Quaternion error: %v", err)
 			}
 
 			// sw := strconv.FormatFloat(float64(quat.W), 'f', -1, 32)
@@ -150,6 +161,14 @@ func (a *acc) Run() error {
 				QuatY:   quat_y,
 				QuatZ:   quat_z,
 			}
+
+			// a.acc2 <- ACCMessage2{
+			// 	// Temp:    temp,
+			// 	QuatW: quat_w,
+			// 	QuatX: quat_x,
+			// 	QuatY: quat_y,
+			// 	QuatZ: quat_z,
+			// }
 
 		}
 

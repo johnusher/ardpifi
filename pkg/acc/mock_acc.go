@@ -10,7 +10,8 @@ import (
 )
 
 type mockACC struct {
-	acc  chan<- ACCMessage
+	acc chan<- ACCMessage
+	// acc2 chan<- ACCMessage2
 	done chan struct{}
 	log  *log.Entry
 }
@@ -54,12 +55,22 @@ func (m *mockACC) Run() error {
 				// Temp:    temp,
 				Bearing: bearing,
 				Roll:    roll,
-				Tilt:    tilt,
 				QuatW:   quat_w,
 				QuatX:   quat_x,
 				QuatY:   quat_y,
 				QuatZ:   quat_z,
 			}
+
+			// m.acc2 <- ACCMessage2{
+			// 	// Temp:    temp,
+			// 	// Bearing: bearing,
+			// 	// Roll:    roll,
+			// 	// Tilt   tilt,
+			// 	QuatW: quat_w,
+			// 	QuatX: quat_x,
+			// 	QuatY: quat_y,
+			// 	QuatZ: quat_z,
+			// }
 		}
 	}
 }

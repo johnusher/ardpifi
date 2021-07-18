@@ -47,6 +47,8 @@ func main() {
 
 	// init accelerometer module (Bosch)
 	accChan := make(chan acc.ACCMessage)
+	// accChan2 := make(chan acc.ACCMessage2)
+	// a, err := acc.Init(accChan, accChan2, *noACC)
 	a, err := acc.Init(accChan, *noACC)
 	if err != nil {
 		log.Errorf("failed to initialize acc: %s", err)
@@ -141,22 +143,15 @@ func GPIOLoop(gpioCh <-chan gpio.GPIOMessage, accCh <-chan acc.ACCMessage, img *
 			// received message from BNo055 module.
 			// eg bearing, ie NSEW direction we are pointing
 			if !more {
-				log.Infof("acc channel closed\n")
+				log.Infof("acc channel2 closed\n")
 				log.Infof("exiting")
 				return nil
 			}
 
 			if buttonDown {
-				// quatsW := accMessage.QuatW
-				// quatsX := accMessage.QuatX
-				// quatsY := accMessage.QuatY
-				// quatsZ := accMessage.QuatZ
-				// log.Infof("quatsW %v %v %v %v", quatsW, quatsX, quatsY, quatsZ)
-
 				// log.Infof("recording quats")
 				// log.Infof("n %v", n)
 				n = n + 1
-
 				quat_in_circ_buffer[n][0] = accMessage.QuatW
 				quat_in_circ_buffer[n][1] = accMessage.QuatX
 				quat_in_circ_buffer[n][2] = accMessage.QuatY
@@ -178,7 +173,7 @@ func GPIOLoop(gpioCh <-chan gpio.GPIOMessage, accCh <-chan acc.ACCMessage, img *
 			// buttonStatus := gpio.GPIOMessage.buttonFlag
 			if buttonStatus == 0 {
 				// button down
-				log.Infof("button down %v", buttonStatus)
+				// log.Infof("button down %v", buttonStatus)
 				buttonDown = true
 				n = 0
 				// start recording quaternions from IMU
@@ -186,7 +181,7 @@ func GPIOLoop(gpioCh <-chan gpio.GPIOMessage, accCh <-chan acc.ACCMessage, img *
 
 			if buttonStatus == 1 {
 				// button up
-				log.Infof("button up %v", buttonStatus)
+				// log.Infof("button up %v", buttonStatus)
 				buttonDown = false
 
 				// stop recording quaternions from IMU,
@@ -199,9 +194,9 @@ func GPIOLoop(gpioCh <-chan gpio.GPIOMessage, accCh <-chan acc.ACCMessage, img *
 				if n > 20 {
 					encoded := quats2Image(quat_in_circ_buffer, n)
 
-					log.Printf("encoded: %v", encoded)
+					// log.Printf("encoded: %v", encoded)
 				} else {
-					log.Printf("shorty")
+					// log.Printf("shorty")
 				}
 
 				// now send to the python:
@@ -412,7 +407,7 @@ func quats2Image(quat_in_circ_buffer [circBufferL][5]float64, length int) string
 	// NB saved as root
 
 	// sn := strings.Replace(file, "quaternion_data.txt", "quat_image.bmp", 1)
-
+	// sudo chmod 777 *.bmp
 	// sn := "imageOut.bmp"
 	sn := GetFilenameDate()
 
