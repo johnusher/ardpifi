@@ -32,7 +32,7 @@ type wavFile struct {
 	remaining int
 }
 
-func InitWavs() *Wavs {
+func InitWavs(noSound bool) *Wavs {
 	err := portaudio.Initialize()
 	if err != nil {
 		panic(err)
@@ -47,7 +47,7 @@ func InitWavs() *Wavs {
 
 	for _, f := range files {
 		if strings.HasSuffix(f.Name(), ".wav") {
-			wavs.wavs[f.Name()] = initWav(f)
+			wavs.wavs[f.Name()] = initWav(f, noSound)
 		}
 	}
 
@@ -63,7 +63,7 @@ func InitWavs() *Wavs {
 	return wavs
 }
 
-func initWav(f os.FileInfo) *wavFile {
+func initWav(f os.FileInfo, noSound bool) *wavFile {
 	file, _ := os.Open(WAVS + "/" + f.Name())
 	reader := wav.NewReader(file)
 	defer file.Close()
@@ -80,9 +80,16 @@ func initWav(f os.FileInfo) *wavFile {
 			}
 		}
 
-		for _, sample := range samples {
-			buf[loc] = float32(reader.FloatValue(sample, 0))
-			loc += 1
+		if noSound {
+			for _, sample := range samples {
+				buf[loc] = 0.0 * float32(reader.FloatValue(sample, 0))
+				loc += 1
+			}
+		} else {
+			for _, sample := range samples {
+				buf[loc] = float32(reader.FloatValue(sample, 0))
+				loc += 1
+			}
 		}
 	}
 

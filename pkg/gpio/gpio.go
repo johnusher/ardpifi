@@ -60,17 +60,18 @@ type gpio struct {
 // }
 
 // func Init(gpioChan chan<- GPIOMessage, mock bool) (GPIO, error) {
-func Init(gpioChan chan<- GPIOMessage) (GPIO, error) {
-	// if mock {  // TBD
+func Init(gpioChan chan<- GPIOMessage, noSound bool) (GPIO, error) {
+	// if noSound { // TBD
 	// 	return initMockGPS(gpsChan)
 	// }
 
-	return initGPIO(gpioChan)
+	return initGPIO(gpioChan, noSound)
 }
 
-func initGPIO(gpioChan chan<- GPIOMessage) (GPIO, error) {
+func initGPIO(gpioChan chan<- GPIOMessage, noSound bool) (GPIO, error) {
 
-	wavsp := wavs.InitWavs()
+	wavsp := wavs.InitWavs(noSound)
+
 	// pushButton is the struct we want to send out
 	pushButton := &gpio{
 		gpio:            gpioChan,

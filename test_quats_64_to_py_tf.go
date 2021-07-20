@@ -273,10 +273,13 @@ func main() {
 
 			now1 := time.Now()
 
+			// send encoded base64 28x28 ti TF:
 			_, err = stdin.Write([]byte(encoded))
 			if err != nil {
 				log.Errorf("stdin.Write() failed: %s", err)
 			}
+
+			// write end of line:
 			_, err = stdin.Write([]byte("\n"))
 			if err != nil {
 				log.Errorf("stdin.Write() failed: %s", err)

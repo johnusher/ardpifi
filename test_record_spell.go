@@ -19,10 +19,14 @@ import (
 	"bufio"
 	"encoding/base64"
 	"flag"
+	"fmt"
 	"image"
 	"image/color"
+	"io"
 	"os/exec"
 	"runtime"
+	"strconv"
+	"strings"
 
 	"math"
 	"os"
@@ -33,7 +37,6 @@ import (
 	"github.com/johnusher/ardpifi/pkg/oled"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/exp/io/i2c"
-	"golang.org/x/image/bmp"
 
 	_ "image/png"
 )
@@ -47,6 +50,7 @@ func main() {
 
 	noACC := flag.Bool("no-acc", false, "run without Bosch accelerometer")
 	noOLED := flag.Bool("no-oled", false, "run without oled display")
+	noSound := flag.Bool("no-sound", false, "run without sound")
 
 	// init TF/ Python
 
@@ -58,7 +62,7 @@ func main() {
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		log.Errorf("failed to initialize StdoutPipe: %s", err)
-		return	
+		return
 	}
 
 	stdin, err := cmd.StdinPipe()
@@ -72,7 +76,7 @@ func main() {
 	err = cmd.Start()
 	if err != nil {
 		log.Errorf("failed to initialize NewReader: %s", err)
-		return	
+		return
 	}
 
 	// init accelerometer module (Bosch)
@@ -88,7 +92,7 @@ func main() {
 	// init gpio module:
 	gpioChan := make(chan gpio.GPIOMessage)
 	// gp, err := gpio.Init(gpioChan, *noGPIO)  // TBD
-	gp, err := gpio.Init(gpioChan)
+	gp, err := gpio.Init(gpioChan, *noSound)
 	if err != nil {
 		log.Errorf("failed to initialize GPIO: %s", err)
 		return
@@ -141,20 +145,20 @@ func main() {
 	}
 
 	img := image.NewRGBA(image.Rect(0, 0, 128, 64))
-     
-	go func() {   
-		errs <- GPIOLoop(gpioChan, accChan, img, oled, stdin)
-	}()    
+
+	go func() {
+		errs <- GPIOLoop(gpioChan, accChan, img, oled, stdin, stdoutReader)
+	}()
 
 	// block until ctrl-c or one of the loops returns an error
 	select {
 	case <-errs:
 	}
 
-}     
-   
-func GPIOLoop(gpioCh <-chan gpio.GPIOMessage, accCh <-chan acc.ACCMessage, img *image.RGBA, oled oled.OLED, stdin io.WriteCloser ) error {
-	// log.Info("Starting GPIO loop")    
+}
+
+func GPIOLoop(gpioCh <-chan gpio.GPIOMessage, accCh <-chan acc.ACCMessage, img *image.RGBA, oled oled.OLED, stdin io.WriteCloser, stdoutReader *bufio.Reader) error {
+	// log.Info("Starting GPIO loop")
 
 	gpioMessage := gpio.GPIOMessage{}
 	accMessage := acc.ACCMessage{}
@@ -223,42 +227,56 @@ func GPIOLoop(gpioCh <-chan gpio.GPIOMessage, accCh <-chan acc.ACCMessage, img *
 				// mFnbT9sthKKp22GR
 
 				if n > 20 {
-					quats2Image(quat_in_circ_buffer, n)
-															
-												
-															// s2, err := stdoutReader.ReadString('\n')
-																// if err != nil {
-																// 	log.Printf("Process is finished ..")
-														// }
-												
-														// now2 := time.Now()
-															// elapsedTime := now2.Sub(now1)
-															// log.Printf("elapsedTime TF=%v", elapsedTime)
-									
-														// // log.Printf("raw message: %v", s2)
-										
-														// s := strings.FieldsFunc(s2, Split)
-								
-													// prob, _ := strconv.ParseFloat(s[0], 64)
-										// // letter := strings.Trim(s[1], "'")
-														// letter := strings.Replace(s[1], "'", "", -1)
-							
-													// log.Printf("prob: %v", prob)
-												// log.Printf("letter: %v", letter)
-										
-											} else {
-														log.Printf("shorty")
-											}
-						
-								}
-			
-			}	
-		
+					encoded, letterImage := quats2Image(quat_in_circ_buffer, n)
+
+					// send encoded base64 28x28 ti TF:
+					_, err := stdin.Write([]byte(encoded))
+					if err != nil {
+						log.Errorf("stdin.Write() failed: %s", err)
+					}
+
+					// write end of line:
+					_, err = stdin.Write([]byte("\n"))
+					if err != nil {
+						log.Errorf("stdin.Write() failed: %s", err)
+					}
+
+					s2, err := stdoutReader.ReadString('\n')
+					if err != nil {
+						log.Printf("Process is finished ..")
+					}
+
+					s := strings.FieldsFunc(s2, Split)
+
+					prob, _ := strconv.ParseFloat(s[0], 64)
+					// letter := strings.Trim(s[1], "'")
+					letter := strings.Replace(s[1], "'", "", -1)
+
+					log.Printf("prob: %v", prob)
+					log.Printf("letter: %v", letter)
+
+					// OLED display:
+					msgP := fmt.Sprintf("letter = %s", letter)
+					TFimg := image.NewRGBA(image.Rect(0, 0, 128, 64))
+
+					oled.ShowText(TFimg, 1, msgP)
+					// var letterImage [lp][lp]byte
+
+					oled.AddGesture(TFimg, letterImage)
+
+				} else {
+					log.Printf("shorty")
+				}
+
+			}
+
 		}
+
+	}
 
 }
 
-func quats2Image(quat_in_circ_buffer [circBufferL][5]float64, length int) string {
+func quats2Image(quat_in_circ_buffer [circBufferL][5]float64, length int) (string, [lp][lp]byte) {
 	// var imageOut float64
 	// imageOut = quatsIn * 2.0
 	// n := 0 // index to write into circ buffer
@@ -427,17 +445,18 @@ func quats2Image(quat_in_circ_buffer [circBufferL][5]float64, length int) string
 	// sn := strings.Replace(file, "quaternion_data.txt", "quat_image.bmp", 1)
 	// sudo chmod 777 *.bmp
 	// sn := "imageOut.bmp"
-	sn := GetFilenameDate()
 
-	fo, err := os.OpenFile(sn, os.O_WRONLY|os.O_CREATE, 0600)
-	if err != nil {
-		log.Printf("err %s\n", err)
-	}
+	// sn := GetFilenameDate()
 
-	defer fo.Close()
-	bmp.Encode(fo, img)
+	// fo, err := os.OpenFile(sn, os.O_WRONLY|os.O_CREATE, 0600)
+	// if err != nil {
+	// 	log.Printf("err %s\n", err)
+	// }
 
-	return encoded
+	// defer fo.Close()
+	// bmp.Encode(fo, img)
+
+	return encoded, letterImage
 }
 
 func GetFilenameDate() string {
@@ -451,3 +470,7 @@ func GetFilenameDate() string {
 }
 
 // sudo chmod 777 *.bmp
+
+func Split(r rune) bool {
+	return r == ':' || r == ',' || r == '(' || r == ')'
+}
