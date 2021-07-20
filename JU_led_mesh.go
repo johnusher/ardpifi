@@ -250,7 +250,6 @@ func main() {
 	if err := oled.Clear(); err != nil {
 		panic(err)
 	}
-
 	img := image.NewRGBA(image.Rect(0, 0, 128, 64))
 
 	go func() {

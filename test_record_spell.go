@@ -16,10 +16,13 @@
 package main
 
 import (
+	"bufio"
 	"encoding/base64"
 	"flag"
 	"image"
 	"image/color"
+	"os/exec"
+	"runtime"
 
 	"math"
 	"os"
@@ -36,14 +39,41 @@ import (
 )
 
 const (
-	circBufferL = 600 // length of buffer where we store quat data. 600 samples @5 ms update = 3 seconds
-	lp          = 28  // pixels used to represent drawn letter, on each axis, ie lpxlp
+	circBufferL = 1200 // length of buffer where we store quat data. 600 samples @5 ms update = 3 seconds
+	lp          = 28   // pixels used to represent drawn letter, on each axis, ie lpxlp
 )
 
 func main() {
 
 	noACC := flag.Bool("no-acc", false, "run without Bosch accelerometer")
 	noOLED := flag.Bool("no-oled", false, "run without oled display")
+
+	// init TF/ Python
+
+	cmd := exec.Command("python3", "-u", "classifier/classify.py") // linux
+	if runtime.GOOS == "windows" {
+		cmd = exec.Command("python", "-u", "classifier/classify.py") // windoze
+	}
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		log.Errorf("failed to initialize StdoutPipe: %s", err)
+		return	
+	}
+
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		log.Errorf("failed to initialize StdinPipe: %s", err)
+		return
+	}
+
+	stdoutReader := bufio.NewReader(stdout)
+
+	err = cmd.Start()
+	if err != nil {
+		log.Errorf("failed to initialize NewReader: %s", err)
+		return	
+	}
 
 	// init accelerometer module (Bosch)
 	accChan := make(chan acc.ACCMessage)
@@ -111,20 +141,20 @@ func main() {
 	}
 
 	img := image.NewRGBA(image.Rect(0, 0, 128, 64))
-
-	go func() {
-		errs <- GPIOLoop(gpioChan, accChan, img, oled)
-	}()
+     
+	go func() {   
+		errs <- GPIOLoop(gpioChan, accChan, img, oled, stdin)
+	}()    
 
 	// block until ctrl-c or one of the loops returns an error
 	select {
 	case <-errs:
 	}
 
-}
-
-func GPIOLoop(gpioCh <-chan gpio.GPIOMessage, accCh <-chan acc.ACCMessage, img *image.RGBA, oled oled.OLED) error {
-	// log.Info("Starting GPIO loop")
+}     
+   
+func GPIOLoop(gpioCh <-chan gpio.GPIOMessage, accCh <-chan acc.ACCMessage, img *image.RGBA, oled oled.OLED, stdin io.WriteCloser ) error {
+	// log.Info("Starting GPIO loop")    
 
 	gpioMessage := gpio.GPIOMessage{}
 	accMessage := acc.ACCMessage{}
@@ -190,53 +220,41 @@ func GPIOLoop(gpioCh <-chan gpio.GPIOMessage, accCh <-chan acc.ACCMessage, img *
 
 				// log.Printf("quat_in_circ_buffer: %v", quat_in_circ_buffer)
 				// log.Printf("n: %v", n)
+				// mFnbT9sthKKp22GR
 
 				if n > 20 {
-					encoded := quats2Image(quat_in_circ_buffer, n)
-
-					// log.Printf("encoded: %v", encoded)
-				} else {
-					// log.Printf("shorty")
-				}
-
-				// now send to the python:
-
-				// now1 := time.Now()
-
-				// _, err = stdin.Write([]byte(encoded))
-				// if err != nil {
-				// 	log.Errorf("stdin.Write() failed: %s", err)
-				// }
-				// _, err = stdin.Write([]byte("\n"))
-				// if err != nil {
-				// 	log.Errorf("stdin.Write() failed: %s", err)
-				// }
-
-				// s2, err := stdoutReader.ReadString('\n')
-				// if err != nil {
-				// 	log.Printf("Process is finished ..")
-				// }
-
-				// now2 := time.Now()
-				// elapsedTime := now2.Sub(now1)
-				// log.Printf("elapsedTime TF=%v", elapsedTime)
-
-				// // log.Printf("raw message: %v", s2)
-
-				// s := strings.FieldsFunc(s2, Split)
-
-				// prob, _ := strconv.ParseFloat(s[0], 64)
-				// // letter := strings.Trim(s[1], "'")
-				// letter := strings.Replace(s[1], "'", "", -1)
-
-				// log.Printf("prob: %v", prob)
-				// log.Printf("letter: %v", letter)
-
-			}
-
+					quats2Image(quat_in_circ_buffer, n)
+															
+												
+															// s2, err := stdoutReader.ReadString('\n')
+																// if err != nil {
+																// 	log.Printf("Process is finished ..")
+														// }
+												
+														// now2 := time.Now()
+															// elapsedTime := now2.Sub(now1)
+															// log.Printf("elapsedTime TF=%v", elapsedTime)
+									
+														// // log.Printf("raw message: %v", s2)
+										
+														// s := strings.FieldsFunc(s2, Split)
+								
+													// prob, _ := strconv.ParseFloat(s[0], 64)
+										// // letter := strings.Trim(s[1], "'")
+														// letter := strings.Replace(s[1], "'", "", -1)
+							
+													// log.Printf("prob: %v", prob)
+												// log.Printf("letter: %v", letter)
+										
+											} else {
+														log.Printf("shorty")
+											}
+						
+								}
+			
+			}	
+		
 		}
-
-	}
 
 }
 

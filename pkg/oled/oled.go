@@ -45,6 +45,9 @@ type OLED interface {
 	// ShowText displays text on specific line to OLED. This is an addition to the
 	// existing monochromeoled.OLED functionality.
 	ShowText(img *image.RGBA, line int, txtLabel string)
+	AddGesture(img *image.RGBA, letterImage [28][28]byte)
+	// func (o *oled) AddGesture(img *image.RGBA, letterImage [28][28]byte) {
+
 }
 
 // oled wraps a monochromeoled.OLED, and provides ShowText technology.
@@ -73,6 +76,31 @@ func Open(o driver.Opener, mock bool) (OLED, error) {
 func (o *oled) ShowText(img *image.RGBA, line int, txtLabel string) {
 	clearLine(img, line)
 	addLabel(img, 0, line, txtLabel)
+	o.SetImage(0, 0, img)
+	o.Draw()
+}
+
+// AddGesture adds a 28x28 image to lower part of screen
+func (o *oled) AddGesture(img *image.RGBA, letterImage [28][28]byte) {
+	w := 28 // pixel width of OLED screen
+	M := 30 //offset
+
+	// lineOffset := (line - 1) * 10
+	col1 := color.RGBA{200, 100, 0, 255}
+	col0 := color.RGBA{0, 0, 0, 255}
+
+	for y := M; y < M+w; y++ {
+		for x := 1; x < w; x++ {
+			if letterImage[y-M][x] == 1 {
+				img.Set(x, y, col1)
+
+			} else {
+				img.Set(x, y, col0)
+
+			}
+		}
+	}
+
 	o.SetImage(0, 0, img)
 	o.Draw()
 }

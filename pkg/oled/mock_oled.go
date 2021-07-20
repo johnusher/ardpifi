@@ -68,3 +68,9 @@ func (m *mockOLED) Close() error {
 func (m *mockOLED) ShowText(img *image.RGBA, line int, txtLabel string) {
 	m.log.Infof("ShowText: %d %s", line, txtLabel)
 }
+
+func (m *mockOLED) AddGesture(img *image.RGBA, letterImage [28][28]byte) {
+	m.log.Infof("AddGesture")
+}
+
+// AddGesture(img *image.RGBA, letterImage [28][28]byte)
