@@ -82,7 +82,7 @@ func (o *oled) ShowText(img *image.RGBA, line int, txtLabel string) {
 
 // AddGesture adds a 28x28 image to lower part of screen
 func (o *oled) AddGesture(img *image.RGBA, letterImage [28][28]byte) {
-	w := 28 // pixel width of OLED screen
+	w := 28 //
 	M := 30 //offset
 
 	// lineOffset := (line - 1) * 10
@@ -91,7 +91,8 @@ func (o *oled) AddGesture(img *image.RGBA, letterImage [28][28]byte) {
 
 	for y := M; y < M+w; y++ {
 		for x := 1; x < w; x++ {
-			if letterImage[y-M][x] == 1 {
+			// if letterImage[y-M][x] == 1 {
+			if letterImage[x][y-M] == 1 {
 				img.Set(x, y, col1)
 
 			} else {

@@ -21,7 +21,6 @@ import (
 	"flag"
 	"fmt"
 	"image"
-	"image/color"
 	"io"
 	"os/exec"
 	"runtime"
@@ -48,9 +47,22 @@ const (
 
 func main() {
 
+	// parse inut flags for no hardware
+	// NB no-sound just means do not output sound- still need I2S connections (probably)
 	noACC := flag.Bool("no-acc", false, "run without Bosch accelerometer")
 	noOLED := flag.Bool("no-oled", false, "run without oled display")
 	noSound := flag.Bool("no-sound", false, "run without sound")
+
+	logLevel := flag.String("log-level", "info", "log level, must be one of: panic, fatal, error, warn, info, debug, trace")
+
+	flag.Parse()
+
+	level, err := log.ParseLevel(*logLevel)
+	if err != nil {
+		log.Errorf("failed to parse log level [%s]: %s", *logLevel, err)
+		return
+	}
+	log.SetLevel(level)
 
 	// init TF/ Python
 
@@ -294,13 +306,16 @@ func quats2Image(quat_in_circ_buffer [circBufferL][5]float64, length int) (strin
 	var x [circBufferL]float64
 	var y [circBufferL]float64
 
+	startOffset := 10
+	length = length - startOffset
+
 	// for n = 0; n < circBufferL; n++ {
 	for n = 0; n < length; n++ {
 
-		s := quat_in_circ_buffer[n][0]
-		x := quat_in_circ_buffer[n][1]
-		y := quat_in_circ_buffer[n][2]
-		z := quat_in_circ_buffer[n][3]
+		s := quat_in_circ_buffer[n+startOffset][0]
+		x := quat_in_circ_buffer[n+startOffset][1]
+		y := quat_in_circ_buffer[n+startOffset][2]
+		z := quat_in_circ_buffer[n+startOffset][3]
 
 		projected_circ_buffer[n][0] = 1.0 - 2.0*(y*y+z*z)
 		projected_circ_buffer[n][1] = 2.0 * (x*y + s*z)
@@ -393,7 +408,7 @@ func quats2Image(quat_in_circ_buffer [circBufferL][5]float64, length int) (strin
 	}
 
 	maxdim := math.Max(maxX, maxY)
-	scaler := 0.8 / maxdim // scale image so we don't extend to the edge: this REALLY help %prob!
+	scaler := 0.9 / maxdim // scale image so we don't extend to the edge: this REALLY help %prob!
 
 	for i := 0; i < n; i++ {
 		x[i] = x[i] * scaler
@@ -416,6 +431,7 @@ func quats2Image(quat_in_circ_buffer [circBufferL][5]float64, length int) (strin
 		x_int = int(x[i]*lp/2 + lp/2)
 		y_int = int(y[i]*lp/2 + lp/2)
 		letterImage[y_int][x_int] = 1
+		letterImage[y_int+1][x_int+1] = 1
 	}
 
 	var joinedArray []byte
@@ -430,21 +446,18 @@ func quats2Image(quat_in_circ_buffer [circBufferL][5]float64, length int) (strin
 	encoded := base64.StdEncoding.EncodeToString(joinedArray)
 
 	// -------------------------------
-	// Create png image
-	img := image.NewRGBA(image.Rect(0, 0, lp, lp))
-
-	for i := 0; i < n; i++ {
-		x_int = int(x[i]*lp/2 + lp/2 + 1)
-		y_int = int(y[i]*lp/2 + lp/2 + 1)
-		img.Set(y_int, x_int, color.RGBA{255, 0, 0, 255})
-	}
-
 	// Save to out.bmp
-	// NB saved as root
 
-	// sn := strings.Replace(file, "quaternion_data.txt", "quat_image.bmp", 1)
+	// NB saved as root
 	// sudo chmod 777 *.bmp
-	// sn := "imageOut.bmp"
+
+	// img := image.NewRGBA(image.Rect(0, 0, lp, lp))
+
+	// for i := 0; i < n; i++ {
+	// 	x_int = int(x[i]*lp/2 + lp/2 + 1)
+	// 	y_int = int(y[i]*lp/2 + lp/2 + 1)
+	// 	img.Set(y_int, x_int, color.RGBA{255, 0, 0, 255})
+	// }
 
 	// sn := GetFilenameDate()
 
