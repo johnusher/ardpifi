@@ -37,7 +37,7 @@ def model_path():
     return os.path.join(script_dir, 'model.tflite')
    
 # Order of letters should match the one in train.py
-_LETTERS = ['Other'] + list('CDMNOS')
+_LETTERS = ['Other'] + list('MO')
 
 class Classifier:
     def __init__(self, interpreter):
@@ -60,8 +60,12 @@ class Classifier:
 
         logits = self._interpreter.get_tensor(self._output_details[0]['index'])[0]
         probs = _softmax(logits)
-        prob, letter = max(zip(probs, _LETTERS))
-        return prob, letter
+        # prob, letter = max(zip(probs, _LETTERS))
+        # prob, letter = sorted(zip(probs, _LETTERS))
+        # prob, letter = sorted(zip(probs, _LETTERS),reverse=False)
+        # prob, letter = zip(probs[1], _LETTERS)
+        # return prob, letter
+        return sorted(zip(probs, _LETTERS),reverse=True)
        
 
 def _softmax(x):
