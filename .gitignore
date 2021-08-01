@@ -68,3 +68,4 @@ oplog.txt
 
 # Python environment
 pyenv
+/classifier/logs
