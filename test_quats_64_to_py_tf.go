@@ -294,7 +294,7 @@ func main() {
 			elapsedTime := now2.Sub(now1)
 			log.Printf("elapsedTime TF=%v", elapsedTime)
 
-			// log.Printf("raw message: %v", s2)
+			log.Printf("raw message: %v", s2)
 
 			s := strings.FieldsFunc(s2, Split)
 
