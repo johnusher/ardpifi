@@ -61,11 +61,11 @@ class Classifier:
         logits = self._interpreter.get_tensor(self._output_details[0]['index'])[0]
         probs = _softmax(logits)
         # prob, letter = max(zip(probs, _LETTERS))
-        prob, letter = sorted(zip(probs, _LETTERS))
+        # prob, letter = sorted(zip(probs, _LETTERS))
         # prob, letter = sorted(zip(probs, _LETTERS),reverse=False)
         # prob, letter = zip(probs[1], _LETTERS)
-        return prob, letter
-        # return probs, _LETTERS
+        # return prob, letter
+        return sorted(zip(probs, _LETTERS),reverse=True)
        
 
 def _softmax(x):
