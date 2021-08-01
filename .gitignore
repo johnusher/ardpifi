@@ -65,3 +65,6 @@ GPIOTEST
 *.max
 logfile
 oplog.txt
+
+# Python environment
+pyenv
