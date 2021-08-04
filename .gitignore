@@ -73,3 +73,7 @@ oplog.txt
 pyenv
 /classifier/logs
 
+euler_data.txt
+gyro_data.txt
+LinAcc_data.txt
+quaternion_data.txt

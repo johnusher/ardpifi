@@ -30,6 +30,11 @@ func main() {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 
+	err = sensor.setOperationMode(prevMode)
+	if err != nil {
+		return err
+	}
+
 	for !isCalibrated {
 		select {
 		case <-signals:

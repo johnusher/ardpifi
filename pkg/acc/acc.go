@@ -78,6 +78,13 @@ func initACC(accChan chan<- ACCMessage) (ACC, error) {
 		panic(err)
 	}
 
+	// err = sensor.EsetOperationMode(0x08)
+	err = sensor.EsetOperationMode(0x0C) // fast mag cal
+
+	if err != nil {
+		panic(err)
+	}
+
 	return &acc{
 		accChan,
 		// accChan2,
