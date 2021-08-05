@@ -3,6 +3,7 @@ module github.com/johnusher/ardpifi
 go 1.15
 
 require (
+	github.com/UssieApp/graphics-go v0.0.0-20150904175756-1cb3710beaca
 	github.com/d2r2/go-hd44780 v0.0.0-20181002113701-74cc28c83a3e
 	github.com/d2r2/go-i2c v0.0.0-20191123181816-73a8a799d6bc
 	github.com/d2r2/go-logger v0.0.0-20181221090742-9998a510495e
