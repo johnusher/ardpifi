@@ -37,6 +37,13 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	// time.Sleep(time.Second)
+	// err = sensor.EsetOperationMode(0x08)
+	err = sensor.EsetOperationMode(0x0C) // fast mag cal
+	if err != nil {
+		panic(err)
+	}
+	time.Sleep(time.Second)
 
 	t := time.Now()
 	// newDir := fmt.Sprintf("%d-%02d-%02d_%02d-%02d-%02d",
@@ -114,6 +121,11 @@ func main() {
 	defer f1.Close()
 	defer f2.Close()
 	defer f3.Close()
+
+	err = sensor.EsetOperationMode(0x08)
+	if err != nil {
+		panic(err)
+	}
 
 	for {
 		select {

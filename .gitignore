@@ -1,5 +1,8 @@
 
+# Specific binaries
 GPIOTEST
+test_quats_64_to_py_tf
+
 # JPEG
 *.jpg
 *.jpeg
@@ -69,4 +72,8 @@ oplog.txt
 # Python environment
 pyenv
 /classifier/logs
-test_quats_64_to_py_tf
+
+euler_data.txt
+gyro_data.txt
+LinAcc_data.txt
+quaternion_data.txt
