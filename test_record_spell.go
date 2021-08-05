@@ -197,6 +197,12 @@ func GPIOLoop(gpioCh <-chan gpio.GPIOMessage, accCh <-chan acc.ACCMessage, img *
 			if buttonDown {
 				// log.Infof("recording quats")
 				// log.Infof("n %v", n)
+
+				err = acc.Einit()
+				if err != nil {
+					return nil, err
+				}
+
 				n = n + 1
 				quat_in_circ_buffer[n][0] = accMessage.QuatW
 				quat_in_circ_buffer[n][1] = accMessage.QuatX

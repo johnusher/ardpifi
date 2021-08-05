@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	// "github.com/kpeu3i/bno055_2"
+	// "github.com/kpeu3i/bno055"
 	log "github.com/sirupsen/logrus"
 
 	// "github.com/kpeu3i/bno055_2"
@@ -54,6 +54,13 @@ func Init(accChan chan<- ACCMessage, mock bool) (ACC, error) {
 	}
 
 	return initACC(accChan)
+}
+
+func EInit(*bno055_2.Sensor) (ACC, error) {
+	err := bno055_2.Einit()
+	if err != nil {
+		return nil, err
+	}
 }
 
 func initACC(accChan chan<- ACCMessage) (ACC, error) {

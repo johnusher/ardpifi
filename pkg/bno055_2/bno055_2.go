@@ -1,5 +1,5 @@
 // Package bno055 allows interfacing with the BNO055 absolute orientation sensor.
-// made a copy of this from "github.com/kpeu3i/bno055" to force global functions
+// made a copy of this from "github.com/kpeu3i/bno055" to force EsetOperationMode to be an external function
 package bno055_2
 
 import (
@@ -620,6 +620,72 @@ func (s *Sensor) checkExists() error {
 }
 
 func (s *Sensor) init() error {
+	err := s.checkExists()
+	if err != nil {
+		return err
+	}
+
+	err = s.setOperationMode(bno055OperationModeConfig)
+	if err != nil {
+		return err
+	}
+
+	// Reset the device using the reset command
+	err = s.bus.Write(bno055SysTrigger, 0x20)
+	if err != nil {
+		return err
+	}
+
+	time.Sleep(1000 * time.Millisecond)
+
+	err = s.checkExists()
+	if err != nil {
+		return err
+	}
+
+	// Set to normal power mode
+	err = s.bus.Write(bno055PwrMode, bno055PowerModeNormal)
+	if err != nil {
+		return err
+	}
+
+	err = s.bus.Write(bno055PageID, 0x0)
+	if err != nil {
+		return err
+	}
+
+	// Default to internal oscillator
+	err = s.bus.Write(bno055SysTrigger, 0x00)
+	if err != nil {
+		return err
+	}
+
+	// Set temperature source to gyroscope, as it seems to be more accurate
+	err = s.bus.Write(bno055TempSource, 0x01)
+	if err != nil {
+		return err
+	}
+
+	// Set the unit selection bits
+	err = s.bus.Write(bno055UnitSel, 0x0)
+	if err != nil {
+		return err
+	}
+
+	err = s.setOperationMode(bno055OperationModeNdof)
+	if err != nil {
+		return err
+	}
+
+	err = s.Calibrate(defaultCalibrationOffsets)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Sensor) Einit() error {
 	err := s.checkExists()
 	if err != nil {
 		return err
