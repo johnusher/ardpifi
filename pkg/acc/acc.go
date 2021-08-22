@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"time"
 
+	// "github.com/kpeu3i/bno055"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/kpeu3i/bno055"
+	// "github.com/kpeu3i/bno055_2"
+	"github.com/johnusher/ardpifi/pkg/bno055_2"
 )
 
 const (
@@ -43,7 +45,7 @@ type ACCMessage struct {
 type acc struct {
 	acc chan<- ACCMessage
 	// acc2   chan<- ACCMessage2
-	Sensor *bno055.Sensor
+	Sensor *bno055_2.Sensor
 }
 
 func Init(accChan chan<- ACCMessage, mock bool) (ACC, error) {
@@ -54,9 +56,16 @@ func Init(accChan chan<- ACCMessage, mock bool) (ACC, error) {
 	return initACC(accChan)
 }
 
+func EInit(*bno055_2.Sensor) (ACC, error) {
+	err := bno055_2.Einit()
+	if err != nil {
+		return nil, err
+	}
+}
+
 func initACC(accChan chan<- ACCMessage) (ACC, error) {
 
-	sensor, err := bno055.NewSensor(0x28, 3)
+	sensor, err := bno055_2.NewSensor(0x28, 3)
 	if err != nil {
 		panic(err)
 	}

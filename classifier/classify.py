@@ -26,18 +26,28 @@ def main():
         data = base64.b64decode(line.strip())
         
         array = np.frombuffer(data, dtype=np.uint8).reshape((28, 28)).transpose()
+
+        # Apply a blur to the input image to look more like the emnist training set.
+        array = blur(array)
+
         output = classifier.classify(array)
         print(output)
         # sys.stdout.flush()
         
-
+def blur(img_array):
+    kernel = np.array([1, 3, 1])
+    img_array = np.apply_along_axis(
+        lambda x: np.convolve(x, kernel, mode='same'), 0, img_array)
+    img_array = np.apply_along_axis(
+        lambda x: np.convolve(x, kernel, mode='same'), 1, img_array)
+    return img_array
 
 def model_path():
     script_dir = os.path.dirname(__file__)
-    return os.path.join(script_dir, 'model.tflite')
+    return os.path.join(script_dir, 'MOCL_FHIKRTY.tflite')
    
 # Order of letters should match the one in train.py
-_LETTERS = ['Other'] + list('MO')
+_LETTERS = ['Other'] + list('MOCL')
 
 class Classifier:
     def __init__(self, interpreter):

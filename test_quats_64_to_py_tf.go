@@ -20,7 +20,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
-	"strconv"
 	"strings"
 	"time"
 
@@ -296,28 +295,22 @@ func main() {
 
 			log.Printf("raw message: %v", s2)
 
-			s := strings.FieldsFunc(s2, Split)
+			// // print first and second place:
+			// s := strings.FieldsFunc(s2, Split)
 
-			prob, _ := strconv.ParseFloat(s[0], 64)
-			// letter := strings.Trim(s[1], "'")
-			letter := strings.Replace(s[1], "'", "", -1)
+			// prob, _ := strconv.ParseFloat(s[0], 64)
+			// // letter := strings.Trim(s[1], "'")
+			// letter := strings.Replace(s[1], "'", "", -1)
 
-			log.Printf("prob: %v", prob)
-			log.Printf("letter: %v", letter)
+			// // s[2] is blank
+			// prob2, _ := strconv.ParseFloat(s[3], 64)
+			// letter2 := strings.Replace(s[4], "'", "", -1)
 
-			// to continuously read output from python:
-			// https://stackoverflow.com/questions/55312593/golang-os-exec-flushing-stdin-without-closing-it
+			// log.Printf("letter1: %v", letter)
+			// log.Printf("prob1: %v", prob)
 
-			// output := make(chan string)
-			// defer close(output)
-			// go ReadOutput2(output, stdout)
-
-			// log.Printf("raw message: %v", output)
-
-			// for o := range output {
-			// 	// Log(o)
-			// 	log.Printf("raw message: %v", o)
-			// }
+			// log.Printf("letter2: %v", letter2)
+			// log.Printf("prob2: %v", prob2)
 
 			// -------------------------------
 			// Create png image
@@ -404,5 +397,5 @@ func sliceToInt(s []byte) byte {
 }
 
 func Split(r rune) bool {
-	return r == ':' || r == ',' || r == '(' || r == ')'
+	return r == ':' || r == ',' || r == '(' || r == ')' || r == '[' || r == ']'
 }

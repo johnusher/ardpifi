@@ -197,6 +197,12 @@ func GPIOLoop(gpioCh <-chan gpio.GPIOMessage, accCh <-chan acc.ACCMessage, img *
 			if buttonDown {
 				// log.Infof("recording quats")
 				// log.Infof("n %v", n)
+
+				err = acc.Einit()
+				if err != nil {
+					return nil, err
+				}
+
 				n = n + 1
 				quat_in_circ_buffer[n][0] = accMessage.QuatW
 				quat_in_circ_buffer[n][1] = accMessage.QuatX
@@ -258,17 +264,32 @@ func GPIOLoop(gpioCh <-chan gpio.GPIOMessage, accCh <-chan acc.ACCMessage, img *
 						log.Printf("Process is finished ..")
 					}
 
+					// print first and second place:
+
+					log.Printf("raw message: %v", s2)
 					s := strings.FieldsFunc(s2, Split)
 
 					prob, _ := strconv.ParseFloat(s[0], 64)
 					// letter := strings.Trim(s[1], "'")
 					letter := strings.Replace(s[1], "'", "", -1)
 
-					log.Printf("prob: %v", prob)
-					log.Printf("letter: %v", letter)
+					// s[2] is blank
+					prob2, _ := strconv.ParseFloat(s[3], 64)
+					letter2 := strings.Replace(s[4], "'", "", -1)
+
+					log.Printf("letter1: %v", letter)
+					log.Printf("prob1: %v", prob)
+
+					log.Printf("letter2: %v", letter2)
+					log.Printf("prob2: %v", prob2)
 
 					// OLED display:
-					msgP := fmt.Sprintf("letter = %s", letter)
+					msgP := fmt.Sprintf("%s or %s", letter, letter2)
+					if prob > 0.9 {
+						// high probability: just print first place letter
+						msgP = fmt.Sprintf("letter = %s", letter)
+					}
+
 					TFimg := image.NewRGBA(image.Rect(0, 0, 128, 64))
 
 					oled.ShowText(TFimg, 1, msgP)
@@ -408,7 +429,7 @@ func quats2Image(quat_in_circ_buffer [circBufferL][5]float64, length int) (strin
 	}
 
 	maxdim := math.Max(maxX, maxY)
-	scaler := 0.9 / maxdim // scale image so we don't extend to the edge: this REALLY help %prob!
+	scaler := 0.85 / maxdim // scale image so we don't extend to the edge: this REALLY help %prob!
 
 	for i := 0; i < n; i++ {
 		x[i] = x[i] * scaler
@@ -431,7 +452,7 @@ func quats2Image(quat_in_circ_buffer [circBufferL][5]float64, length int) (strin
 		x_int = int(x[i]*lp/2 + lp/2)
 		y_int = int(y[i]*lp/2 + lp/2)
 		letterImage[y_int][x_int] = 1
-		letterImage[y_int+1][x_int+1] = 1
+		// letterImage[y_int+1][x_int+1] = 1   // make line thicker
 	}
 
 	var joinedArray []byte
@@ -485,5 +506,5 @@ func GetFilenameDate() string {
 // sudo chmod 777 *.bmp
 
 func Split(r rune) bool {
-	return r == ':' || r == ',' || r == '(' || r == ')'
+	return r == ':' || r == ',' || r == '(' || r == ')' || r == '[' || r == ']'
 }
