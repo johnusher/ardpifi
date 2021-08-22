@@ -15,17 +15,20 @@ Keyboard inputs on each Raspi will send LED pattern info and sync across all Ras
 
 ## Hardware set-up
 
-See shopping list section for details on components.
+![HardWare](https://github.com/johnusher/ardpifi/blob/master/ardPiFi_hw.png?raw=true)
+  
 
-### Arduino
-Connect Arduino Uno (also Nano clone tested) to Raspi 3 via USB. Programmable NeoPixelLED strips connected to Arduino and should be powered separately:
+See [shopping list section](#hardware-shopping-list) for details on components. 
+
+### MCU for programmable LEDs 
+ATmega328p- Arduino Nano. MCU and NeoPixelLED strips should be powered separately.
 
 ### GPS
-GPS module connect with GPIO serial (upin 15, 16, 5 V power to module). It shows up at serial port /dev/ttyS0. In raspi-config settings, you may need to disable serial console output, and disable bluetooth. I have used an external antenna and a small ceramic antenna: both seem to work.
+GPS module connect with GPIO serial. It shows up at serial port /dev/ttyS0. In raspi-config settings, you may need to disable serial console output, and disable bluetooth. I have used an external antenna and a small ceramic antenna: both seem to work.
 
-Have tested the UBLOX NEO-6M (GPS only= less accurate) NEO M-9N (GPS, GLONASS, Galileo = more accurate).
+Have tested the UBLOX NEO-6M (GPS only= less accurate) and NEO M-9N (GPS, GLONASS, Galileo = more accurate).
 
-NEO M-9N is default 38000 baud UART, but we change to 9600 and poll every 2 seconds. To this this, use u-center 21.02 (windows only), or use NEO9Settings.txt configuration script with ubxconfig.sh from https://gist.github.com/hdoverobinson/42732da4c5b50d031f60c1fae39f0720)  (untested!)
+NEO M-9N default 38000 baud UART, but I changed to 9600 and poll every 2 seconds. To do this this, use u-center 21.02 (windows only), or use NEO9Settings.txt configuration script with ubxconfig.sh from https://gist.github.com/hdoverobinson/42732da4c5b50d031f60c1fae39f0720)  (untested!)
 
 ```bash
 ./ubxconfig.sh /dev/ttyS0 NEO9Settings.txt
@@ -52,7 +55,9 @@ gpsbabel -i nmea -f gpsdata.txt -x discard,hdop=1,sat=9  -o kml -F outfile.kml
 
 ### Audio: I2S
 
-install port audio and make I2s default:
+Raspi Zero does not have audio IO, so output is I2S into a 2 W amp, and then to a loudspeaker.
+
+Install port audio and make I2s default:
 ```bash
 sudo apt-get install libasound-dev portaudio19-dev libportaudio2 libportaudiocpp0 mpg123 
 curl -sS https://raw.githubusercontent.com/adafruit/Raspberry-Pi-Installer-Scripts/master/i2samp.sh | bash
@@ -71,16 +76,6 @@ There is no built-in audio out with the Pi-Zero, so we use an I2S audio DAC: UDA
 
 from https://learn.adafruit.com/adafruit-i2s-stereo-decoder-uda1334a/raspberry-pi-wiring
 
-Amp Vin to Raspbery Pi 3V or 5V
-
-Amp GND to Raspbery Pi GND
-
-Amp DIN to Raspbery Pi #21  = pin 21
-
-Amp BCLK to Raspbery Pi GPIO#18 = pin 12
-
-Amp LRCLK to Raspbery Pi #19 = pin 35
-
 
 We must run audio playback as sudo! eg  go build wavestest.go && sudo ./wavestest 
 
@@ -92,7 +87,7 @@ sudo apt-get --no-install-recommends install jackd2
 
 ### GPIO: Button and LED
 
-An arcade push button attaches to GPIO27= physical pin 13, and an LED with 330 Ohm series resistor to GPIO22 = physcial pin 13.
+An arcade push button attaches to GPIO27=  pin 13, and an LED with 330 Ohm series resistor to GPIO22 =  pin 15.
 
 GPIOTEST.go shows this in action.
 
@@ -153,7 +148,6 @@ This should show OLED on 3c
 sudo i2cdetect -y 3
 
 This should show the BNo055 on 28.
-
 
 
 There are "no hardware" options for running the main Go file without these HW modules.
@@ -305,7 +299,7 @@ systemctl status delayBoot2.service
 
 Rasperry Pi 3 Model B+ tested.
 
-Arduino clone:
+MCU:
 https://www.christians-shop.de/Nano-V3-developer-board-for-Arduino-IDE-ATMEL-ATmega328P-AVR-Microcontroller-CH340-Chip-Christians-Technikshop
 
 https://www.amazon.de/-/en/gp/product/B078SBBST6/ref=ppx_yo_dt_b_asin_title_o02_s00?ie=UTF8&psc=1
