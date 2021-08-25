@@ -14,9 +14,9 @@ int idleC = 0;	// counter for led position
 int colC = 0;	// counter for led colour
 
 uint32_t idleCol;
-uint8_t idleColR = 0; 	// colour of idle
-uint8_t idleColG = 0; 
-uint8_t idleColB = 127; 
+uint8_t idleColR = 255; 	// colour of idle
+uint8_t idleColG = 112; 
+uint8_t idleColB = 197; 
 
 
 uint8_t maxC = 128;   // max colour value
