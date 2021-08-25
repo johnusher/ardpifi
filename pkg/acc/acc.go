@@ -56,12 +56,12 @@ func Init(accChan chan<- ACCMessage, mock bool) (ACC, error) {
 	return initACC(accChan)
 }
 
-func EInit(*bno055_2.Sensor) (ACC, error) {
-	err := bno055_2.Einit()
-	if err != nil {
-		return nil, err
-	}
-}
+// func EInit(*bno055_2.Sensor) (ACC, error) {
+// 	err := bno055_2.Einit()
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// }
 
 func initACC(accChan chan<- ACCMessage) (ACC, error) {
 

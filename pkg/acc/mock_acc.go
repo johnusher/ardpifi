@@ -30,7 +30,7 @@ func (m *mockACC) Run() error {
 	m.log.Infof("Run()")
 
 	// send a pseudo-random gps location every 2 seconds
-	ticker := time.NewTicker(2 * time.Second)
+	ticker := time.NewTicker(20 * time.Millisecond)
 
 	for {
 		select {
@@ -49,12 +49,23 @@ func (m *mockACC) Run() error {
 			quat_y := rand.Float64()
 			quat_z := rand.Float64()
 
-			m.log.Infof("Sending %f %f %f", bearing, roll, tilt)
+			// m.log.Infof("Sending %f %f %f", bearing, roll, tilt)
+
+			// m.acc <- ACCMessage{
+			// 	// Temp:    temp,
+			// 	Bearing: bearing,
+			// 	Roll:    roll,
+			// 	QuatW:   quat_w,
+			// 	QuatX:   quat_x,
+			// 	QuatY:   quat_y,
+			// 	QuatZ:   quat_z,
+			// }
 
 			m.acc <- ACCMessage{
 				// Temp:    temp,
 				Bearing: bearing,
 				Roll:    roll,
+				Tilt:    tilt,
 				QuatW:   quat_w,
 				QuatX:   quat_x,
 				QuatY:   quat_y,
