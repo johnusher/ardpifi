@@ -18,8 +18,6 @@ void setup() {
   // Serial.begin(9600);
   // Serial.begin(19200);
   Serial.begin(115200);
-  
-
 
   idleCol =  strip.Color(idleColR, idleColG, idleColB);
 }
@@ -50,22 +48,23 @@ void loop() {
     // if(idleC==strip.numPixels()){
     // colC = colC + 1;
     // colC = colC % 127;
-      
+
     // // change color:
     //   uint8_t idleColR = 0; 	// colour of idle
-    //   uint8_t idleColG = 64%colC; 
-    //   uint8_t idleColB = 127%colC; 
+    //   uint8_t idleColG = 64%colC;
+    //   uint8_t idleColB = 127%colC;
 
     // }
 
     strip.setPixelColor(idleC, idleColR, idleColG, idleColB);  // show blue light moving along
 
-    if(breakFlag==0){        
-      
+    if (breakFlag == 0) {
+
       myStripShow();
 
       for (i = 0; i < 1000; i++) {
         checkSerialInput();
+
       }
 
     }
@@ -73,9 +72,9 @@ void loop() {
     else
     {
       idleC = 0;
-      
+
     }
-    
+
 
     breakFlag = 0;
 
@@ -129,16 +128,30 @@ void checkSerialInput() {
 
   if (serial_in == '0') {
     SMode = 0;
-    Serial.print("mode 0");
+    Serial.println("mode 0");
     Serial.flush();
+    Serial.println("a");
 
-    colorWipe(strip.Color(maxC, 0 , 0), 25); // Red
-    if(breakFlag==1){
-    colorWipe(strip.Color(0, 0 , 0), 50); // off
-    }
-    else{
-      wipeReverse = !wipeReverse;
-    }
+    idleC = 128;
+    idleColR = 0;
+    idleColG = 0;
+    idleColB = 128;
+
+
+    strip.setPixelColor(idleC, idleColR, idleColG, idleColB);  // show blue light moving along
+    Serial.println("b");
+
+
+    
+//    if (breakFlag == 1) {
+//      //    colorWipe(strip.Color(0, 0 , 0), 50); // off
+//      Serial.println("c");
+//    }
+//    else {
+//      wipeReverse = !wipeReverse;
+//      Serial.println("d");
+//    }
+//    Serial.println("e");
     breakFlag = 0;
     idleC = 0;
 
@@ -146,14 +159,18 @@ void checkSerialInput() {
 
   else if (serial_in == '1') {
     SMode = 1;
-    Serial.print("mode 1");
+    Serial.println("mode 1");
     Serial.flush();
 
-    colorWipe(strip.Color(0, maxC , 0 ), 25); // g
-    if(breakFlag==1){
-    colorWipe(strip.Color(0, 0 , 0), 50); // off
+    colorWipe(strip.Color(0, 0 , maxC ), 25); // g
+    Serial.print("breakFlag = ");
+    Serial.println(breakFlag);
+
+
+    if (breakFlag == 1) {
+      colorWipe(strip.Color(0, 0 , 0), 50); // off
     }
-    else{
+    else {
       wipeReverse = !wipeReverse;
     }
     breakFlag = 0;
@@ -184,11 +201,11 @@ void colorWipe(uint32_t c, uint8_t wait) {
       strip.setPixelColor(i, c);
       //      tone(buzzer, i ); // Send 1KHz sound signal...
       myStripShow();
-      if(breakFlag==1){
+      if (breakFlag == 1) {
         break;
       }
-      else{
-      delay(wait);
+      else {
+        delay(wait);
       }
     }
   }
@@ -199,11 +216,11 @@ void colorWipe(uint32_t c, uint8_t wait) {
       //      tone(buzzer, i XI); // Send 1KHz sound signal...
 
       myStripShow();
-      if(breakFlag==1){
+      if (breakFlag == 1) {
         break;
       }
-      else{
-      delay(wait);
+      else {
+        delay(wait);
       }
     }
   }
