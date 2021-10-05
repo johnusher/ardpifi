@@ -99,6 +99,14 @@ sudo apt-get install wiringpi
 gpio readall
 ```
 
+NB this does not work on pi 4, try the following:
+
+```bash
+cd /tmp
+wget https://project-downloads.drogon.net/wiringpi-latest.deb
+sudo dpkg -i wiringpi-latest.deb
+```
+
 ### Display screen
 OLED 128*64.
 
