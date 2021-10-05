@@ -305,7 +305,7 @@ systemctl status delayBoot2.service
 
 ## Hardware shopping list
 
-Rasperry Pi 3 Model B+ tested.
+Rasperry Pi 3 Model B+ tested, Pi Zero WH, and Pi-4 B
 
 MCU:
 https://www.christians-shop.de/Nano-V3-developer-board-for-Arduino-IDE-ATMEL-ATmega328P-AVR-Microcontroller-CH340-Chip-Christians-Technikshop
@@ -609,6 +609,12 @@ This reads the button, debounces, and plays sound when we have button down.
 run OLEDtest.go
 ```
 This displays a real-time clock on the OLED.
+
+```bash
+go run test_quats_64_to_py_tf.go
+```
+this tests if you have  and python and go correctly installed.
+
 
 convAccData.m
 
