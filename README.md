@@ -89,7 +89,7 @@ sudo apt-get --no-install-recommends install jackd2
 
 An arcade push button attaches to GPIO27=  pin 13, and an LED with 330 Ohm series resistor to GPIO22 =  pin 15.
 
-GPIOTEST.go shows this in action.
+test_GPIO.go shows this in action.
 
 go get github.com/warthog618/gpiod
 
@@ -590,30 +590,51 @@ ssh $USER@pi
 
 Open a browser window to localhost:8080
 
+## Main routines to run:
+
+```bash
+go build test_record_spell.go && sudo ./test_record_spell -no-sound
+```
+test_record_spell records MCU movement when we have a button press.
+
+NB The GPIO channel can not close properly, so you may need to kill the app with
+
+sudo ps aux | grep test_record_spell
+
+kill -9 -1 3290 
 
 ## Other useful scripts
 ```bash
-run BNo055_save_data.go
+go run test_BNo055_save_data.go
 ```
-This saves accelerometer and gyroscope data to a txt file.
+NB not running!! This saves accelerometer and gyroscope data to a txt file.
 
 ```bash
 
-go build GPIOTEST.go && sudo ./GPIOTEST
+go build test_GPIO.go && sudo ./test_GPIO
 
 ```
-This reads the button, debounces, and plays sound when we have button down.
+NV this currently fails! This reads the button, debounces, and plays sound when we have button down.
 
 
 ```bash
-run OLEDtest.go
+go run OLEDtest.go
 ```
 This displays a real-time clock on the OLED.
 
 ```bash
 go run test_quats_64_to_py_tf.go
 ```
-this tests if you have  and python and go correctly installed.
+process quat recordings with TF... this tests if you have python and go correctly installed.
+
+
+```bash
+go run test_parse_quats_oled.go
+```
+test_parse_quats_oled
+
+
+
 
 
 convAccData.m

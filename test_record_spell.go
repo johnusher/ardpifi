@@ -5,7 +5,7 @@
 // determine what letter the user draws in the air
 
 // NB binary must be run as sudo
-// go build test_record_spell.go && sudo ./test_record_spell -no-sound
+// eg go build test_record_spell.go && sudo ./test_record_spell -no-sound
 
 // read switch input from raspberry pi 3+ GPIO and light LED
 // when button is down for a "long" time (>500 ms): record IMU data.

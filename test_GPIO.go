@@ -1,10 +1,16 @@
-// GPIOTEST.go
+// test_GPIO.go
 // read switch input from raspberry pi 3+ GPIO and light LED
 // uses command-line GPIOD.
 // debouncing handled using time.AfterFunc
 // go get github.com/warthog618/gpiod
 
-// to playback audio must run as sudo eg  go build GPIOTEST.go && sudo ./GPIOTEST
+// to playback audio must run as sudo eg  go build test_GPIO.go && sudo ./test_GPIO
+
+// input:  Physical pin 13 = BCM pin 27, GPIO27 = J8p13
+// The library uses the raw BCM2835 pin numbers, not the ports as they are mapped
+// on the J8 output pins for the Raspberry Pi.
+// A mapping from J8 to BCM is provided for those wanting to use the J8 numbering.
+// eg physica; pin
 
 package main
 
@@ -127,7 +133,8 @@ func mkButtonEventHandler(pushButton *buttonPress) func(gpiod.LineEvent) {
 
 func main() {
 
-	wavsp := wavs.InitWavs()
+	// bool noSound 1
+	wavsp := wavs.InitWavs(true)
 
 	pushButton := &buttonPress{
 		buttonFlag:     0,
