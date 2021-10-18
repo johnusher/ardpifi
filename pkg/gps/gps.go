@@ -1,5 +1,12 @@
 package gps
 
+// return GS cooridinates and HDOP.
+// where HDOP:
+// <1	Ideal	Highest possible confidence level to be used for applications demanding the highest possible precision at all times.
+// 1-2	Excellent	At this confidence level, positional measurements are considered accurate enough to meet all but the most sensitive applications.
+// 2-5	Good	Represents a level that marks the minimum appropriate for making accurate decisions. Positional measurements could be used to make reliable in-route navigation suggestions to the user.
+// 5-10	Moderate	Positional measurements could be used for calculations, but the fix quality could still be improved. A more open view of the sky is recommended.
+
 import (
 	"bufio"
 	"errors"

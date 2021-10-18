@@ -24,17 +24,29 @@ See [shopping list section](#hardware-shopping-list) for details on components.
 ATmega328p- Arduino Nano. MCU and NeoPixelLED strips should be powered separately.
 
 ### GPS
-GPS module connect with GPIO serial. It shows up at serial port /dev/ttyS0. In raspi-config settings, you may need to disable serial console output, and disable bluetooth. I have used an external antenna and a small ceramic antenna: both seem to work.
+GPS module connect with GPIO serial. It shows up at serial port /dev/ttyS0. In raspi-config settings, you  need to disable serial console output, enable Hardware serial, and maybe disable bluetooth. 
 
-Have tested the UBLOX NEO-6M (GPS only= less accurate) and NEO M-9N (GPS, GLONASS, Galileo = more accurate).
+Tested using the UBLOX NEO-6M (GPS only= less accurate) and NEO M-9N (GPS, GLONASS, Galileo = more accurate).
 
-NEO M-9N default 38000 baud UART, but I changed to 9600 and poll every 2 seconds. To do this this, use u-center 21.02 (windows only), or use NEO9Settings.txt configuration script with ubxconfig.sh from https://gist.github.com/hdoverobinson/42732da4c5b50d031f60c1fae39f0720)  (untested!)
+Note we only use serial Rx from GPS module into the Raspi, as we use Serial Tx for Arduino MCU.
+
+NEO M-9N default 38000 baud UART, but changed to 9600 and poll every 2 seconds. To do this this, use u-center 21.02 (windows only), or use NEO9Settings.txt configuration script with ubxconfig.sh from https://gist.github.com/hdoverobinson/42732da4c5b50d031f60c1fae39f0720)  (untested and won't work without serial Tx from Raspi)
 
 ```bash
 ./ubxconfig.sh /dev/ttyS0 NEO9Settings.txt
 ```
 
 Useful GPS:
+```bash
+go run test_GPS2.go 
+```
+
+Prints Lat-Long cooridinates and HDOP.<br />
+where HDOP:<br />
+<1	Ideal	Highest possible confidence level to be used for applications demanding the highest possible precision at all times.<br />
+1-2	Excellent	At this confidence level, positional measurements are considered accurate enough to meet all but the most sensitive applications.<br />
+2-5	Good	Represents a level that marks the minimum appropriate for making accurate decisions. Positional measurements could be used to make reliable in-route navigation suggestions to the user.<br />
+5-10	Moderate	Positional measurements could be used for calculations, but the fix quality could still be improved. A more open view of the sky is recommended.<br />
 
 
 Read raw NMEA format GPS data from serial port
