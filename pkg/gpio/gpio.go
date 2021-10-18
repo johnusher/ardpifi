@@ -82,6 +82,21 @@ func initGPIO(gpioChan chan<- GPIOMessage, noSound bool) (GPIO, error) {
 	pushButton.buttonWavs = *wavsp
 	buttonEventHandler := mkButtonEventHandler(pushButton)
 
+	// on pi 4, we need to set GPIO 27 to pull up like this:
+	// raspi-gpio set 27 pu
+
+	app := "raspi-gpio"
+	arg0 := "set"
+	arg1 := "27"
+	arg2 := "pu"
+	cmd := exec.Command(app, arg0, arg1, arg2)
+	// log.Printf("gpio set-up part 1")
+	err := cmd.Run()
+	if err != nil {
+		log.Printf("Command finished with error: %v", err)
+		return nil, err
+	}
+
 	// hack from https://www.raspberrypi.org/forums/viewtopic.php?t=270376:
 
 	//  Physical pin 13 = BCM pin 27, GPIO27 = J8p13
@@ -92,15 +107,15 @@ func initGPIO(gpioChan chan<- GPIOMessage, noSound bool) (GPIO, error) {
 	// A mapping from J8 to BCM is provided for those wanting to use the J8 numbering.
 	// eg physica; pin
 
-	app := "gpio"
-	arg0 := "-g"
-	arg1 := "mode"
-	arg2 := "27"
+	app = "gpio"
+	arg0 = "-g"
+	arg1 = "mode"
+	arg2 = "27"
 	arg3 := "in"
 
-	cmd := exec.Command(app, arg0, arg1, arg2, arg3)
+	cmd = exec.Command(app, arg0, arg1, arg2, arg3)
 	// log.Printf("gpio set-up part 1")
-	err := cmd.Run()
+	err = cmd.Run()
 	if err != nil {
 		log.Printf("Command finished with error: %v", err)
 		return nil, err

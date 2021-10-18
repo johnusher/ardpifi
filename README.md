@@ -89,9 +89,6 @@ sudo apt-get --no-install-recommends install jackd2
 
 An arcade push button attaches to GPIO27=  pin 13, and an LED with 330 Ohm series resistor to GPIO22 =  pin 15.
 
-test_GPIO.go shows this in action.
-
-go get github.com/warthog618/gpiod
 
 GPIO support not intalled for Raspi Lite so run this:
 ```bash
@@ -99,13 +96,38 @@ sudo apt-get install wiringpi
 gpio readall
 ```
 
-NB this does not work on pi 4, try the following:
+on pi 4, try the following:
 
 ```bash
 cd /tmp
 wget https://project-downloads.drogon.net/wiringpi-latest.deb
 sudo dpkg -i wiringpi-latest.deb
 ```
+
+test button LED works:
+```bash
+gpio -g mode 22 out
+gpio -g write 22 1
+ ``` 
+ 
+run this command to set pullup:
+```bash
+raspi-gpio set 27 pu
+```
+
+when you run
+gpio readall
+you should see following when button not pressed 
+```bash
+BCM| wPi |   Name  | Mode | V
+27 |   2 | GPIO. 2 |   IN | 1 
+```
+```bash
+27 |   2 | GPIO. 2 |   IN | 0
+```
+when pressed 
+
+
 
 ### Display screen
 OLED 128*64.
