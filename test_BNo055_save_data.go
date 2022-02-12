@@ -1,5 +1,7 @@
 package main
 
+// this is obsolete now!
+
 import (
 	"fmt"
 	"os"
@@ -9,6 +11,7 @@ import (
 	"time"
 
 	"github.com/kpeu3i/bno055"
+	// "github.com/kpeu3i/bno055"
 )
 
 const (
