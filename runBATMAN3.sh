@@ -10,8 +10,8 @@
 #   sudo make install
 # )
 
-echo waiting 20 secs
-sleep 20s
+echo pi3
+sleep 1s
 # Activate batman-adv
 sudo modprobe batman-adv
 echo 1
@@ -49,11 +49,11 @@ sudo ifconfig bat0 172.27.0.3/16   # 172.27.0.x
 echo 11
 sudo iwconfig wlan0 ap CA:B4:54:B1:5A:75
 echo BATMAN loaded
-sleep 10s
-cd /home/pi/apl3/
+# sleep 10s
+# cd /home/pi/apl3/
 # pi zero doesnt have duino etc, ony gps module.
-/home/pi/apl3/JU_led_mesh -rasp-id=66 --web-addr :8082 -no-duino -no-oled -no-acc -log-level debug
-echo go app loaded
+# /home/pi/apl3/JU_led_mesh -rasp-id=66 --web-addr :8082 -no-duino -no-oled -no-acc -log-level debug
+# echo go app loaded
 # test batctl
 # sudo batctl o
 # echo 13
