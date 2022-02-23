@@ -10,8 +10,13 @@
 #   sudo make install
 # )
 
+<<<<<<< HEAD
 echo waiting 3 secs
 sleep 3s
+=======
+echo waiting 5 secs
+sleep 5s
+>>>>>>> 756a39b112b0926f27536178df5a33b28a8b42cb
 # Activate batman-adv
 sudo modprobe batman-adv
 echo 1
@@ -45,9 +50,19 @@ sleep 5s
 # This is the only change necessary to the script for
 # different devices. Make sure to indicate the number
 # of bits used for the mask.
+<<<<<<< HEAD
 sudo ifconfig bat0 172.27.0.3/16   # 172.27.0.x
+=======
+sudo ifconfig bat0 172.27.0.4/16   # 172.27.0.x
+>>>>>>> 756a39b112b0926f27536178df5a33b28a8b42cb
 echo 11
 sudo iwconfig wlan0 ap CA:B4:54:B1:5A:75
 echo BATMAN loaded
 sleep 10s
 cd /home/pi/apl3/
+<<<<<<< HEAD
+=======
+# test batctl
+# sudo batctl o
+# echo 13
+>>>>>>> 756a39b112b0926f27536178df5a33b28a8b42cb

@@ -50,7 +50,7 @@ echo 11
 sudo iwconfig wlan0 ap CA:B4:54:B1:5A:75
 echo BATMAN loaded
 sleep 10s
-cd /home/pi/apl/
+cd /home/pi/apl4/
 /home/pi/apl/JU_led_mesh -rasp-id=64 --web-addr :8080 -no-duino -log-level debug
 echo go app loaded
 # test batctl
